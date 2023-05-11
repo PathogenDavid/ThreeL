@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Window.cpp" />
+    <ClCompile Include="Assert.cpp" />
+    <ClCompile Include="GraphicsCore.cpp" />
+    <ClCompile Include="SwapChain.cpp" />
+    <ClCompile Include="CommandQueue.cpp" />
+    <ClCompile Include="CommandContext.cpp" />
+    <ClCompile Include="GpuSyncPoint.cpp" />
+    <ClCompile Include="GpuResource.cpp" />
+    <ClCompile Include="ResourceDescriptorManager.cpp" />
+    <ClCompile Include="DynamicDescriptorTableBuilder.cpp" />
+    <ClCompile Include="GraphicsContext.cpp" />
+    <ClCompile Include="DebugLayer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Window.h" />
+    <ClInclude Include="Assert.h" />
+    <ClInclude Include="GraphicsCore.h" />
+    <ClInclude Include="Util.h" />
+    <ClInclude Include="SwapChain.h" />
+    <ClInclude Include="CommandQueue.h" />
+    <ClInclude Include="CommandContext.h" />
+    <ClInclude Include="GpuSyncPoint.h" />
+    <ClInclude Include="GpuResource.h" />
+    <ClInclude Include="ResourceDescriptorManager.h" />
+    <ClInclude Include="ResourceDescriptor.h" />
+    <ClInclude Include="DynamicDescriptorTableBuilder.h" />
+    <ClInclude Include="DynamicDescriptorTable.h" />
+    <ClInclude Include="GraphicsContext.h" />
+    <ClInclude Include="RenderTargetView.h" />
+    <ClInclude Include="BackBuffer.h" />
+    <ClInclude Include="DebugLayer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>
