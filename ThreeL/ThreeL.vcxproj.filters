@@ -14,6 +14,28 @@
     <ClCompile Include="DynamicDescriptorTableBuilder.cpp" />
     <ClCompile Include="GraphicsContext.cpp" />
     <ClCompile Include="DebugLayer.cpp" />
+    <ClCompile Include="DearImGui.cpp" />
+    <ClCompile Include="..\external\imgui\imgui.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\imgui\imgui_demo.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\imgui\imgui_draw.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\imgui\imgui_tables.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\imgui\imgui_widgets.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\imgui\backends\imgui_impl_dx12.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -33,8 +55,17 @@
     <ClInclude Include="RenderTargetView.h" />
     <ClInclude Include="BackBuffer.h" />
     <ClInclude Include="DebugLayer.h" />
+    <ClInclude Include="DearImGui.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="external">
+      <UniqueIdentifier>{1e97fcc4-23ea-4087-8b10-15f0eeea1c02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\imgui">
+      <UniqueIdentifier>{76afd895-8678-42e9-ac17-f6f03c1dc9a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

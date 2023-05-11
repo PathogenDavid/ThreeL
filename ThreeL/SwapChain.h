@@ -10,10 +10,11 @@
 
 class SwapChain
 {
-private:
+public:
     static const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_B8G8R8A8_UNORM;
     static const uint32_t BACK_BUFFER_COUNT = 3;
 
+private:
     GraphicsCore& m_GraphicsCore;
     ComPtr<IDXGISwapChain3> m_SwapChain;
 
@@ -32,6 +33,11 @@ public:
     void Present();
 
     ~SwapChain();
+
+    inline operator RenderTargetView()
+    {
+        return CurrentBackBuffer().GetRtv();
+    }
 
 private:
     void InitializeBackBuffers();

@@ -33,13 +33,11 @@ ResourceDescriptorManager::ResourceDescriptorManager(const ComPtr<ID3D12Device>&
 
 struct UninitializedResidentDescriptorHandle
 {
-private:
     ID3D12Device* m_Device;
     D3D12_CPU_DESCRIPTOR_HANDLE m_StagingHandle;
     D3D12_CPU_DESCRIPTOR_HANDLE m_ResidentCpuHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE m_ResidentGpuHandle;
 
-public:
     UninitializedResidentDescriptorHandle(const ResourceDescriptorManager& manager, uint32_t index)
     {
         m_Device = manager.m_Device.Get();
@@ -107,6 +105,12 @@ ResourceDescriptor ResourceDescriptorManager::CreateUnorderedAccessView(ID3D12Re
 {
     UninitializedResidentDescriptorHandle handle(*this, AllocateResidentDescriptor());
     return handle.Initialize(resource, counterResource, description);
+}
+
+std::tuple<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> ResourceDescriptorManager::AllocateUninitializedResidentDescriptor()
+{
+    UninitializedResidentDescriptorHandle handle(*this, AllocateResidentDescriptor());
+    return { handle.m_ResidentCpuHandle, handle.m_ResidentGpuHandle };
 }
 
 DynamicDescriptorTableBuilder ResourceDescriptorManager::AllocateDynamicTable(uint32_t length)

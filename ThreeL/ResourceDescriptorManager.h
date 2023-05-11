@@ -4,6 +4,7 @@
 #include "Util.h"
 
 #include <d3d12.h>
+#include <tuple>
 
 /// <summary>Provides facilities for allocating CBV/SRV/UAV descriptors.</summary>
 /// <remarks>
@@ -66,7 +67,14 @@ public:
     ResourceDescriptor CreateShaderResourceView(ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* description);
     ResourceDescriptor CreateUnorderedAccessView(ID3D12Resource* resource, ID3D12Resource* counterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* description);
 
+    std::tuple<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> AllocateUninitializedResidentDescriptor();
+
     DynamicDescriptorTableBuilder AllocateDynamicTable(uint32_t length);
 
     void BindHeap(ID3D12GraphicsCommandList* commandList);
+
+    inline ID3D12DescriptorHeap* GetGpuHeap()
+    {
+        return m_GpuHeap.Get();
+    }
 };

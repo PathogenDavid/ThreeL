@@ -2,6 +2,8 @@
 
 #include "Assert.h"
 
+#include <ranges>
+
 Window::Window(LPCWSTR title, int width, int height)
 {
     m_ThisProcessModuleHandle = GetModuleHandleW(nullptr);
@@ -83,6 +85,28 @@ bool Window::ProcessMessages()
     return true;
 }
 
+WndProcHandle Window::AddWndProc(WndProcFunction function)
+{
+    m_LastMessageHandlerId++;
+    size_t newHandle = m_LastMessageHandlerId;
+    m_MessageHandlers.push_back({ newHandle, function });
+    return { newHandle };
+}
+
+void Window::RemoveWndProc(WndProcHandle handle)
+{
+    for (auto it = m_MessageHandlers.begin(); it != m_MessageHandlers.end(); it++)
+    {
+        if (it->first == handle.m_Handle)
+        {
+            m_MessageHandlers.erase(it);
+            return;
+        }
+    }
+
+    Assert(false && "Window's message handler chain does not contain the specified handle.");
+}
+
 LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     // Handle window creation
@@ -121,6 +145,16 @@ LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
 
 LRESULT Window::WndProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
+    // Process registered message handlers (from most recently added to last.)
+    for (auto messageHandler : m_MessageHandlers | std::views::reverse)
+    {
+        std::optional result = messageHandler.second(m_Hwnd, message, wParam, lParam);
+
+        if (result.has_value())
+            return result.value();
+    }
+
+    // No custom handlers handled the message, check if we have our own default behavior for this message
     switch (message)
     {
         //TODO: Handle WM_DPICHANGED

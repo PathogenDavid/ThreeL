@@ -36,6 +36,12 @@ public:
         GetCommandList()->ClearRenderTargetView(renderTarget.GetRtvHandle(), color, 0, nullptr);
     }
 
+    inline void SetRenderTarget(RenderTargetView renderTarget)
+    {
+        D3D12_CPU_DESCRIPTOR_HANDLE handle = renderTarget.GetRtvHandle();
+        GetCommandList()->OMSetRenderTargets(1, &handle, false, nullptr);
+    }
+
     inline GpuSyncPoint Flush(ID3D12PipelineState* newState)
     {
         m_Context->Flush(newState);
