@@ -1,10 +1,9 @@
+#include "pch.h"
 #include "GraphicsCore.h"
 
-#include "Assert.h"
 #include "CommandQueue.h"
 #include "DebugLayer.h"
 
-#include <d3d12.h>
 #include <dxgi1_6.h>
 #include <pix3.h>
 

@@ -36,12 +36,12 @@
     <ClCompile Include="..\external\imgui\backends\imgui_impl_win32.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="GraphicsCore.h" />
-    <ClInclude Include="Util.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="CommandContext.h" />
@@ -56,6 +56,7 @@
     <ClInclude Include="BackBuffer.h" />
     <ClInclude Include="DebugLayer.h" />
     <ClInclude Include="DearImGui.h" />
+    <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "DynamicDescriptorTableBuilder.h"
 #include "ResourceDescriptorManager.h"
 

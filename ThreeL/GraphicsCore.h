@@ -1,12 +1,10 @@
 #pragma once
+#include "pch.h"
 #include "CommandContext.h"
 #include "CommandQueue.h"
 #include "ResourceDescriptorManager.h"
-#include "Util.h"
 
-#include <d3d12.h>
 #include <dxgi1_4.h>
-#include <memory>
 
 class GraphicsCore
 {

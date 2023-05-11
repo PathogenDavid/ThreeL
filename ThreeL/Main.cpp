@@ -1,4 +1,4 @@
-#include "Assert.h"
+#include "pch.h"
 #include "BackBuffer.h"
 #include "CommandQueue.h"
 #include "DearImGui.h"
@@ -9,7 +9,6 @@
 #include "Window.h"
 
 #include "imgui.h"
-#include <stdio.h>
 #include <pix3.h>
 
 static int MainImpl()

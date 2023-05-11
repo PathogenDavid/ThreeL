@@ -90,6 +90,9 @@
     <ClCompile Include="GpuResource.cpp" />
     <ClCompile Include="GpuSyncPoint.cpp" />
     <ClCompile Include="GraphicsContext.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="ResourceDescriptorManager.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="GraphicsCore.cpp" />
@@ -108,12 +111,12 @@
     <ClInclude Include="GpuResource.h" />
     <ClInclude Include="GpuSyncPoint.h" />
     <ClInclude Include="GraphicsContext.h" />
+    <ClInclude Include="pch.h" />
     <ClInclude Include="RenderTargetView.h" />
     <ClInclude Include="ResourceDescriptor.h" />
     <ClInclude Include="ResourceDescriptorManager.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="GraphicsCore.h" />
-    <ClInclude Include="Util.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

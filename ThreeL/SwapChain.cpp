@@ -1,8 +1,7 @@
+#include "pch.h"
 #include "SwapChain.h"
 
 #include "CommandQueue.h"
-
-#include <format>
 
 SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     : m_GraphicsCore(graphicsCore)

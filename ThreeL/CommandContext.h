@@ -1,9 +1,6 @@
 #pragma once
+#include "pch.h"
 #include "GpuSyncPoint.h"
-#include "Util.h"
-
-#include <d3d12.h>
-#include <vector>
 
 class CommandQueue;
 class GpuResource;

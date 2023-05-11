@@ -15,4 +15,11 @@
   <Target Name="CleanUpRelativeProjectPathFilePath" AfterTargets="Clean">
     <Delete Files="$(_RelativeProjectPathFilePath)" />
   </Target>
+
+  <!-- Don't use PCH for external source files -->
+  <ItemGroup>
+    <ClCompile Update="$(MSBuildThisFileDirectory)../external/**/*">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
 </Project>

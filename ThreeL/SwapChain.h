@@ -1,12 +1,10 @@
 #pragma once
+#include "pch.h"
 #include "BackBuffer.h"
 #include "GraphicsCore.h"
-#include "Util.h"
 #include "Window.h"
 
-#include <d3d12.h>
 #include <dxgi1_4.h>
-#include <Windows.h>
 
 class SwapChain
 {

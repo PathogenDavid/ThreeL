@@ -1,7 +1,5 @@
+#include "pch.h"
 #include "ResourceDescriptorManager.h"
-
-#include <new>
-#include <Windows.h>
 
 ResourceDescriptorManager::ResourceDescriptorManager(const ComPtr<ID3D12Device>& device)
 {

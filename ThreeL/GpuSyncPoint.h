@@ -1,7 +1,5 @@
 #pragma once
-#include "Util.h"
-
-#include <d3d12.h>
+#include "pch.h"
 
 //! Represents a GPU fence synchronization point.
 //! This struct is free-threaded.

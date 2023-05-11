@@ -1,9 +1,8 @@
 #pragma once
+#include "pch.h"
 #include "DynamicDescriptorTableBuilder.h"
 #include "ResourceDescriptor.h"
-#include "Util.h"
 
-#include <d3d12.h>
 #include <tuple>
 
 /// <summary>Provides facilities for allocating CBV/SRV/UAV descriptors.</summary>

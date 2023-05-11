@@ -1,9 +1,6 @@
 #pragma once
 #include "Window.h"
 
-#include <optional>
-#include <Windows.h>
-
 struct GraphicsContext;
 class GraphicsCore;
 struct ImGuiContext;

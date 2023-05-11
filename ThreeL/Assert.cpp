@@ -1,8 +1,5 @@
+#include "pch.h"
 #include "Assert.h"
-
-#include <format>
-#include <stdio.h>
-#include <Windows.h>
 
 static void PrintMessageForHResultOrWinError(HRESULT errorCode)
 {

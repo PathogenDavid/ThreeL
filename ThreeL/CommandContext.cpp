@@ -1,11 +1,9 @@
+#include "pch.h"
 #include "CommandContext.h"
 
 #include "CommandQueue.h"
 #include "GpuResource.h"
 #include "GraphicsCore.h"
-
-#include <format>
-#include <Windows.h>
 
 static volatile uint64_t g_NextId;
 

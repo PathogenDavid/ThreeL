@@ -1,9 +1,8 @@
+#include "pch.h"
 #include "CommandQueue.h"
 
 #include "CommandContext.h"
 #include "GraphicsCore.h"
-
-#include <format>
 
 CommandQueue::CommandQueue(GraphicsCore& graphicsCore, D3D12_COMMAND_LIST_TYPE type)
     : m_GraphicsCore(graphicsCore), m_Type(type)

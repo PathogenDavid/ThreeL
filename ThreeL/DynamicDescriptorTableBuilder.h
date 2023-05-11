@@ -1,7 +1,6 @@
 #pragma once
 #include "DynamicDescriptorTable.h"
 #include "ResourceDescriptor.h"
-#include "Util.h"
 
 #include <d3d12.h>
 

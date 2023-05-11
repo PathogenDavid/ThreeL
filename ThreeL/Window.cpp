@@ -1,6 +1,5 @@
+#include "pch.h"
 #include "Window.h"
-
-#include "Assert.h"
 
 #include <ranges>
 

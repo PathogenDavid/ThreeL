@@ -1,8 +1,7 @@
 #pragma once
+#include "pch.h"
+
 #include <functional>
-#include <optional>
-#include <vector>
-#include <Windows.h>
 
 using WndProcFunction = std::function<std::optional<LRESULT>(HWND, UINT, WPARAM, LPARAM)>;
 

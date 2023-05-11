@@ -1,6 +1,5 @@
+#include "pch.h"
 #include "GpuResource.h"
-
-#include <Windows.h>
 
 #ifdef DEBUG
 void GpuResource::TakeOwnership(CommandContext* context)

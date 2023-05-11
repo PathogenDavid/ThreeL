@@ -1,13 +1,10 @@
 #pragma once
+#include "pch.h"
 #include "GpuSyncPoint.h"
-#include "Util.h"
 
-#include <d3d12.h>
-#include <memory>
 #include <mutex>
 #include <queue>
 #include <stack>
-#include <string>
 
 class CommandContext;
 class GraphicsCore;
