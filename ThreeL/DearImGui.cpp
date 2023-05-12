@@ -27,7 +27,7 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; //TODO: Need to handle fullscreen transitions ourselves for viewports to work correctly
     io.IniFilename = nullptr;
 
     //---------------------------------------------------------------------------------------------------------

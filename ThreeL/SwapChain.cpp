@@ -4,7 +4,7 @@
 #include "CommandQueue.h"
 
 SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
-    : m_GraphicsCore(graphicsCore)
+    : m_GraphicsCore(graphicsCore), m_Window(window)
 {
     // Determine initial size
     uint32_t width;
@@ -15,6 +15,8 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
         width = clientRect.right - clientRect.left;
         height = clientRect.bottom - clientRect.top;
     }
+
+    m_BufferSize = m_Size = { width, height };
 
     // Create the swap chain
     DXGI_SWAP_CHAIN_DESC1 desc =
@@ -28,7 +30,7 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
         .Scaling = DXGI_SCALING_STRETCH,
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-        .Flags = 0,
+        .Flags = SWAP_CHAIN_FLAGS,
     };
 
     ComPtr<IDXGISwapChain1> swapChain;
@@ -53,6 +55,26 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     AssertSuccess(graphicsCore.GetDevice()->CreateDescriptorHeap(&rtvHeapDescription, IID_PPV_ARGS(&m_RtvHeap)));
     m_RtvHeap->SetName(L"ARES SwapChain RTV heap");
     InitializeBackBuffers();
+
+    // Register WndProc to handle resizing
+    m_WndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+        {
+            if (message == WM_WINDOWPOSCHANGED)
+            {
+                RECT clientRect;
+                Assert(GetClientRect(hwnd, &clientRect));
+                uint2 newSize(clientRect.right - clientRect.left, clientRect.bottom - clientRect.top);
+
+                if ((newSize > uint2::Zero).All()) // (Size can be 0 when window is minimized)
+                {
+                    Resize(newSize);
+                }
+
+                return std::optional<LRESULT>(0);
+            }
+
+            return std::optional<LRESULT>();
+        });
 }
 
 void SwapChain::InitializeBackBuffers()
@@ -80,8 +102,72 @@ void SwapChain::Present()
     m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 }
 
+
+void SwapChain::Resize(uint2 size)
+{
+    Assert((size.x > uint2::Zero).All() && "The swap chain size must be positive and non-zero!");
+
+    // If there is no change, don't do anything
+    if (m_Size == size)
+    {
+        return;
+    }
+
+    // All buffers should be presenting before resize
+#ifdef DEBUG
+    for (BackBuffer backBuffer : m_BackBuffers)
+    {
+        backBuffer.AssertIsInPresentState();
+    }
+#endif
+
+    // If this is a minor size change, just change the source size instead of resizing the buffers
+    //TODO: Add consideration of the VRAM limit here (IE: Never re-use the swap chain when the system is VRAM-constrained)
+    if (size < m_BufferSize)
+    {
+        uint32_t bufferPixelCount = m_BufferSize.x * m_BufferSize.y;
+        uint32_t newPixelCount = size.x * size.y;
+        double percentDifference = (double)newPixelCount / (double)bufferPixelCount;
+
+        // If the shrink doesn't exceed 75% of the buffer size, just resize the source region
+        if (percentDifference > 0.75)
+        {
+            AssertSuccess(m_SwapChain->SetSourceSize(size.x, size.y));
+            m_Size = size;
+            return;
+        }
+    }
+
+    // Wait for the graphics queue to become idle so we know nothing is in use
+    m_GraphicsCore.GetGraphicsQueue().QueueSyncPoint().Wait();
+
+    // Release the back buffers
+    for (BackBuffer& backBuffer : m_BackBuffers)
+    {
+        backBuffer = { };
+    }
+
+    // Resize the buffers
+    HRESULT hr = m_SwapChain->ResizeBuffers
+    (
+        BACK_BUFFER_COUNT,
+        size.x,
+        size.y,
+        BACK_BUFFER_FORMAT,
+        SWAP_CHAIN_FLAGS
+    );
+    AssertSuccess(hr);
+    AssertSuccess(m_SwapChain->SetSourceSize(size.x, size.y));
+    m_Size = m_BufferSize = size;
+
+    // Re-initialize the render target views and such
+    InitializeBackBuffers();
+}
+
 SwapChain::~SwapChain()
 {
+    m_Window.RemoveWndProc(m_WndProcHandle);
+
     // Wait for the graphics queue to become idle so we know nothing is in use
     m_GraphicsCore.GetGraphicsQueue().QueueSyncPoint().Wait();
 }

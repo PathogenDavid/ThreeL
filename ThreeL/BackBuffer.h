@@ -23,6 +23,11 @@ private:
         m_CurrentState = D3D12_RESOURCE_STATE_PRESENT;
     }
 
+    inline void AssertIsInPresentState()
+    {
+        Assert(m_CurrentState == D3D12_RESOURCE_STATE_PRESENT);
+    }
+
 public:
     inline RenderTargetView GetRtv()
     {
