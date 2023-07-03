@@ -88,7 +88,7 @@ void SwapChain::InitializeBackBuffers()
         AssertSuccess(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&renderTarget)));
         renderTarget->SetName(std::format(L"ARES SwapChain back buffer {}", i).c_str());
         m_GraphicsCore.GetDevice()->CreateRenderTargetView(renderTarget.Get(), nullptr, rtvHandle);
-        m_BackBuffers[i] = { renderTarget, rtvHandle };
+        m_BackBuffers[i] = BackBuffer(renderTarget, rtvHandle);
 
         rtvHandle.ptr += rtvHandleSize;
     }
@@ -115,7 +115,7 @@ void SwapChain::Resize(uint2 size)
 
     // All buffers should be presenting before resize
 #ifdef DEBUG
-    for (BackBuffer backBuffer : m_BackBuffers)
+    for (const BackBuffer& backBuffer : m_BackBuffers)
     {
         backBuffer.AssertIsInPresentState();
     }

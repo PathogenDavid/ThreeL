@@ -10,6 +10,7 @@ class CommandContext final
 {
     friend struct GraphicsContext;
     friend struct ComputeContext;
+    friend class UploadQueue;
 
 private:
     CommandQueue& m_CommandQueue;

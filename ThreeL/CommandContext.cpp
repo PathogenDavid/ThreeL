@@ -43,7 +43,17 @@ void CommandContext::ResetCommandList(ID3D12PipelineState* initialPipelineState)
 {
     Assert(m_CommandAllocator != nullptr && "Tried to reset without an allocator.");
     m_CommandList->Reset(m_CommandAllocator, initialPipelineState);
-    m_CommandQueue.m_GraphicsCore.GetResourceDescriptorManager().BindHeap(m_CommandList.Get());
+    ID3D12DescriptorHeap* heaps[] =
+    {
+        m_CommandQueue.m_GraphicsCore.GetResourceDescriptorManager().GetGpuHeap(),
+        m_CommandQueue.m_GraphicsCore.GetSamplerHeap().GetGpuHeap(),
+    };
+
+    if (m_CommandQueue.m_Type != D3D12_COMMAND_LIST_TYPE_COPY)
+    { m_CommandList->SetDescriptorHeaps((UINT)std::size(heaps), heaps); }
+
+    if (m_CommandQueue.m_Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+    { m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); }
 }
 
 D3D12_RESOURCE_BARRIER& CommandContext::AllocateResourceBarrier()

@@ -11,9 +11,13 @@ class GraphicsCore;
 
 class CommandQueue
 {
+    //TODO: Too many friends here (a symptom of this class coming from C# and intending to use the internal access modifier)
+    // Should maybe loosen things up or revisit some of the details behind how these types interact with eachother
     friend class CommandContext;
     friend struct ComputeContext;
     friend struct GraphicsContext;
+
+    friend class UploadQueue;
 
     friend class SwapChain;
 
@@ -51,8 +55,10 @@ private:
     GpuSyncPoint Execute(ID3D12CommandList* commandList);
     GpuSyncPoint ExecuteAndReturnAllocator(ID3D12CommandList* commandList, ID3D12CommandAllocator* allocator);
 
+public:
     GpuSyncPoint QueueSyncPoint();
 
+private:
     CommandContext& RentContext();
     void ReturnContext(CommandContext& context);
 

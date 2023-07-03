@@ -31,24 +31,15 @@ private:
 public:
     SwapChain(GraphicsCore& graphicsCore, Window& window);
 
-    inline BackBuffer& CurrentBackBuffer()
-    {
-        return m_BackBuffers[m_CurrentBackBufferIndex];
-    }
+    inline BackBuffer& CurrentBackBuffer() { return m_BackBuffers[m_CurrentBackBufferIndex]; }
+    inline const BackBuffer& CurrentBackBuffer() const { return m_BackBuffers[m_CurrentBackBufferIndex]; }
 
     void Present();
 
     ~SwapChain();
 
-    inline operator RenderTargetView()
-    {
-        return CurrentBackBuffer().GetRtv();
-    }
-
-    inline uint2 Size()
-    {
-        return m_Size;
-    }
+    inline operator RenderTargetView() const { return CurrentBackBuffer().GetRtv(); }
+    inline uint2 Size() const { return m_Size; }
 
 private:
     void InitializeBackBuffers();

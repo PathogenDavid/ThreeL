@@ -12,6 +12,10 @@ GraphicsCore::GraphicsCore()
     //---------------------------------------------------------------------------------------------------------
     // Enable PIX capture runtime
     //---------------------------------------------------------------------------------------------------------
+    // The PIX team does not recommend having this enabled all the time.
+    // > We advise against unconditionally loading the DLL in scenarios where you may write invalid D3D12 code,
+    // > since WinPixGpuCapturer.dll is not hardened against invalid API usage.
+    // https://devblogs.microsoft.com/pix/taking-a-capture/#attach
 #if defined(USE_PIX) && true
     PIXLoadLatestWinPixGpuCapturerLibrary();
 #endif
@@ -89,9 +93,9 @@ GraphicsCore::GraphicsCore()
     DebugLayer::Configure(m_Device.Get());
 
     //---------------------------------------------------------------------------------------------------------
-    // Allocate the GPU CBV/SRV/UAV descriptor heap
+    // Allocate the descriptor heaps
     //---------------------------------------------------------------------------------------------------------
-    // We only allocate a single GPU descriptor heap because switching between them is expensive on many platforms.
+    // We only allocate a single GPU descriptor heap of each kind because switching between them is expensive on many platforms.
     // Intel:
     //    Minimize descriptor heap changes. Changing descriptor heaps severely stalls the graphics pipeline. Ideally, all resources will have views appropriated out of one descriptor heap.
     //    https://software.intel.com/content/www/us/en/develop/articles/developer-and-optimization-guide-for-intel-processor-graphics-gen11-api.html#inpage-nav-3-1
@@ -104,12 +108,14 @@ GraphicsCore::GraphicsCore()
     //    https://docs.microsoft.com/en-us/windows/win32/direct3d12/descriptor-heaps-overview#switching-heaps
     // AMD doesn't seem to care since they don't mention it in any best practice guides.
     m_ResourceDescriptorManager = std::make_unique<ResourceDescriptorManager>(m_Device);
+    m_SamplerHeap = std::make_unique<SamplerHeap>(*this);
 
     //---------------------------------------------------------------------------------------------------------
     // Initialize queues
     //---------------------------------------------------------------------------------------------------------
     m_GraphicsQueue = std::make_unique<GraphicsQueue>(*this);
     m_ComputeQueue = std::make_unique<ComputeQueue>(*this);
+    m_UploadQueue = std::make_unique<UploadQueue>(*this);
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------

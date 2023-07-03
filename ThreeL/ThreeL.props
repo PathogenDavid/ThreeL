@@ -2,10 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <DearImGuiDir>$(MSBuildThisFileDirectory)../external/imgui/</DearImGuiDir>
+    <ExternalDir>$(MSBuildThisFileDirectory)../external/</ExternalDir>
+    <DearImGuiDir>$(ExternalDir)DearImGui/</DearImGuiDir>
+    <!-- See bit about transaction logs below -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   <PropertyGroup>
-    <IncludePath>$(DearImGuiDir);$(DearImGuiDir)backends/;$(IncludePath)</IncludePath>
+    <IncludePath>$(DearImGuiDir);$(DearImGuiDir)backends/;$(ExternalDir);$(IncludePath);$(MSBuildThisFileDirectory)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -13,14 +16,43 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PreprocessorDefinitions>TINYGLTF_NO_STB_IMAGE_WRITE;TINYGLTF_USE_CPP14;XXH_STATIC_LINKING_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <BuildMacro Include="ExternalDir">
+      <Value>$(ExternalDir)</Value>
+    </BuildMacro>
     <BuildMacro Include="DearImGuiDir">
       <Value>$(DearImGuiDir)</Value>
     </BuildMacro>
   </ItemGroup>
+  <!--
+    Using a target here works around Visual Studio being a big baby about wildcards https://aka.ms/cpp/projectwildcards
+    Unfortunately the warning doesn't care if you explicitly mark the items as invisible so we have to do it by adding them in a target.
+    Additionally items referencing their own metadata (IE: the TargetPath below) barfs hard inside targets (https://aka.ms/msbuild/metadata-self-ref) hence the _Assets items.
+  -->
+  <ItemGroup>
+    <_Assets Include="$(ExternalDir)Assets/**" TargetPath="Assets/%(RecursiveDir)/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <_Assets Include="$(MSBuildThisFileDirectory)Shaders/**" TargetPath="Shaders/%(RecursiveDir)/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="EnumerateThreeLAssets" BeforeTargets="AssignTargetPaths;GetCopyToOutputDirectoryItems">
+    <ItemGroup>
+      <None Include="@(_Assets)" />
+    </ItemGroup>
+    <!--
+      Update transaction logs
+      TODO: This isn't working, it seems Visual Studio is *very* picky about the format of these files.
+      The paths basically need to be canonical. Unfortunately I can't remember how to use property functions on item metadata, so no easy fix.
+      For now I'm just disabling fast up-to-date checks. This project is small and I don't wanna deal with this right now✨
+      Bonus TODO: Complain at Microsoft that CopyToOutputDirectory doesn't write tlogs, what's up with that?
+    -->
+    <!--
+    <WriteLinesToFile File="$(TLogLocation)EnumerateThreeLAssets.read.1.tlog" Lines="@(_Assets->'^%(FullPath)')" Overwrite="true" />
+    <WriteLinesToFile File="$(TLogLocation)EnumerateThreeLAssets.write.1.tlog" Lines="@(_Assets->'^%(FullPath)%0d%0a$(OutDir)%(TargetPath)')" Overwrite="true" />
+    -->
+  </Target>
 </Project>

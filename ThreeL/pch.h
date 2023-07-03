@@ -15,13 +15,22 @@
 using Microsoft::WRL::ComPtr;
 
 #include <d3d12.h>
+#include <dxcapi.h>
+#include <d3d12shader.h>
 
 #include <format>
+#include <functional>
+#include <map>
 #include <memory>
 #include <optional>
+#include <queue>
+#include <span>
 #include <stdint.h>
 #include <stdio.h>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Assert.h"
+#include "HashImplementations.h"
+#include "Utilities.h"

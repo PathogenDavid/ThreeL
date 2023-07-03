@@ -11,6 +11,8 @@ protected:
     ComPtr<ID3D12Resource> m_Resource;
     D3D12_RESOURCE_STATES m_CurrentState = D3D12_RESOURCE_STATE_COMMON;
 
+    GpuResource() = default;
+
 #ifdef DEBUG
 private:
     //! This keeps track of which context "owns" this resource.
@@ -21,4 +23,12 @@ private:
     void TakeOwnership(CommandContext* context);
     void ReleaseOwnership(CommandContext* context);
 #endif
+
+    // Resources should not be copied
+    GpuResource(const GpuResource&) = delete;
+    GpuResource& operator =(const GpuResource&) = delete;
+
+public:
+    GpuResource(GpuResource&&) = default;
+    GpuResource& operator =(GpuResource&&) = default;
 };

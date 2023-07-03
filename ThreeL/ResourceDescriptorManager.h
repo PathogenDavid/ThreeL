@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "DynamicDescriptorTableBuilder.h"
+#include "DynamicResourceDescriptor.h"
 #include "ResourceDescriptor.h"
 
 #include <tuple>
@@ -24,11 +25,10 @@
 /// </remarks>
 class ResourceDescriptorManager
 {
-    friend struct UninitializedResidentDescriptorHandle;
     friend struct DynamicDescriptorTableBuilder;
+    friend struct DynamicResourceDescriptor;
 
 private:
-    static const D3D12_DESCRIPTOR_HEAP_TYPE HEAP_TYPE = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     ComPtr<ID3D12Device> m_Device;
     uint32_t m_DescriptorSize;
 
@@ -62,18 +62,24 @@ private:
     uint32_t AllocateResidentDescriptor();
 
 public:
-    ResourceDescriptor CreateConstantBufferView(D3D12_CONSTANT_BUFFER_VIEW_DESC* description);
-    ResourceDescriptor CreateShaderResourceView(ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* description);
-    ResourceDescriptor CreateUnorderedAccessView(ID3D12Resource* resource, ID3D12Resource* counterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* description);
+    DynamicResourceDescriptor AllocateDynamicDescriptor();
+
+    ResourceDescriptor CreateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& description);
+    ResourceDescriptor CreateShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& description);
+    ResourceDescriptor CreateUnorderedAccessView(ID3D12Resource* resource, ID3D12Resource* counterResource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& description);
 
     std::tuple<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> AllocateUninitializedResidentDescriptor();
 
     DynamicDescriptorTableBuilder AllocateDynamicTable(uint32_t length);
 
-    void BindHeap(ID3D12GraphicsCommandList* commandList);
-
     inline ID3D12DescriptorHeap* GetGpuHeap()
     {
         return m_GpuHeap.Get();
+    }
+
+    //TODO: This exists to enable bindless, ideally we should probably just rip out all the bindful stuff or make it the exception instead
+    inline uint32_t GetResidentIndex(const ResourceDescriptor& descriptor)
+    {
+        return (uint32_t)((descriptor.GetResidentHandle().ptr - m_ResidentGpuHandle0.ptr) / m_DescriptorSize);
     }
 };

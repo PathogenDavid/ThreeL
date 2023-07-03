@@ -15,29 +15,64 @@
     <ClCompile Include="GraphicsContext.cpp" />
     <ClCompile Include="DebugLayer.cpp" />
     <ClCompile Include="DearImGui.cpp" />
-    <ClCompile Include="..\external\imgui\imgui.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\external\imgui\imgui_demo.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\external\imgui\imgui_draw.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\external\imgui\imgui_tables.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\external\imgui\imgui_widgets.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\external\imgui\backends\imgui_impl_dx12.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\external\imgui\backends\imgui_impl_win32.cpp">
-      <Filter>external\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\DearImGui\imgui_demo.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\DearImGui\imgui_draw.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\DearImGui\imgui_impl_dx12.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\DearImGui\imgui_impl_win32.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\DearImGui\imgui_tables.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\DearImGui\imgui_widgets.cpp">
+      <Filter>external\DearImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="HeaderLibraryImplementations.cpp" />
+    <ClCompile Include="Utilities.cpp" />
+    <ClCompile Include="MeshPrimitive.cpp" />
+    <ClCompile Include="Vector2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Quaternion.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="PipelineStateObject.cpp" />
+    <ClCompile Include="PbrMaterialHeap.cpp" />
+    <ClCompile Include="Vector4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshHeap.cpp" />
+    <ClCompile Include="GltfAccessorView.cpp" />
+    <ClCompile Include="SamplerHeap.cpp" />
+    <ClCompile Include="..\external\xxhash.c">
+      <Filter>external</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadQueue.cpp" />
+    <ClCompile Include="PbrMaterial.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="GltfLoadContext.cpp" />
+    <ClCompile Include="HlslCompiler.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="RootSignature.cpp" />
+    <ClCompile Include="DepthStencilBuffer.cpp" />
+    <ClCompile Include="DynamicResourceDescriptor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -58,8 +93,84 @@
     <ClInclude Include="DebugLayer.h" />
     <ClInclude Include="DearImGui.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Math.h" />
-    <ClInclude Include="Vector2.h" />
+    <ClInclude Include="..\external\DearImGui\imconfig.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imgui.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imgui_impl_dx12.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imgui_impl_win32.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imgui_internal.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imstb_rectpack.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imstb_textedit.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\DearImGui\imstb_truetype.h">
+      <Filter>external\DearImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\stb_image.h">
+      <Filter>external</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\tiny_gltf.h">
+      <Filter>external</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\json.hpp">
+      <Filter>external</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities.h" />
+    <ClInclude Include="MeshPrimitive.h" />
+    <ClInclude Include="SceneNode.h" />
+    <ClInclude Include="Vector2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Quaternion.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="MathCommon.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="PipelineStateObject.h" />
+    <ClInclude Include="PbrMaterialHeap.h" />
+    <ClInclude Include="Vector4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshHeap.h" />
+    <ClInclude Include="GltfAccessorView.h" />
+    <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="SamplerHeap.h" />
+    <ClInclude Include="HashImplementations.h" />
+    <ClInclude Include="..\external\xxhash.h">
+      <Filter>external</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadQueue.h" />
+    <ClInclude Include="PbrMaterial.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="GltfLoadContext.h" />
+    <ClInclude Include="HlslCompiler.h" />
+    <ClInclude Include="RootSignature.h" />
+    <ClInclude Include="ShaderInterop.h" />
+    <ClInclude Include="DepthStencilView.h" />
+    <ClInclude Include="DepthStencilBuffer.h" />
+    <ClInclude Include="DynamicResourceDescriptor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -68,8 +179,19 @@
     <Filter Include="external">
       <UniqueIdentifier>{1e97fcc4-23ea-4087-8b10-15f0eeea1c02}</UniqueIdentifier>
     </Filter>
-    <Filter Include="external\imgui">
-      <UniqueIdentifier>{76afd895-8678-42e9-ac17-f6f03c1dc9a5}</UniqueIdentifier>
+    <Filter Include="external\DearImGui">
+      <UniqueIdentifier>{12f89d83-339a-44e5-be20-ec5a17f02f7b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{64113bad-11c4-4309-a983-7969f6dde710}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{2680a101-7374-4cae-9099-cdea269e6f42}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\Pbr.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

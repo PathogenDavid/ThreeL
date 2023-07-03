@@ -8,18 +8,21 @@ struct GpuSyncPoint
     friend class CommandQueue;
 
 private:
-    // In the interest of making sync points as lighweight as possible, this is not a ComPtr
-    // Realistically these fences live as long as the entire program, so it's pretty unlikely a sync point will be used after they're destroyed
-    ID3D12Fence* m_Fence;
+    mutable ID3D12Fence* m_Fence;
     uint64_t m_FenceValue;
 
 public:
+    GpuSyncPoint()
+        : m_Fence(nullptr), m_FenceValue(0)
+    {
+    }
+
     GpuSyncPoint(ID3D12Fence* fence, uint64_t fenceValue)
         : m_Fence(fence), m_FenceValue(fenceValue)
     {
     }
 
-    inline bool WasReached()
+    inline bool WasReached() const
     {
         ID3D12Fence* fence = m_Fence;
         if (fence != nullptr)
@@ -35,7 +38,7 @@ public:
         return true;
     }
 
-    inline void AssertReached()
+    inline void AssertReached() const
     {
 #ifdef DEBUG
         ID3D12Fence* fence = m_Fence;
@@ -47,10 +50,11 @@ public:
     }
 
 private:
-    __declspec(noinline) void AssertReachedCold(ID3D12Fence* fence);
+    __declspec(noinline) void AssertReachedCold(ID3D12Fence* fence) const;
+
 public:
 
-    inline void Wait()
+    inline void Wait() const
     {
         ID3D12Fence* fence = m_Fence;
         if (fence != nullptr)
@@ -64,7 +68,7 @@ public:
         }
     }
 
-    inline void Wait(ID3D12CommandQueue* queue)
+    inline void Wait(ID3D12CommandQueue* queue) const
     {
         ID3D12Fence* fence = m_Fence;
         if (fence != nullptr)
@@ -83,6 +87,6 @@ public:
     //! Returns a GPU sync point which has already been reached.
     inline static GpuSyncPoint CreateAlreadyReached()
     {
-        return { nullptr, 0 };
+        return GpuSyncPoint();
     }
 };

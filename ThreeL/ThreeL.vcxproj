@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.props" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -74,44 +75,105 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\external\imgui\backends\imgui_impl_dx12.cpp" />
-    <ClCompile Include="..\external\imgui\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="..\external\imgui\imgui.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_demo.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_draw.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_tables.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui_demo.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui_draw.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui_tables.cpp" />
+    <ClCompile Include="..\external\DearImGui\imgui_widgets.cpp" />
+    <ClCompile Include="..\external\xxhash.c" />
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="CommandContext.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
     <ClCompile Include="DearImGui.cpp" />
     <ClCompile Include="DebugLayer.cpp" />
+    <ClCompile Include="DepthStencilBuffer.cpp" />
     <ClCompile Include="DynamicDescriptorTableBuilder.cpp" />
+    <ClCompile Include="DynamicResourceDescriptor.cpp" />
+    <ClCompile Include="GltfAccessorView.cpp" />
+    <ClCompile Include="GltfLoadContext.cpp" />
     <ClCompile Include="GpuResource.cpp" />
     <ClCompile Include="GpuSyncPoint.cpp" />
     <ClCompile Include="GraphicsContext.cpp" />
+    <ClCompile Include="HeaderLibraryImplementations.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="HlslCompiler.cpp" />
+    <ClCompile Include="PbrMaterialHeap.cpp" />
+    <ClCompile Include="Matrix4.cpp" />
+    <ClCompile Include="MeshHeap.cpp" />
+    <ClCompile Include="MeshPrimitive.cpp" />
+    <ClCompile Include="PbrMaterial.cpp" />
+    <ClCompile Include="PipelineStateObject.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="RootSignature.cpp" />
+    <ClCompile Include="SamplerHeap.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="ResourceDescriptorManager.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="GraphicsCore.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="UploadQueue.cpp" />
+    <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="Vector3.cpp" />
+    <ClCompile Include="Vector4.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\external\DearImGui\imconfig.h" />
+    <ClInclude Include="..\external\DearImGui\imgui.h" />
+    <ClInclude Include="..\external\DearImGui\imgui_impl_dx12.h" />
+    <ClInclude Include="..\external\DearImGui\imgui_impl_win32.h" />
+    <ClInclude Include="..\external\DearImGui\imgui_internal.h" />
+    <ClInclude Include="..\external\DearImGui\imstb_rectpack.h" />
+    <ClInclude Include="..\external\DearImGui\imstb_textedit.h" />
+    <ClInclude Include="..\external\DearImGui\imstb_truetype.h" />
+    <ClInclude Include="..\external\json.hpp" />
+    <ClInclude Include="..\external\stb_image.h" />
+    <ClInclude Include="..\external\tiny_gltf.h" />
+    <ClInclude Include="..\external\xxhash.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="BackBuffer.h" />
     <ClInclude Include="CommandContext.h" />
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="DearImGui.h" />
     <ClInclude Include="DebugLayer.h" />
+    <ClInclude Include="DepthStencilBuffer.h" />
+    <ClInclude Include="DepthStencilView.h" />
     <ClInclude Include="DynamicDescriptorTable.h" />
     <ClInclude Include="DynamicDescriptorTableBuilder.h" />
+    <ClInclude Include="DynamicResourceDescriptor.h" />
+    <ClInclude Include="GltfAccessorView.h" />
+    <ClInclude Include="GltfLoadContext.h" />
     <ClInclude Include="GpuResource.h" />
     <ClInclude Include="GpuSyncPoint.h" />
     <ClInclude Include="GraphicsContext.h" />
+    <ClInclude Include="HashImplementations.h" />
+    <ClInclude Include="HlslCompiler.h" />
+    <ClInclude Include="PbrMaterialHeap.h" />
+    <ClInclude Include="MathCommon.h" />
+    <ClInclude Include="Matrix4.h" />
+    <ClInclude Include="MeshHeap.h" />
+    <ClInclude Include="MeshPrimitive.h" />
+    <ClInclude Include="PbrMaterial.h" />
+    <ClInclude Include="PipelineStateObject.h" />
+    <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="RootSignature.h" />
+    <ClInclude Include="SamplerHeap.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="Quaternion.h" />
+    <ClInclude Include="SceneNode.h" />
+    <ClInclude Include="ShaderInterop.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="UploadQueue.h" />
+    <ClInclude Include="Utilities.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="pch.h" />
@@ -120,19 +182,27 @@
     <ClInclude Include="ResourceDescriptorManager.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="GraphicsCore.h" />
+    <ClInclude Include="Vector3.h" />
+    <ClInclude Include="Vector4.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\Pbr.hlsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\WinPixEventRuntime.1.0.230302001\build\WinPixEventRuntime.targets" Condition="Exists('..\packages\WinPixEventRuntime.1.0.230302001\build\WinPixEventRuntime.targets')" />
+    <Import Project="..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.targets" Condition="Exists('..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\WinPixEventRuntime.1.0.230302001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WinPixEventRuntime.1.0.230302001\build\WinPixEventRuntime.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Direct3D.DXC.1.7.2212.36\build\native\Microsoft.Direct3D.DXC.targets'))" />
   </Target>
 </Project>

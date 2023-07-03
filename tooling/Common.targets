@@ -16,10 +16,12 @@
     <Delete Files="$(_RelativeProjectPathFilePath)" />
   </Target>
 
-  <!-- Don't use PCH for external source files -->
   <ItemGroup>
+    <!-- Don't use PCH for external source files -->
     <ClCompile Update="$(MSBuildThisFileDirectory)../external/**/*">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <!-- Don't use legacy HLSL compiler -->
+    <FxCompile Update="**" ExcludedFromBuild="true" />
   </ItemGroup>
 </Project>

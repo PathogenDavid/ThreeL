@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "GpuSyncPoint.h"
 
-void GpuSyncPoint::AssertReachedCold(ID3D12Fence* fence)
+void GpuSyncPoint::AssertReachedCold(ID3D12Fence* fence) const
 {
     if (fence->GetCompletedValue() >= m_FenceValue)
     {

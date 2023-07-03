@@ -13,7 +13,7 @@ void HandleFailedAssert(const char* condition, const char* fileName, int lineNum
 #ifdef NDEBUG
 // Unlike the standard assert macro we still evaluate the condition to make HRESULT checking easier and others consitent with it
 // For conditions without side effect we can expect the optimizer to eliminate them
-#define _AssertRaw(cond, kind, errorCode) ((void)cond)
+#define _AssertRaw(cond, kind, errorCode) (cond)
 #else
 #define _AssertRaw(cond, kind, errorCode) (void)((!!(cond)) || (HandleFailedAssert( #cond, __FILE__, __LINE__, (kind), (errorCode)), 0))
 #endif

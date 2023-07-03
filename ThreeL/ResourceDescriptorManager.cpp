@@ -4,11 +4,11 @@
 ResourceDescriptorManager::ResourceDescriptorManager(const ComPtr<ID3D12Device>& device)
 {
     m_Device = device;
-    m_DescriptorSize = m_Device->GetDescriptorHandleIncrementSize(HEAP_TYPE);
+    m_DescriptorSize = m_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDescription =
     {
-        .Type = HEAP_TYPE,
+        .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
         .NumDescriptors = RESIDENT_DESCRIPTOR_COUNT,
         .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     };
@@ -29,51 +29,6 @@ ResourceDescriptorManager::ResourceDescriptorManager(const ComPtr<ID3D12Device>&
     m_DynamicGpuHandle0.ptr = m_ResidentGpuHandle0.ptr + dynamicSegmentOffset;
 }
 
-struct UninitializedResidentDescriptorHandle
-{
-    ID3D12Device* m_Device;
-    D3D12_CPU_DESCRIPTOR_HANDLE m_StagingHandle;
-    D3D12_CPU_DESCRIPTOR_HANDLE m_ResidentCpuHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE m_ResidentGpuHandle;
-
-    UninitializedResidentDescriptorHandle(const ResourceDescriptorManager& manager, uint32_t index)
-    {
-        m_Device = manager.m_Device.Get();
-        m_StagingHandle = manager.m_StagingHeapHandle0;
-        m_ResidentCpuHandle = manager.m_ResidentCpuHandle0;
-        m_ResidentGpuHandle = manager.m_ResidentGpuHandle0;
-
-        uint32_t offset = index * manager.m_DescriptorSize;
-        m_StagingHandle.ptr += offset;
-        m_ResidentCpuHandle.ptr += offset;
-        m_ResidentGpuHandle.ptr += offset;
-    }
-
-    ResourceDescriptor Initialize(D3D12_CONSTANT_BUFFER_VIEW_DESC* description)
-    {
-        m_Device->CreateConstantBufferView(description, m_StagingHandle);
-        return Complete();
-    }
-
-    ResourceDescriptor Initialize(ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* description)
-    {
-        m_Device->CreateShaderResourceView(resource, description, m_StagingHandle);
-        return Complete();
-    }
-
-    ResourceDescriptor Initialize(ID3D12Resource* resource, ID3D12Resource* counterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* description)
-    {
-        m_Device->CreateUnorderedAccessView(resource, counterResource, description, m_StagingHandle);
-        return Complete();
-    }
-
-    ResourceDescriptor Complete()
-    {
-        m_Device->CopyDescriptorsSimple(1, m_ResidentCpuHandle, m_StagingHandle, ResourceDescriptorManager::HEAP_TYPE);
-        return { m_StagingHandle, m_ResidentGpuHandle };
-    }
-};
-
 uint32_t ResourceDescriptorManager::AllocateResidentDescriptor()
 {
     uint32_t index = InterlockedIncrement(&m_NextFreeResidentDescriptorIndex) - 1;
@@ -87,28 +42,36 @@ uint32_t ResourceDescriptorManager::AllocateResidentDescriptor()
     return index;
 }
 
-ResourceDescriptor ResourceDescriptorManager::CreateConstantBufferView(D3D12_CONSTANT_BUFFER_VIEW_DESC* description)
+DynamicResourceDescriptor ResourceDescriptorManager::AllocateDynamicDescriptor()
 {
-    UninitializedResidentDescriptorHandle handle(*this, AllocateResidentDescriptor());
-    return handle.Initialize(description);
+    return DynamicResourceDescriptor(*this, AllocateResidentDescriptor());
 }
 
-ResourceDescriptor ResourceDescriptorManager::CreateShaderResourceView(ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* description)
+ResourceDescriptor ResourceDescriptorManager::CreateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& description)
 {
-    UninitializedResidentDescriptorHandle handle(*this, AllocateResidentDescriptor());
-    return handle.Initialize(resource, description);
+    DynamicResourceDescriptor handle = AllocateDynamicDescriptor();
+    handle.UpdateConstantBufferView(description);
+    return handle.ResourceDescriptor();
 }
 
-ResourceDescriptor ResourceDescriptorManager::CreateUnorderedAccessView(ID3D12Resource* resource, ID3D12Resource* counterResource, D3D12_UNORDERED_ACCESS_VIEW_DESC* description)
+ResourceDescriptor ResourceDescriptorManager::CreateShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& description)
 {
-    UninitializedResidentDescriptorHandle handle(*this, AllocateResidentDescriptor());
-    return handle.Initialize(resource, counterResource, description);
+    DynamicResourceDescriptor handle = AllocateDynamicDescriptor();
+    handle.UpdateShaderResourceView(resource, description);
+    return handle.ResourceDescriptor();
+}
+
+ResourceDescriptor ResourceDescriptorManager::CreateUnorderedAccessView(ID3D12Resource* resource, ID3D12Resource* counterResource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& description)
+{
+    DynamicResourceDescriptor handle = AllocateDynamicDescriptor();
+    handle.UpdateUnorderedAccessView(resource, counterResource, description);
+    return handle.ResourceDescriptor();
 }
 
 std::tuple<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> ResourceDescriptorManager::AllocateUninitializedResidentDescriptor()
 {
-    UninitializedResidentDescriptorHandle handle(*this, AllocateResidentDescriptor());
-    return { handle.m_ResidentCpuHandle, handle.m_ResidentGpuHandle };
+    DynamicResourceDescriptor handle = AllocateDynamicDescriptor();
+    return { handle.m_ResidentCpuHandle, handle.m_ResourceDescriptor.GetResidentHandle() };
 }
 
 DynamicDescriptorTableBuilder ResourceDescriptorManager::AllocateDynamicTable(uint32_t length)
@@ -143,10 +106,4 @@ TryAgain:
         gpuHandle,
         length
     };
-}
-
-void ResourceDescriptorManager::BindHeap(ID3D12GraphicsCommandList* commandList)
-{
-    ID3D12DescriptorHeap* heaps[] = { m_GpuHeap.Get() };
-    commandList->SetDescriptorHeaps(1, heaps);
 }
