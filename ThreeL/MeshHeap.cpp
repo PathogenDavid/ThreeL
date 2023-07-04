@@ -111,6 +111,22 @@ void MeshHeap::Flush()
 
     GraphicsContext context(m_Graphics.GetGraphicsQueue());
     context->CopyResource(m_CurrentBuffer, m_StagingBuffer.Get());
+
+    // Note: This explicit barrier is not needed (or possible) once we adapt this class to use the upload queue
+    D3D12_RESOURCE_BARRIER barrier =
+    {
+        .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+        .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+        .Transition =
+        {
+            .pResource = m_CurrentBuffer,
+            .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+            .StateBefore = D3D12_RESOURCE_STATE_COPY_DEST,
+            .StateAfter = D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+        },
+    };
+    context->ResourceBarrier(1, &barrier);
+
     context.Finish().Wait(); //TODO: Ideally we'd rent a new staging buffer and keep working while the GPU copies
 
     // Clear fields relating to the current GPU chunk since this one is now finished
