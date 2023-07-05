@@ -12,11 +12,12 @@ GraphicsCore::GraphicsCore()
     //---------------------------------------------------------------------------------------------------------
     // Enable PIX capture runtime
     //---------------------------------------------------------------------------------------------------------
-    // The PIX team does not recommend having this enabled all the time.
+    // The PIX team does not recommend having this enabled all the time, this is here as a convenience toggle.
     // > We advise against unconditionally loading the DLL in scenarios where you may write invalid D3D12 code,
     // > since WinPixGpuCapturer.dll is not hardened against invalid API usage.
     // https://devblogs.microsoft.com/pix/taking-a-capture/#attach
-#if defined(USE_PIX) && true
+    // In particular either PIX or the debug layer leaks memory when both are enabled, so generally don't do that.
+#if defined(USE_PIX) && false
     PIXLoadLatestWinPixGpuCapturerLibrary();
 #endif
 
