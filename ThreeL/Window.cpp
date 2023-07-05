@@ -1,7 +1,38 @@
 #include "pch.h"
 #include "Window.h"
 
+#include "Math.h"
+
 #include <ranges>
+
+static int2 GetDefaultWindowLocation(int2 windowSize)
+{
+    int2 data[] =
+    {
+        windowSize,
+        int2(CW_USEDEFAULT, CW_USEDEFAULT)
+    };
+
+    EnumDisplayMonitors(NULL, NULL, [](HMONITOR monitor, HDC, LPRECT, LPARAM extra) -> BOOL
+        {
+            MONITORINFO monitorInfo = { sizeof(monitorInfo) };
+            if (GetMonitorInfoW(monitor, &monitorInfo) && (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0)
+            {
+                int2* data = (int2*)extra;
+                const int2& windowSize = data[0];
+                int2& result = data[1];
+
+                result.x = (monitorInfo.rcWork.right - monitorInfo.rcWork.left) / 2 - (windowSize.x / 2);
+                result.y = (monitorInfo.rcWork.bottom - monitorInfo.rcWork.top) / 2 - (windowSize.y / 2);
+
+                return FALSE;
+            }
+
+            return TRUE;
+        }, (LPARAM)data);
+
+    return data[1];
+}
 
 Window::Window(LPCWSTR title, int width, int height)
 {
@@ -45,16 +76,20 @@ Window::Window(LPCWSTR title, int width, int height)
         RECT rect = { 0, 0, width, height };
         Assert(AdjustWindowRectEx(&rect, style, false, styleEx));
 
+        int2 size(rect.right - rect.left, rect.bottom - rect.top);
+        int2 position = GetDefaultWindowLocation(size);
+
         m_Hwnd = nullptr;
-        m_Hwnd = CreateWindowExW(
+        m_Hwnd = CreateWindowExW
+        (
             styleEx,
             (LPCWSTR)m_WindowClass,
             title,
             style,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            rect.right - rect.left,
-            rect.bottom - rect.top,
+            position.x,
+            position.y,
+            size.x,
+            size.y,
             nullptr,
             nullptr,
             m_ThisProcessModuleHandle,
