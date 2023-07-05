@@ -151,7 +151,7 @@ static int MainImpl()
 
         ShaderInterop::PerFrameCb perFrame =
         {
-            .ViewProjectionTransform = float4x4::MakeCameraLookAtViewTransform(float3(0.f, 0.f, 0.f), float3(0.f, 1.f, 0.f), float3::UnitZ)
+            .ViewProjectionTransform = float4x4::MakeCameraLookAtViewTransform(float3(0.f, 0.f, 0.f), float3(0.f, 0.f, 1.f), float3::UnitY)
                 * float4x4::MakePerspectiveTransformReverseZ(0.8f, screenSizeF.x / screenSizeF.y, 0.0001f),
         };
 

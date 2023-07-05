@@ -30,7 +30,7 @@ ShaderBlobs HlslCompiler::CompileShader(std::wstring filePath, std::wstring entr
         filePath.c_str(),
         L"-E", entryPoint.c_str(),
         L"-T", target.c_str(),
-        L"-Zpc", // float4x4 uses column-major storage
+        L"-Zpr", // float4x4 uses row-major storage
 #ifdef DEBUG
         // Enable shader PDBs
         // -Zs makes slim PDBs, -Zi makes full ones

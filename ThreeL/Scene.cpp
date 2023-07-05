@@ -3,13 +3,12 @@
 
 #include "GltfLoadContext.h"
 
-// glTF uses right-handed y-up coordinates but we use left-handed z-up so we need to convert form one to the other (which is effectively just swapping Y and Z.)
-//TODO: Should probably just do this upon mesh load
+// glTF uses right-handed coordinates but we use left-handed so we need to convert form one to the other, which we do by mirroring about the YZ plane
 static const float4x4 g_CoordinateSpaceConversion
 (
-    1.f, 0.f, 0.f, 0.f,
-    0.f, 0.f, 1.f, 0.f,
+    -1.f, 0.f, 0.f, 0.f,
     0.f, 1.f, 0.f, 0.f,
+    0.f, 0.f, 1.f, 0.f,
     0.f, 0.f, 0.f, 1.f
 );
 
@@ -115,7 +114,7 @@ Scene::Scene(ResourceManager& resources, const tinygltf::Model& model)
             {
                 std::span<MeshPrimitive> meshPrimitives = GetOrLoadMesh(node.mesh);
                 std::string nodeName = std::format("{}#{}", node.name, nodeIndex);
-                m_SceneNodes[nodeIndex] = SceneNode(nodeName, g_CoordinateSpaceConversion * modelLocalTransform, meshPrimitives);
+                m_SceneNodes[nodeIndex] = SceneNode(nodeName, modelLocalTransform, meshPrimitives);
             }
 
             // Recursively create the node's childern
@@ -127,7 +126,7 @@ Scene::Scene(ResourceManager& resources, const tinygltf::Model& model)
 
     for (int nodeIndex : scene.nodes)
     {
-        LoadNode(nodeIndex, float4x4::Identity);
+        LoadNode(nodeIndex, g_CoordinateSpaceConversion);
     }
 }
 
