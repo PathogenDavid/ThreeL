@@ -1,6 +1,8 @@
 #pragma once
 #include "Window.h"
 
+#include <imgui.h>
+
 struct GraphicsContext;
 class GraphicsCore;
 struct ImGuiContext;
@@ -25,3 +27,13 @@ public:
 private:
     static std::optional<LRESULT> WndProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 };
+
+namespace ImGui
+{
+    inline void Text(std::string s) { ImGui::TextUnformatted(s.data(), s.data() + s.size()); }
+
+    inline ImVec2 CalcTextSize(std::string s, bool hide_text_after_double_hash = false, float wrap_width = -1.0f)
+    {
+        return ImGui::CalcTextSize(s.data(), s.data() + s.size(), hide_text_after_double_hash, wrap_width);
+    }
+}

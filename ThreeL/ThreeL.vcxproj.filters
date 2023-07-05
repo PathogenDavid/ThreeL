@@ -73,6 +73,8 @@
     <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="DepthStencilBuffer.cpp" />
     <ClCompile Include="DynamicResourceDescriptor.cpp" />
+    <ClCompile Include="CameraInput.cpp" />
+    <ClCompile Include="CameraController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -171,6 +173,8 @@
     <ClInclude Include="DepthStencilView.h" />
     <ClInclude Include="DepthStencilBuffer.h" />
     <ClInclude Include="DynamicResourceDescriptor.h" />
+    <ClInclude Include="CameraInput.h" />
+    <ClInclude Include="CameraController.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

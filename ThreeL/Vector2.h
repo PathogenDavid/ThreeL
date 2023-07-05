@@ -1,5 +1,8 @@
 #pragma once
 #include "Assert.h"
+#include "MathCommon.h"
+
+#include <cmath>
 #include <stdint.h>
 
 struct float2
@@ -21,6 +24,26 @@ struct float2
         : x(s), y(s)
     {
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Vector math
+    //---------------------------------------------------------------------------------------------
+    inline float Dot(float2 other)
+    {
+        return (x * other.x) + (y * other.y);
+    }
+
+    inline float LengthSquared()
+    {
+        return Dot(*this);
+    }
+
+    inline float Length()
+    {
+        return std::sqrt(LengthSquared());
+    }
+
+    inline float2 Normalized();
 
     //---------------------------------------------------------------------------------------------
     // Basic vectors
@@ -50,6 +73,11 @@ struct int2
         : x(s), y(s)
     {
     }
+
+    //---------------------------------------------------------------------------------------------
+    // Conversion operators
+    //---------------------------------------------------------------------------------------------
+    explicit operator float2() const { return float2((float)x, (float)y); }
 
     //---------------------------------------------------------------------------------------------
     // Basic vectors
@@ -82,7 +110,7 @@ struct uint2
     }
 
     //---------------------------------------------------------------------------------------------
-    // Conversions
+    // Conversion operators
     //---------------------------------------------------------------------------------------------
     explicit operator float2() const { return float2((float)x, (float)y); }
 
@@ -156,3 +184,56 @@ inline bool2 operator<=(uint2 a, uint2 b) { return { a.x <= b.x, a.y <= b.y }; }
 inline bool2 operator>=(uint2 a, uint2 b) { return { a.x >= b.x, a.y >= b.y }; }
 inline bool2 operator<(uint2 a, uint2 b) { return { a.x < b.x, a.y < b.y }; }
 inline bool2 operator>(uint2 a, uint2 b) { return { a.x > b.x, a.y > b.y }; }
+
+//=====================================================================================================================
+// float2 operators
+//=====================================================================================================================
+
+//-------------------------------------------------------------------------------------------------
+// Unary operators
+//-------------------------------------------------------------------------------------------------
+inline float2 operator +(float2 v) { return v; }
+inline float2 operator -(float2 v) { return float2(-v.x, -v.y); }
+
+//-------------------------------------------------------------------------------------------------
+// Vector arithmetic
+//-------------------------------------------------------------------------------------------------
+inline float2 operator +(float2 a, float2 b) { return float2(a.x + b.x, a.y + b.y); }
+inline float2 operator -(float2 a, float2 b) { return float2(a.x - b.x, a.y - b.y); }
+inline float2 operator *(float2 a, float2 b) { return float2(a.x * b.x, a.y * b.y); }
+inline float2 operator /(float2 a, float2 b) { return float2(a.x / b.x, a.y / b.y); }
+
+//-------------------------------------------------------------------------------------------------
+// Scalar operators
+//-------------------------------------------------------------------------------------------------
+inline float2 operator +(float2 v, float s) { return float2(v.x + s, v.y + s); }
+inline float2 operator -(float2 v, float s) { return float2(v.x - s, v.y - s); }
+inline float2 operator *(float2 v, float s) { return float2(v.x * s, v.y * s); }
+inline float2 operator /(float2 v, float s) { return float2(v.x / s, v.y / s); }
+inline float2 operator +(float s, float2 v) { return float2(s + v.x, s + v.y); }
+inline float2 operator -(float s, float2 v) { return float2(s - v.x, s - v.y); }
+inline float2 operator *(float s, float2 v) { return float2(s * v.x, s * v.y); }
+inline float2 operator /(float s, float2 v) { return float2(s / v.x, s / v.y); }
+
+//-------------------------------------------------------------------------------------------------
+// Inline implementations requiring operators
+//-------------------------------------------------------------------------------------------------
+inline float2 float2::Normalized()
+{
+    return *this / Length();
+}
+
+//-------------------------------------------------------------------------------------------------
+// Per-component math
+//-------------------------------------------------------------------------------------------------
+namespace Math
+{
+    inline float2 Clamp(float2 x, float2 min, float2 max)
+    {
+        return float2
+        (
+            Clamp(x.x, min.x, max.x),
+            Clamp(x.y, min.y, max.y)
+        );
+    }
+}

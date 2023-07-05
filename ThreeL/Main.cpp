@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "BackBuffer.h"
+#include "CameraController.h"
+#include "CameraInput.h"
 #include "CommandQueue.h"
 #include "DearImGui.h"
 #include "DebugLayer.h"
@@ -15,6 +17,7 @@
 
 #include <format>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <iostream>
 #include <pix3.h>
 #include <stb_image.h>
@@ -56,6 +59,29 @@ static Texture LoadHdr(GraphicsCore& graphics, std::string filePath)
     return texture;
 }
 
+static std::wstring GetExtraWindowTitleInfo()
+{
+    std::wstring title = L"";
+
+#ifndef NDEBUG
+    title += L"Checked";
+#endif
+
+    if (DebugLayer::IsEnabled())
+    {
+        if (title.size() > 0) { title += L"/"; }
+        title += L"DebugLayer";
+    }
+
+    if (GetModuleHandleW(L"WinPixGpuCapturer.dll") != NULL)
+    {
+        if (title.size() > 0) { title += L"/"; }
+        title += L"PIX";
+    }
+
+    return title.size() == 0 ? title : L" (" + title + L")";
+}
+
 static int MainImpl()
 {
     // Set working directory to app directory so we can easily get at our assets
@@ -68,11 +94,13 @@ static int MainImpl()
 
     PIXBeginEvent(0, "Initialization");
 
-    Window window(L"ThreeL", 1280, 720);
+    std::wstring windowTitle = L"ThreeL";
+    windowTitle += GetExtraWindowTitleInfo();
+    Window window(windowTitle.c_str(), 1280, 720);
 
-    // Don't show the PIX HUD on Dear ImGui viewports
+    // Ensure PIX targets our main window and disable the HUD since it overlaps with our menu bar
     PIXSetTargetWindow(window.GetHwnd());
-    PIXSetHUDOptions(PIX_HUD_SHOW_ON_TARGET_WINDOW_ONLY);
+    PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS);
 
     SwapChain swapChain(graphics, window);
 
@@ -88,6 +116,7 @@ static int MainImpl()
     // Load glTF model
     //-----------------------------------------------------------------------------------------------------------------
     Scene scene = LoadGltfScene(resources,
+        // Note: If you change this be sure to change the default camera location below
         //"Assets/MetalRoughSpheres/MetalRoughSpheres.gltf"
         "Assets/Sponza/Sponza.gltf"
     );
@@ -105,6 +134,26 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     DearImGui dearImGui(graphics, window);
 
+    // Time keeping
+    LARGE_INTEGER performanceFrequency;
+    double performanceFrequencyInverse;
+    AssertWinError(QueryPerformanceFrequency(&performanceFrequency));
+    performanceFrequencyInverse = 1.0 / (double)performanceFrequency.QuadPart;
+
+    LARGE_INTEGER lastTimestamp;
+    AssertWinError(QueryPerformanceCounter(&lastTimestamp));
+
+    float frameTimes[200] = {};
+    uint64_t frameNumber = 0;
+
+    // Camera stuff
+    CameraInput cameraInput(window);
+    CameraController camera;
+    float cameraFovDegrees = 45.f;
+
+    // Start the camera in a sensible location for Sponza
+    camera.WarpTo(float3(4.35f, 1.f, 0.f), 0.f, Math::HalfPi);
+
     // Initiate final resource uploads and wait for them to complete
     resources.Finish();
     graphics.GetUploadQueue().Flush();
@@ -117,6 +166,19 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     while (Window::ProcessMessages())
     {
+        PIXScopedEvent(0, "Frame %lld", frameNumber);
+
+        LARGE_INTEGER timestamp;
+        QueryPerformanceCounter(&timestamp);
+        float deltaTime = (float)(double(timestamp.QuadPart - lastTimestamp.QuadPart) * performanceFrequencyInverse); // seconds
+        float deltaTimeMs = deltaTime * 1000.f;
+        frameTimes[frameNumber % std::size(frameTimes)] = deltaTimeMs;
+
+        dearImGui.NewFrame();
+
+        cameraInput.StartFrame();
+        camera.ApplyMovement(cameraInput.MoveVector() * deltaTime * 3.f, cameraInput.LookVector() * deltaTime);
+
         //-------------------------------------------------------------------------------------------------------------
         // Resize screen-dependent resources
         //-------------------------------------------------------------------------------------------------------------
@@ -137,7 +199,7 @@ static int MainImpl()
         {
             PIXScopedEvent(&context, 0, "Frame setup");
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
-            context.Clear(swapChain, 0.f, 0.f, 1.f, 1.f);
+            context.Clear(swapChain, 0.2f, 0.2f, 0.2f, 1.f);
             context.Clear(depthBuffer);
             context.SetRenderTarget(swapChain, depthBuffer.View());
 
@@ -145,14 +207,12 @@ static int MainImpl()
             context->RSSetViewports(1, &viewport);
             D3D12_RECT scissor = { 0, 0, (LONG)screenSize.x, (LONG)screenSize.y };
             context->RSSetScissorRects(1, &scissor);
-
-            dearImGui.NewFrame();
         }
 
         ShaderInterop::PerFrameCb perFrame =
         {
-            .ViewProjectionTransform = float4x4::MakeCameraLookAtViewTransform(float3(0.f, 0.f, 0.f), float3(0.f, 0.f, 1.f), float3::UnitY)
-                * float4x4::MakePerspectiveTransformReverseZ(0.8f, screenSizeF.x / screenSizeF.y, 0.0001f),
+            .ViewProjectionTransform = camera.GetViewTransform()
+                * float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f),
         };
 
         //-------------------------------------------------------------------------------------------------------------
@@ -221,6 +281,60 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(&context, 4, "UI");
+            ImGuiStyle& style = ImGui::GetStyle();
+
+            // Submit main dockspace and menu bar
+            {
+                ImGuiViewport* viewport = ImGui::GetMainViewport();
+                ImGui::SetNextWindowPos(viewport->WorkPos);
+                ImGui::SetNextWindowSize(viewport->WorkSize);
+                ImGui::SetNextWindowViewport(viewport->ID);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2());
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
+                flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
+                ImGui::Begin("MainDockSpaceViewportWindow", nullptr, flags);
+                ImGui::PopStyleVar(3);
+
+                ImGui::DockSpace(0xC0FFEEEE, ImVec2(), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+
+                if (ImGui::BeginMenuBar())
+                {
+                    if (ImGui::BeginMenu("Settings"))
+                    {
+                        ImGui::SliderFloat("Mouse sensitivity", &cameraInput.m_MouseSensitivity, 0.1f, 10.f);
+                        ImGui::SliderFloat("Controller sensitivity", &cameraInput.m_ControllerLookSensitivity, 0.1f, 10.f);
+                        ImGui::SliderFloat("Camera Fov", &cameraFovDegrees, 10.f, 140.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+                        ImGui::EndMenu();
+                    }
+
+                    // Submit frame time indicator
+                    {
+                        float graphWidth = 200.f + style.FramePadding.x * 2.f;
+                        float frameTimeWidth = ImGui::CalcTextSize("Frame time: 9999.99 ms").x; // Use a static string so the position is stable
+
+                        ImGui::SetCursorPosX(screenSizeF.x - graphWidth - frameTimeWidth);
+                        ImGui::Text("Frame time: %.2f ms", deltaTimeMs);
+                        ImGui::SetCursorPosX(screenSizeF.x - graphWidth);
+                        ImGui::PlotLines
+                        (
+                            "##FrameTimeGraph",
+                            frameTimes,
+                            (int)std::size(frameTimes),
+                            (int)(frameNumber % std::size(frameTimes)),
+                            nullptr,
+                            FLT_MAX, FLT_MAX,
+                            ImVec2(200.f, ImGui::GetCurrentWindow()->MenuBarHeight())
+                        );
+                    }
+
+                    ImGui::EndMenuBar();
+                }
+
+                ImGui::End();
+            }
+
 #if false
             ImGui::ShowDemoWindow();
 
@@ -240,6 +354,33 @@ static int MainImpl()
             }
             ImGui::End();
 #endif
+
+            // Show controls hint
+            {
+                std::string controlsHint = std::format("Move with {}, click+drag look around or use Xbox controller.", cameraInput.WasdName());
+                float padding = 5.f;
+                float wrapWidth = screenSizeF.x - padding * 2.f;
+                ImVec2 hintSize = ImGui::CalcTextSize(controlsHint, wrapWidth);
+                ImVec2 position = ImVec2(padding, screenSize.y - hintSize.y - padding);
+
+                ImGui::GetForegroundDrawList()->AddText
+                (
+                    nullptr, 0.f,
+                    ImVec2(position.x - 1.f, position.y + 1.f),
+                    IM_COL32(0, 0, 0, 255),
+                    controlsHint.data(), controlsHint.data() + controlsHint.size(),
+                    wrapWidth
+                );
+
+                ImGui::GetForegroundDrawList()->AddText
+                (
+                    nullptr, 0.f,
+                    position,
+                    IM_COL32(255, 255, 255, 255),
+                    controlsHint.data(), controlsHint.data() + controlsHint.size(),
+                    wrapWidth
+                );
+            }
 
             dearImGui.Render(context);
             dearImGui.RenderViewportWindows();
@@ -261,8 +402,14 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         PIXScopedEvent(99, "Housekeeping");
         graphics.GetUploadQueue().Cleanup();
+
+        lastTimestamp.QuadPart = timestamp.QuadPart;
+        frameNumber++;
     }
 
+    // Ensure the GPU is done with all our resources before they're implicitly destroyed by their destructors
+    // If you get a deadlock here it's probably because you had the debug layer enabled and the PIX capture library loaded at the same time
+    graphics.WaitForGpuIdle();
     return 0;
 }
 

@@ -95,3 +95,19 @@ inline float3 float3::Normalized()
 {
     return *this / Length();
 }
+
+//-------------------------------------------------------------------------------------------------
+// Per-component math
+//-------------------------------------------------------------------------------------------------
+namespace Math
+{
+    inline float3 Clamp(float3 x, float3 min, float3 max)
+    {
+        return float3
+        (
+            Clamp(x.x, min.x, max.x),
+            Clamp(x.y, min.y, max.y),
+            Clamp(x.z, min.z, max.z)
+        );
+    }
+}

@@ -92,3 +92,20 @@ inline float4 float4::Normalized()
 {
     return *this / Length();
 }
+
+//-------------------------------------------------------------------------------------------------
+// Per-component math
+//-------------------------------------------------------------------------------------------------
+namespace Math
+{
+    inline float4 Clamp(float4 x, float4 min, float4 max)
+    {
+        return float4
+        (
+            Clamp(x.x, min.x, max.x),
+            Clamp(x.y, min.y, max.y),
+            Clamp(x.z, min.z, max.z),
+            Clamp(x.w, min.w, max.w)
+        );
+    }
+}

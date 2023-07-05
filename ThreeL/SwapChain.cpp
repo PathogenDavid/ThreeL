@@ -123,6 +123,7 @@ void SwapChain::Resize(uint2 size)
 
     // If this is a minor size change, just change the source size instead of resizing the buffers
     //TODO: Add consideration of the VRAM limit here (IE: Never re-use the swap chain when the system is VRAM-constrained)
+#if false //TODO: Disabled for now as we render directly to the swap chain and this is causing issues with the depth buffer size not matching
     if (size < m_BufferSize)
     {
         uint32_t bufferPixelCount = m_BufferSize.x * m_BufferSize.y;
@@ -137,6 +138,7 @@ void SwapChain::Resize(uint2 size)
             return;
         }
     }
+#endif
 
     // Wait for the graphics queue to become idle so we know nothing is in use
     m_GraphicsCore.GetGraphicsQueue().QueueSyncPoint().Wait();

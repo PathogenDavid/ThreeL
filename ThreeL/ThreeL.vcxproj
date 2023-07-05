@@ -84,6 +84,8 @@
     <ClCompile Include="..\external\DearImGui\imgui_widgets.cpp" />
     <ClCompile Include="..\external\xxhash.c" />
     <ClCompile Include="Assert.cpp" />
+    <ClCompile Include="CameraController.cpp" />
+    <ClCompile Include="CameraInput.cpp" />
     <ClCompile Include="CommandContext.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
     <ClCompile Include="DearImGui.cpp" />
@@ -141,6 +143,8 @@
     <ClInclude Include="..\external\xxhash.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="BackBuffer.h" />
+    <ClInclude Include="CameraController.h" />
+    <ClInclude Include="CameraInput.h" />
     <ClInclude Include="CommandContext.h" />
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="DearImGui.h" />
