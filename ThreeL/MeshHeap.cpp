@@ -64,14 +64,17 @@ ComPtr<ID3D12Resource> MeshHeap::AllocateChunk(bool isStagingBuffer)
     return newChunk;
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS MeshHeap::Allocate(const void* buffer, size_t sizeBytes)
+D3D12_GPU_VIRTUAL_ADDRESS MeshHeap::Allocate(const void* buffer, size_t sizeBytes, uint32_t* outBindlessIndex)
 {
     Assert(sizeBytes <= CHUNK_SIZE && "Allocation failed: Mesh data exceeds the chunk size.");
+
+    // Bindless buffers need to be aligned to 16 byte boundaries
+    uint32_t prePadding = outBindlessIndex == nullptr ? 0 : D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT - (m_CurrentOffset % D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT);
 
     // Flush the current buffer if the new data won't fit
     if (m_CurrentBuffer != nullptr)
     {
-        size_t remainingBytes = CHUNK_SIZE - m_CurrentOffset;
+        size_t remainingBytes = CHUNK_SIZE - m_CurrentOffset - prePadding;
         if (remainingBytes < sizeBytes)
         {
             Flush();
@@ -85,12 +88,37 @@ D3D12_GPU_VIRTUAL_ADDRESS MeshHeap::Allocate(const void* buffer, size_t sizeByte
         ComPtr<ID3D12Resource> newChunk = AllocateChunk(false);
         m_CurrentBuffer = newChunk.Get();
         m_CurrentOffset = 0;
+        prePadding = 0;
         m_CurrentGpuBaseAddress = newChunk->GetGPUVirtualAddress();
         m_MeshBuffers.push_back(std::move(newChunk));
     }
 
+    // Account for pre-padding
+    m_CurrentOffset += prePadding;
+
     // Copy data into the staging buffer
     memcpy(m_MappedStagingBuffer + m_CurrentOffset, buffer, sizeBytes);
+
+    // Allocate an SRV for bindless buffer access if requested
+    if (outBindlessIndex != nullptr)
+    {
+        Assert(m_CurrentOffset % D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT == 0);
+        Assert(sizeBytes % 4 == 0);
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc =
+        {
+            .Format = DXGI_FORMAT_R32_TYPELESS,
+            .ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+            .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            .Buffer =
+            {
+                .FirstElement = m_CurrentOffset / 4,
+                .NumElements = (UINT)(sizeBytes / 4),
+                .Flags = D3D12_BUFFER_SRV_FLAG_RAW,
+            },
+        };
+        ResourceDescriptor srv = m_Graphics.GetResourceDescriptorManager().CreateShaderResourceView(m_CurrentBuffer, srvDesc);
+        *outBindlessIndex = m_Graphics.GetResourceDescriptorManager().GetResidentIndex(srv);
+    }
 
     // Calculate the (future) GPU address of this buffer and update the offset for the next buffer (ensuring it's going to be aligned on a 4 byte boundary
     D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = m_CurrentGpuBaseAddress + m_CurrentOffset;

@@ -102,6 +102,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="HlslCompiler.cpp" />
+    <ClCompile Include="Matrix3.cpp" />
     <ClCompile Include="PbrMaterialHeap.cpp" />
     <ClCompile Include="Matrix4.cpp" />
     <ClCompile Include="MeshHeap.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="GraphicsContext.h" />
     <ClInclude Include="HashImplementations.h" />
     <ClInclude Include="HlslCompiler.h" />
+    <ClInclude Include="Matrix3.h" />
     <ClInclude Include="PbrMaterialHeap.h" />
     <ClInclude Include="MathCommon.h" />
     <ClInclude Include="Matrix4.h" />

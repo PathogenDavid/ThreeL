@@ -63,9 +63,12 @@ MeshPrimitive::MeshPrimitive(GltfLoadContext& context, int meshIndex, int primit
     }
 
     // Load vertex data
+    bool hasTangents = false;
     {
         GltfAccessorView<float3>* positions = context.GetAttribute<float3>(primitive, "POSITION");
         GltfAccessorView<float3>* normals = context.GetAttribute<float3>(primitive, "NORMAL");
+        GltfAccessorView<float4>* tangents = context.GetAttribute<float4>(primitive, "TANGENT");
+        GltfAccessorView<float4>* colors0 = context.GetAttribute<float4>(primitive, "COLOR_0");
         GltfAccessorView<float2>* uv0 = context.GetAttribute<float2>(primitive, "TEXCOORD_0");
 
         //TODO: Read in COLOR_0 if present. (We don't currently have an elegant way to handle missing attributes and none of the test models we care about use it.)
@@ -84,11 +87,26 @@ MeshPrimitive::MeshPrimitive(GltfLoadContext& context, int meshIndex, int primit
         m_Uvs = resources.MeshHeap.AllocateVertexBuffer(uv0->AsDenseSpanMaybeAllocate());
         m_VertexOrIndexCount = m_IsIndexed ? indexCount : positions->ElementCount();
 
+        if (tangents != nullptr)
+        {
+            resources.MeshHeap.AllocateVertexBuffer(tangents->AsDenseSpanMaybeAllocate(), &m_TangentsBufferIndex);
+            hasTangents = true;
+        }
+        else
+        { m_TangentsBufferIndex = BUFFER_DISABLED; }
+
+        if (colors0 != nullptr)
+        { resources.MeshHeap.AllocateVertexBuffer(tangents->AsDenseSpanMaybeAllocate(), &m_ColorsBufferIndex); }
+        else
+        { m_ColorsBufferIndex = BUFFER_DISABLED; }
+
         delete positions;
         delete normals;
+        delete tangents;
+        delete colors0;
         delete uv0;
     }
 
     // Create material and load textures
-    m_Material = PbrMaterial(context, primitive.material);
+    m_Material = PbrMaterial(context, primitive.material, hasTangents);
 }

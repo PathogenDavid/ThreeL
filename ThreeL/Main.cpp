@@ -237,8 +237,7 @@ static int MainImpl()
                 ShaderInterop::PerNodeCb perNode =
                 {
                     .Transform = node.WorldTransform(),
-                    //TODO: Normal transform
-                    .NormalTransform = float4x4::Identity,
+                    .NormalTransform = node.NormalTransform(),
                 };
 
                 PIXScopedEvent(&context, 2, "Node '%s'", node.Name().c_str());
@@ -251,6 +250,8 @@ static int MainImpl()
 
                     PbrMaterial material = primitive.Material();
                     perNode.MaterialId = material.MaterialId();
+                    perNode.TangentsIndex = primitive.TangentsBufferIndex();
+                    perNode.ColorsIndex = primitive.ColorsBufferIndex();
                     context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerNodeCb, sizeof(perNode) / sizeof(UINT), &perNode, 0);
 
                     context->SetPipelineState(material.PipelineStateObject());
@@ -274,7 +275,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Transparents Pass
         //-------------------------------------------------------------------------------------------------------------
-        //TODO
+        //TODO: Transparents pass
 
         //-------------------------------------------------------------------------------------------------------------
         // UI

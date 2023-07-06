@@ -37,7 +37,7 @@ PendingUpload UploadQueue::AllocateResource(const D3D12_RESOURCE_DESC& resourceD
     m_Graphics.GetDevice()->GetCopyableFootprints(&resourceDescription, 0, 1, 0, &uploadPlacedFootprint, &rowCount, &rowSizeBytes, &uploadBufferSize);
 
     // Create the upload buffer
-    //TODO: For resources under a certain size it'd might make sense to pool and recycle buyffers
+    //TODO: For resources under a certain size it'd might make sense to pool and recycle buffers
     D3D12_HEAP_PROPERTIES uploadHeapProperties = { D3D12_HEAP_TYPE_UPLOAD };
     D3D12_RESOURCE_DESC uploadResourceDescription =
     {

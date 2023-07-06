@@ -23,7 +23,7 @@ public:
 private:
     ComPtr<ID3D12Resource> AllocateChunk(bool isStagingBuffer);
 
-    D3D12_GPU_VIRTUAL_ADDRESS Allocate(const void* buffer, size_t sizeBytes);
+    D3D12_GPU_VIRTUAL_ADDRESS Allocate(const void* buffer, size_t sizeBytes, uint32_t* outBindlessIndex = nullptr);
 
 public:
     inline D3D12_INDEX_BUFFER_VIEW AllocateIndexBuffer(const void* rawIndices, size_t sizeBytes, DXGI_FORMAT format)
@@ -45,19 +45,19 @@ public:
         return AllocateIndexBuffer(indices.data(), indices.size_bytes(), DXGI_FORMAT_R32_UINT);
     }
 
-    inline D3D12_VERTEX_BUFFER_VIEW AllocateVertexBuffer(const void* rawVertexData, size_t sizeBytes, uint32_t strideBytes)
+    inline D3D12_VERTEX_BUFFER_VIEW AllocateVertexBuffer(const void* rawVertexData, size_t sizeBytes, uint32_t strideBytes, uint32_t* outBindlessIndex = nullptr)
     {
         return {
-            .BufferLocation = Allocate(rawVertexData, sizeBytes),
+            .BufferLocation = Allocate(rawVertexData, sizeBytes, outBindlessIndex),
             .SizeInBytes = (UINT)sizeBytes,
             .StrideInBytes = strideBytes,
         };
     }
 
     template<typename T>
-    inline D3D12_VERTEX_BUFFER_VIEW AllocateVertexBuffer(std::span<const T> vertexData)
+    inline D3D12_VERTEX_BUFFER_VIEW AllocateVertexBuffer(std::span<const T> vertexData, uint32_t* outBindlessIndex = nullptr)
     {
-        return AllocateVertexBuffer(vertexData.data(), vertexData.size_bytes(), sizeof(T));
+        return AllocateVertexBuffer(vertexData.data(), vertexData.size_bytes(), sizeof(T), outBindlessIndex);
     }
 
     void Flush();

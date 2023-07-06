@@ -13,7 +13,7 @@ private:
 
 public:
     PbrMaterial() = default;
-    PbrMaterial(GltfLoadContext& context, int materialIndex);
+    PbrMaterial(GltfLoadContext& context, int materialIndex, bool primitiveHasTangents);
 
     inline const PipelineStateObject& PipelineStateObject() const { return *m_PipelineStateObject; }
     inline PbrMaterialId MaterialId() const { return m_MaterialId; }

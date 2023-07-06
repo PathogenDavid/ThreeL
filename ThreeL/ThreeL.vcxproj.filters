@@ -75,6 +75,9 @@
     <ClCompile Include="DynamicResourceDescriptor.cpp" />
     <ClCompile Include="CameraInput.cpp" />
     <ClCompile Include="CameraController.cpp" />
+    <ClCompile Include="Matrix3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -175,6 +178,9 @@
     <ClInclude Include="DynamicResourceDescriptor.h" />
     <ClInclude Include="CameraInput.h" />
     <ClInclude Include="CameraController.h" />
+    <ClInclude Include="Matrix3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

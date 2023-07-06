@@ -7,24 +7,24 @@
 
 #include <tiny_gltf.h>
 
-PbrMaterial::PbrMaterial(GltfLoadContext& context, int materialIndex)
+PbrMaterial::PbrMaterial(GltfLoadContext& context, int materialIndex, bool primitiveHasTangents)
 {
     const tinygltf::Material& material = context.Model().materials[materialIndex];
-    PbrMaterialParams pbr =
+    ShaderInterop::PbrMaterialParams pbr =
     {
         .AlphaCutoff = -1000.f,
-        .BaseColorTexture = TEXTURE_DISABLED,
-        .BaseColorTextureSampler = TEXTURE_DISABLED,
-        .MealicRoughnessTexture = TEXTURE_DISABLED,
-        .MetalicRoughnessTextureSampler = TEXTURE_DISABLED,
-        .NormalTexture = TEXTURE_DISABLED,
-        .NormalTextureSampler = TEXTURE_DISABLED,
+        .BaseColorTexture = BUFFER_DISABLED,
+        .BaseColorTextureSampler = BUFFER_DISABLED,
+        .MealicRoughnessTexture = BUFFER_DISABLED,
+        .MetalicRoughnessTextureSampler = BUFFER_DISABLED,
+        .NormalTexture = BUFFER_DISABLED,
+        .NormalTextureSampler = BUFFER_DISABLED,
         .NormalTextureScale = 1.f,
         .BaseColorFactor = float4::One,
         .MetallicFactor = 1.f,
         .RoughnessFactor = 1.f,
-        .EmissiveTexture = TEXTURE_DISABLED,
-        .EmissiveTextureSampler = TEXTURE_DISABLED,
+        .EmissiveTexture = BUFFER_DISABLED,
+        .EmissiveTextureSampler = BUFFER_DISABLED,
         .EmissiveFactor = float3::Zero,
     };
 
@@ -33,9 +33,7 @@ PbrMaterial::PbrMaterial(GltfLoadContext& context, int materialIndex)
         const std::vector<double>& c = material.pbrMetallicRoughness.baseColorFactor;
         Assert(c.size() == 4);
         pbr.BaseColorFactor = float4((float)c[0], (float)c[1], (float)c[2], (float)c[3]);
-    }
 
-    {
         const tinygltf::TextureInfo& colorTexture = material.pbrMetallicRoughness.baseColorTexture;
         if (colorTexture.index >= 0)
         {
@@ -63,6 +61,10 @@ PbrMaterial::PbrMaterial(GltfLoadContext& context, int materialIndex)
         const tinygltf::NormalTextureInfo& normalTexture = material.normalTexture;
         if (normalTexture.index >= 0)
         {
+            // Spec says we should generate missing tangents using MikkTSpace, but using it is a bit higher friction than I'd like for this project
+            // as it requires unwelding (and ideally re-welding) the entire mesh. In practice meshes which use features that need tangents will include them
+            Assert(primitiveHasTangents && "Primitives with a normal texture must have tangents.");
+
             Assert(normalTexture.texCoord == 0 && "Using secondary UV sets is not yet supported.");
             pbr.NormalTexture = context.LoadTexture(normalTexture.index, false).BindlessIndex();
             pbr.NormalTextureSampler = context.LoadSamplerForTexture(normalTexture.index);

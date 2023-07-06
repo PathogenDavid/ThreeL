@@ -9,7 +9,7 @@ PbrMaterialHeap::PbrMaterialHeap(GraphicsCore& graphics)
 {
 }
 
-PbrMaterialId PbrMaterialHeap::CreateMaterial(const PbrMaterialParams& params)
+PbrMaterialId PbrMaterialHeap::CreateMaterial(const ShaderInterop::PbrMaterialParams& params)
 {
     Assert(m_MaterialParams == nullptr && "Materials cannot be created after they've previously been uploaded!");
     m_MaterialParamsStaging.push_back(params);
@@ -28,7 +28,7 @@ GpuSyncPoint PbrMaterialHeap::UploadMaterials()
     {
         .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
         .Alignment = 0,
-        .Width = m_MaterialParamsStaging.size() * sizeof(PbrMaterialParams),
+        .Width = m_MaterialParamsStaging.size() * sizeof(ShaderInterop::PbrMaterialParams),
         .Height = 1,
         .DepthOrArraySize = 1,
         .MipLevels = 1,
@@ -40,8 +40,8 @@ GpuSyncPoint PbrMaterialHeap::UploadMaterials()
 
     PendingUpload pendingUpload = m_Graphics.GetUploadQueue().AllocateResource(resourceDescription, L"PBR Material Parameters");
 
-    std::span<const PbrMaterialParams> sourceSpan = m_MaterialParamsStaging;
-    std::span<PbrMaterialParams> destinationSpan = SpanCast<uint8_t, PbrMaterialParams>(pendingUpload.StagingBuffer());
+    std::span<const ShaderInterop::PbrMaterialParams> sourceSpan = m_MaterialParamsStaging;
+    std::span<ShaderInterop::PbrMaterialParams> destinationSpan = SpanCast<uint8_t, ShaderInterop::PbrMaterialParams>(pendingUpload.StagingBuffer());
     SpanCopy(destinationSpan, sourceSpan);
 
     // CPU-side staging buffer is no longer needed

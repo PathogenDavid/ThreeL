@@ -19,6 +19,8 @@ private:
     D3D12_VERTEX_BUFFER_VIEW m_Positions = { };
     D3D12_VERTEX_BUFFER_VIEW m_Normals = { };
     D3D12_VERTEX_BUFFER_VIEW m_Uvs = { };
+    uint32_t m_ColorsBufferIndex = BUFFER_DISABLED;
+    uint32_t m_TangentsBufferIndex = BUFFER_DISABLED;
 
     PbrMaterial m_Material;
 
@@ -37,5 +39,7 @@ public:
     inline const D3D12_VERTEX_BUFFER_VIEW& Positions() const { return m_Positions; }
     inline const D3D12_VERTEX_BUFFER_VIEW& Normals() const { return m_Normals; }
     inline const D3D12_VERTEX_BUFFER_VIEW& Uvs() const { return m_Uvs; }
+    inline uint32_t ColorsBufferIndex() const { return m_ColorsBufferIndex; }
+    inline uint32_t TangentsBufferIndex() const { return m_TangentsBufferIndex; }
     inline const PbrMaterial& Material() const { return m_Material; }
 };
