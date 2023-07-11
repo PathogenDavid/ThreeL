@@ -88,9 +88,11 @@
     <ClCompile Include="CameraInput.cpp" />
     <ClCompile Include="CommandContext.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
+    <ClCompile Include="ComputeContext.cpp" />
     <ClCompile Include="DearImGui.cpp" />
     <ClCompile Include="DebugLayer.cpp" />
     <ClCompile Include="DepthStencilBuffer.cpp" />
+    <ClCompile Include="DxgiFormat.cpp" />
     <ClCompile Include="DynamicDescriptorTableBuilder.cpp" />
     <ClCompile Include="DynamicResourceDescriptor.cpp" />
     <ClCompile Include="GltfAccessorView.cpp" />
@@ -148,10 +150,12 @@
     <ClInclude Include="CameraInput.h" />
     <ClInclude Include="CommandContext.h" />
     <ClInclude Include="CommandQueue.h" />
+    <ClInclude Include="ComputeContext.h" />
     <ClInclude Include="DearImGui.h" />
     <ClInclude Include="DebugLayer.h" />
     <ClInclude Include="DepthStencilBuffer.h" />
     <ClInclude Include="DepthStencilView.h" />
+    <ClInclude Include="DxgiFormat.h" />
     <ClInclude Include="DynamicDescriptorTable.h" />
     <ClInclude Include="DynamicDescriptorTableBuilder.h" />
     <ClInclude Include="DynamicResourceDescriptor.h" />
@@ -196,6 +200,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\GenerateMipmapChain.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

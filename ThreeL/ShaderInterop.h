@@ -72,4 +72,28 @@ namespace ShaderInterop
             RpBindlessHeap,
         };
     }
+
+    struct GenerateMipmapChainParams
+    {
+        uint2 OutputSize;
+        float2 OutputSizeInverse;
+        uint32_t OutputIsSrgb;
+    };
+    static_assert(sizeof(GenerateMipmapChainParams) == 5 * sizeof(uint32_t));
+    static_assert(offsetof(GenerateMipmapChainParams, OutputSize) == 0);
+    static_assert(offsetof(GenerateMipmapChainParams, OutputSizeInverse) == 8);
+    static_assert(offsetof(GenerateMipmapChainParams, OutputIsSrgb) == 16);
+
+    namespace GenerateMipmapChain
+    {
+        // See ROOT_SIGNATURE in GenerateMipmapChain.cs.hlsl
+        enum RootParameters
+        {
+            RpParams,
+            RpInputTexture,
+            RpOutputTexture
+        };
+
+        static const uint32_t ThreadGroupSize = 8;
+    }
 }

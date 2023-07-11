@@ -78,6 +78,8 @@
     <ClCompile Include="Matrix3.cpp">
       <Filter>Math</Filter>
     </ClCompile>
+    <ClCompile Include="ComputeContext.cpp" />
+    <ClCompile Include="DxgiFormat.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -181,6 +183,8 @@
     <ClInclude Include="Matrix3.h">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="ComputeContext.h" />
+    <ClInclude Include="DxgiFormat.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -201,6 +205,9 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Pbr.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\GenerateMipmapChain.cs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

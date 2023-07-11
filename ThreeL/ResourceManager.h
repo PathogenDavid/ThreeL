@@ -28,7 +28,12 @@ struct ResourceManager
     PipelineStateObject PbrBlendOnSingleSided;
     PipelineStateObject PbrBlendOnDoubleSided;
 
-    ResourceManager(GraphicsCore& graphics);
+    RootSignature GenerateMipMapsRootSignature;
+    PipelineStateObject GenerateMipMapsUnorm;
+    PipelineStateObject GenerateMipMapsFloat;
+
+    explicit ResourceManager(GraphicsCore& graphics);
+    ResourceManager(const ResourceManager&) = delete;
 
     //! Marks this resource manager as finished, flushing its managed resources to the GPU
     //! Does not wait for GPU work to complete, caller is expected to flush the upload queue themselves

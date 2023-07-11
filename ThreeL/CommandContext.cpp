@@ -96,6 +96,22 @@ void CommandContext::TransitionResource(GpuResource& resource, D3D12_RESOURCE_ST
         FlushResourceBarriersEarly();
 }
 
+void CommandContext::UavBarrier(GpuResource* resource, bool immediate)
+{
+    AllocateResourceBarrier() =
+    {
+        .Type = D3D12_RESOURCE_BARRIER_TYPE_UAV,
+        .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+        .UAV =
+        {
+            .pResource = resource == nullptr ? nullptr : resource->m_Resource.Get()
+        }
+    };
+
+    if (immediate)
+        FlushResourceBarriersEarly();
+}
+
 void CommandContext::FlushResourceBarriersEarly()
 {
     if (m_PendingResourceBarrierCount == 0)

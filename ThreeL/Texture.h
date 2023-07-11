@@ -7,7 +7,7 @@
 #include <d3d12.h>
 #include <span>
 
-class GraphicsCore;
+struct ResourceManager;
 
 class Texture : public GpuResource
 {
@@ -16,10 +16,10 @@ private:
     uint32_t m_BindlessIndex;
     GpuSyncPoint m_UploadSyncPoint;
 
-    Texture(const GraphicsCore& graphics, std::wstring debugName, std::span<const uint8_t> colorData, uint2 size, int texelSize, DXGI_FORMAT format);
+    Texture(const ResourceManager& resources, std::wstring debugName, std::span<const uint8_t> colorData, uint2 size, int texelSize, DXGI_FORMAT format);
 public:
-    Texture(const GraphicsCore& graphics, std::wstring debugName, std::span<const uint8_t> rgbaData, uint2 size, bool isSrgb = false)
-        : Texture(graphics, debugName, rgbaData, size, 4, isSrgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM)
+    Texture(const ResourceManager& resources, std::wstring debugName, std::span<const uint8_t> rgbaData, uint2 size, bool isSrgb = false)
+        : Texture(resources, debugName, rgbaData, size, 4, isSrgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM)
     {
     }
 
@@ -39,8 +39,8 @@ private:
     }
 
 public:
-    Texture(const GraphicsCore& graphics, std::wstring debugName, std::span<const float> colorData, uint2 size, int channelCount)
-        : Texture(graphics, debugName, SpanCast<const float, const uint8_t>(colorData), size, channelCount * 4, GetHdrFormat(channelCount))
+    Texture(const ResourceManager& resources, std::wstring debugName, std::span<const float> colorData, uint2 size, int channelCount)
+        : Texture(resources, debugName, SpanCast<const float, const uint8_t>(colorData), size, channelCount * 4, GetHdrFormat(channelCount))
     {
     }
 

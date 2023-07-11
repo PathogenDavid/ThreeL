@@ -143,7 +143,7 @@ const Texture& GltfLoadContext::LoadTexture(int textureIndex, bool isSrgb)
     { name = std::format(L"{} (sRGB)", name); }
 
     // Create, cache, and return the texture
-    return *(m_Scene.m_TextureCache[cacheKey] = std::make_unique<Texture>(m_Graphics, name, std::span(image.image), uint2((uint32_t)image.width, (uint32_t)image.height), isSrgb));
+    return *(m_Scene.m_TextureCache[cacheKey] = std::make_unique<Texture>(m_Resources, name, std::span(image.image), uint2((uint32_t)image.width, (uint32_t)image.height), isSrgb));
 }
 
 GltfAccessorViewBase* GltfLoadContext::GetAttributeRaw(const tinygltf::Primitive& primitive, const std::string& attributeName)

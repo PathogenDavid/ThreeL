@@ -12,8 +12,12 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     ShaderBlobs pbrVs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"VsMain", L"vs_6_0");
     ShaderBlobs pbrPs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"PsMain", L"ps_6_0");
 
+    ShaderBlobs generateMipMapsCsUnorm = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0", { L"GENERATE_UNORM_MIPMAP_CHAIN" });
+    ShaderBlobs generateMipMapsCsFloat = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0");
+
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
+    GenerateMipMapsRootSignature = RootSignature(Graphics, generateMipMapsCsUnorm, L"GenerateMipMaps Root Signature");
 
     // Create PBR pipeline state objects
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pbrDescription = PipelineStateObject::BaseDescription;
@@ -53,4 +57,14 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Double Sided");
     pbrDescription.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
     PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Single Sided");
+
+    // Create GenerateMipMaps pipeline state object
+    D3D12_COMPUTE_PIPELINE_STATE_DESC generateMipMapsDescription =
+    {
+        .pRootSignature = GenerateMipMapsRootSignature.Get(),
+        .CS = generateMipMapsCsUnorm.ShaderBytecode(),
+    };
+    GenerateMipMapsUnorm = PipelineStateObject(Graphics, generateMipMapsDescription, L"GenerateMipMaps PSO - UNorm");
+    generateMipMapsDescription.CS = generateMipMapsCsFloat.ShaderBytecode();
+    GenerateMipMapsFloat = PipelineStateObject(Graphics, generateMipMapsDescription, L"GenerateMipMaps PSO - Float");
 }

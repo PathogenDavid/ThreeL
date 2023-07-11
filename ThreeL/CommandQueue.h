@@ -57,6 +57,7 @@ private:
 
 public:
     GpuSyncPoint QueueSyncPoint();
+    inline void AwaitSyncPoint(GpuSyncPoint syncPoint) { m_Queue->Wait(syncPoint.m_Fence, syncPoint.m_FenceValue); }
 
 private:
     CommandContext& RentContext();

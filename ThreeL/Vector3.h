@@ -1,5 +1,6 @@
 #pragma once
 #include "MathCommon.h"
+#include "Vector2.h"
 #include <cmath>
 
 struct float3
@@ -56,6 +57,34 @@ struct float3
     static const float3 UnitZ;
     static const float3 One;
     static const float3 Zero;
+};
+
+struct uint3
+{
+    using uint = uint32_t;
+    uint x;
+    uint y;
+    uint z;
+
+    constexpr uint3() : x(), y(), z() { }
+    constexpr uint3(uint x, uint y, uint z) : x(x), y(y), z(z) { }
+    constexpr uint3(uint2 xy, uint z) : x(xy.x), y(xy.y), z(z) { }
+    constexpr uint3(uint x, uint2 yz) : x(x), y(yz.x), z(yz.y) { }
+    constexpr uint3(uint s) : x(s), y(s), z(s) { }
+
+    //---------------------------------------------------------------------------------------------
+    // Conversion operators
+    //---------------------------------------------------------------------------------------------
+    explicit operator float3() const { return float3((float)x, (float)y, (float)z); }
+
+    //---------------------------------------------------------------------------------------------
+    // Basic vectors
+    //---------------------------------------------------------------------------------------------
+    static const uint3 UnitX;
+    static const uint3 UnitY;
+    static const uint3 UnitZ;
+    static const uint3 One;
+    static const uint3 Zero;
 };
 
 //=====================================================================================================================

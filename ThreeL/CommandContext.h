@@ -26,7 +26,16 @@ public:
 
     void Begin(ID3D12PipelineState* initialPipelineState);
     
+    //TODO: This is inadequate for handling subresource state tracking or implicit resource state decay/promotion
+    // This design also predates enhanced barriers and as such doesn't even slightly consider them
+    // It should be revisited, don't imitate this.
     void TransitionResource(GpuResource& resource, D3D12_RESOURCE_STATES desiredState, bool immediate);
+
+private:
+    void UavBarrier(GpuResource* resource, bool immediate);
+public:
+    inline void UavBarrier(bool immediate) { UavBarrier(nullptr, immediate); }
+    inline void UavBarrier(GpuResource& resource, bool immediate) { UavBarrier(&resource, immediate); }
 
     void FlushResourceBarriers();
     GpuSyncPoint Flush(ID3D12PipelineState* newState);

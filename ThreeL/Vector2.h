@@ -185,6 +185,26 @@ inline bool2 operator>=(uint2 a, uint2 b) { return { a.x >= b.x, a.y >= b.y }; }
 inline bool2 operator<(uint2 a, uint2 b) { return { a.x < b.x, a.y < b.y }; }
 inline bool2 operator>(uint2 a, uint2 b) { return { a.x > b.x, a.y > b.y }; }
 
+//-------------------------------------------------------------------------------------------------
+// Vector arithmetic
+//-------------------------------------------------------------------------------------------------
+inline uint2 operator +(uint2 a, uint2 b) { return uint2(a.x + b.x, a.y + b.y); }
+inline uint2 operator -(uint2 a, uint2 b) { return uint2(a.x - b.x, a.y - b.y); }
+inline uint2 operator *(uint2 a, uint2 b) { return uint2(a.x * b.x, a.y * b.y); }
+inline uint2 operator /(uint2 a, uint2 b) { return uint2(a.x / b.x, a.y / b.y); }
+
+//-------------------------------------------------------------------------------------------------
+// Scalar operators
+//-------------------------------------------------------------------------------------------------
+inline uint2 operator +(uint2 v, uint32_t s) { return uint2(v.x + s, v.y + s); }
+inline uint2 operator -(uint2 v, uint32_t s) { return uint2(v.x - s, v.y - s); }
+inline uint2 operator *(uint2 v, uint32_t s) { return uint2(v.x * s, v.y * s); }
+inline uint2 operator /(uint2 v, uint32_t s) { return uint2(v.x / s, v.y / s); }
+inline uint2 operator +(uint32_t s, uint2 v) { return uint2(s + v.x, s + v.y); }
+inline uint2 operator -(uint32_t s, uint2 v) { return uint2(s - v.x, s - v.y); }
+inline uint2 operator *(uint32_t s, uint2 v) { return uint2(s * v.x, s * v.y); }
+inline uint2 operator /(uint32_t s, uint2 v) { return uint2(s / v.x, s / v.y); }
+
 //=====================================================================================================================
 // float2 operators
 //=====================================================================================================================
@@ -234,6 +254,15 @@ namespace Math
         (
             Clamp(x.x, min.x, max.x),
             Clamp(x.y, min.y, max.y)
+        );
+    }
+
+    inline uint2 Max(uint2 a, uint2 b)
+    {
+        return uint2
+        (
+            std::max(a.x, b.x),
+            std::max(a.y, b.y)
         );
     }
 }

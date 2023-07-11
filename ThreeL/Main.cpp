@@ -48,13 +48,15 @@ static Scene LoadGltfScene(ResourceManager& resources, const std::string& filePa
     return Scene(resources, model);
 }
 
-static Texture LoadHdr(GraphicsCore& graphics, std::string filePath)
+static Texture LoadHdr(ResourceManager& resources, std::string filePath)
 {
     int width;
     int height;
     int channels;
-    float* data = stbi_loadf(filePath.c_str(), &width, &height, &channels, 0);
-    Texture texture(graphics, std::format(L"{}", filePath), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), channels);
+    // Forcing 4 channels because R32G32B32 cannot be accessed via UAV which is required for mipmap chain generation.
+    float* data = stbi_loadf(filePath.c_str(), &width, &height, &channels, 4);
+    channels = 4;
+    Texture texture(resources, std::format(L"{}", filePath), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), channels);
     stbi_image_free(data);
     return texture;
 }
@@ -109,7 +111,7 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Load environment HDR
     //-----------------------------------------------------------------------------------------------------------------
-    Texture environmentHdr = LoadHdr(graphics, "Assets/ninomaru_teien_1k.hdr");
+    Texture environmentHdr = LoadHdr(resources, "Assets/ninomaru_teien_1k.hdr");
     Assert(environmentHdr.BindlessIndex() == 0); // We currently hard-code the environment HDR to be bindless slot 0 in the shader
 
     //-----------------------------------------------------------------------------------------------------------------
