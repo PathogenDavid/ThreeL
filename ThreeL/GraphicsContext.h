@@ -60,9 +60,23 @@ public:
         GetCommandList()->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
     }
 
-    inline GpuSyncPoint Flush(ID3D12PipelineState* newState)
+    inline void SetRenderTarget(DepthStencilView depthTarget)
     {
-        m_Context->Flush(newState);
+        D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = depthTarget.DsvHandle();
+        GetCommandList()->OMSetRenderTargets(0, nullptr, false, &dsvHandle);
+    }
+
+    inline void SetFullViewportScissor(uint2 size)
+    {
+        D3D12_VIEWPORT viewport = { 0.f, 0.f, (float)size.x, (float)size.y, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
+        GetCommandList()->RSSetViewports(1, &viewport);
+        D3D12_RECT scissor = { 0, 0, (LONG)size.x, (LONG)size.y };
+        GetCommandList()->RSSetScissorRects(1, &scissor);
+    }
+
+    inline GpuSyncPoint Flush(ID3D12PipelineState* newState = nullptr)
+    {
+        return m_Context->Flush(newState);
     }
 
     GpuSyncPoint Finish();

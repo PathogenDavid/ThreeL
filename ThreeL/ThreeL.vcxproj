@@ -201,7 +201,9 @@
     <None Include="Shaders\Common.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\DepthDownsample.ps.hlsl" />
     <FxCompile Include="Shaders\DepthOnly.hlsl" />
+    <FxCompile Include="Shaders\FullScreenQuad.vs.hlsl" />
     <FxCompile Include="Shaders\GenerateMipmapChain.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
   </ItemGroup>

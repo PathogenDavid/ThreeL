@@ -32,6 +32,9 @@ struct ResourceManager
     PipelineStateObject DepthOnlySingleSided;
     PipelineStateObject DepthOnlyDoubleSided;
 
+    RootSignature DepthDownsampleRootSignature;
+    PipelineStateObject DepthDownsample;
+
     RootSignature GenerateMipMapsRootSignature;
     PipelineStateObject GenerateMipMapsUnorm;
     PipelineStateObject GenerateMipMapsFloat;

@@ -22,6 +22,7 @@ private:
     std::unique_ptr<UploadQueue> m_UploadQueue;
 public:
     GraphicsCore();
+    GraphicsCore(const GraphicsCore&) = delete;
 
     inline const ComPtr<ID3D12Device>& GetDevice() const
     {

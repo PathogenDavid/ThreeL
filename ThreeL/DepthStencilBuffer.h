@@ -37,6 +37,7 @@ public:
     //! You must ensure all outstanding uses of this buffer on the GPU are complete before calling this method
     void Resize(uint2 newSize);
 
+    inline uint2 Size() const { return m_Size; }
     inline float DepthClearValue() const { return m_DepthClearValue; }
     inline uint8_t StencilClearValue() const { return m_StencilClearValue; }
     inline DepthStencilView View() const { return m_View; }

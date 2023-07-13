@@ -100,6 +100,23 @@ static int MainImpl()
     windowTitle += GetExtraWindowTitleInfo();
     Window window(windowTitle.c_str(), 1280, 720);
 
+    WndProcHandle wndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>
+        {
+            switch (message)
+            {
+                // Prevent the user from making the window super tiny
+                // (This mainly saves us from having to do something sensible in response to a buffer or half-buffer being 0-sized.)
+                case WM_GETMINMAXINFO:
+                {
+                    MINMAXINFO* info = (MINMAXINFO*)lParam;
+                    info->ptMinTrackSize = { 200, 200 };
+                    return 0;
+                }
+                default:
+                    return { };
+            }
+        });
+
     // Ensure PIX targets our main window and disable the HUD since it overlaps with our menu bar
     PIXSetTargetWindow(window.GetHwnd());
     PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS);
@@ -130,6 +147,13 @@ static int MainImpl()
     uint2 screenSize = uint2::Zero;
     float2 screenSizeF = (float2)screenSize;
     DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", swapChain.Size(), DEPTH_BUFFER_FORMAT);
+
+    std::vector<DepthStencilBuffer> downsampledDepthBuffers;
+    for (int i = 2; i <= 8; i *= 2)
+    {
+        std::wstring name = std::format(L"Depth Buffer (1/{})", i);
+        downsampledDepthBuffers.emplace_back(graphics, name, swapChain.Size() / i, DEPTH_BUFFER_FORMAT);
+    }
 
     //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
@@ -166,6 +190,15 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Main loop
     //-----------------------------------------------------------------------------------------------------------------
+    auto BindPbrRootSignature = [&](GraphicsContext& context, ShaderInterop::PerFrameCb& perFrame)
+        {
+            context->SetGraphicsRootSignature(resources.PbrRootSignature);
+            context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerFrameCb, sizeof(perFrame) / sizeof(UINT), &perFrame, 0);
+            context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpMaterialHeap, resources.PbrMaterials.BufferGpuAddress());
+            context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpSamplerHeap, graphics.GetSamplerHeap().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
+            context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.GetResourceDescriptorManager().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
+        };
+
     while (Window::ProcessMessages())
     {
         PIXScopedEvent(0, "Frame %lld", frameNumber);
@@ -192,6 +225,13 @@ static int MainImpl()
             screenSizeF = (float2)screenSize;
 
             depthBuffer.Resize(screenSize);
+
+            int div = 2;
+            for (DepthStencilBuffer& depthBuffer : downsampledDepthBuffers)
+            {
+                depthBuffer.Resize(screenSize / div);
+                div *= 2;
+            }
         }
 
         //-------------------------------------------------------------------------------------------------------------
@@ -204,12 +244,6 @@ static int MainImpl()
             context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
             context.Clear(swapChain, 0.2f, 0.2f, 0.2f, 1.f);
             context.Clear(depthBuffer);
-            context.SetRenderTarget(swapChain, depthBuffer.View());
-
-            D3D12_VIEWPORT viewport = { 0.f, 0.f, screenSizeF.x, screenSizeF.y, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
-            context->RSSetViewports(1, &viewport);
-            D3D12_RECT scissor = { 0, 0, (LONG)screenSize.x, (LONG)screenSize.y };
-            context->RSSetScissorRects(1, &scissor);
         }
 
         ShaderInterop::PerFrameCb perFrame =
@@ -220,19 +254,14 @@ static int MainImpl()
         };
 
         //-------------------------------------------------------------------------------------------------------------
-        // Start PBR material passes
-        //-------------------------------------------------------------------------------------------------------------
-        context->SetGraphicsRootSignature(resources.PbrRootSignature);
-        context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerFrameCb, sizeof(perFrame) / sizeof(UINT), &perFrame, 0);
-        context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpMaterialHeap, resources.PbrMaterials.BufferGpuAddress());
-        context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpSamplerHeap, graphics.GetSamplerHeap().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
-        context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.GetResourceDescriptorManager().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
-
-        //-------------------------------------------------------------------------------------------------------------
         // Depth Pre-pass
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(&context, 1, "Depth pre-pass");
+            context.SetRenderTarget(depthBuffer.View());
+            context.SetFullViewportScissor(screenSize);
+            BindPbrRootSignature(context, perFrame);
+
             for (const SceneNode& node : scene)
             {
                 // Skip unrenderable nodes (IE: nodes without meshes)
@@ -273,15 +302,47 @@ static int MainImpl()
                     }
                 }
             }
+
+            context.Flush();
         }
 
-        context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ, true);
+        //-------------------------------------------------------------------------------------------------------------
+        // Downsample depth buffer
+        //-------------------------------------------------------------------------------------------------------------
+        {
+            PIXScopedEvent(&context, 1, "Downsample depth");
+
+            DepthStencilBuffer* previousBuffer = &depthBuffer;
+            context->SetGraphicsRootSignature(resources.DepthDownsampleRootSignature);
+            context->SetPipelineState(resources.DepthDownsample);
+
+            for (DepthStencilBuffer& depthBuffer : downsampledDepthBuffers)
+            {
+                context->SetGraphicsRootDescriptorTable(ShaderInterop::DepthDownsample::RpInputDepthBuffer, previousBuffer->DepthShaderResourceView().GetResidentHandle());
+                context.SetRenderTarget(depthBuffer.View());
+                context.SetFullViewportScissor(depthBuffer.Size());
+
+                context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
+                context->DrawInstanced(3, 1, 0, 0);
+
+                context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
+                previousBuffer = &depthBuffer;
+            }
+
+            context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
+            context.Flush();
+        }
 
         //-------------------------------------------------------------------------------------------------------------
         // Opaque Pass
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(&context, 2, "Opaque pass");
+            context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
+            context.SetFullViewportScissor(screenSize);
+            BindPbrRootSignature(context, perFrame);
+
             for (const SceneNode& node : scene)
             {
                 // Skip unrenderable nodes (IE: nodes without meshes)
@@ -323,6 +384,8 @@ static int MainImpl()
                     }
                 }
             }
+
+            context.Flush();
         }
 
         //-------------------------------------------------------------------------------------------------------------
@@ -460,6 +523,9 @@ static int MainImpl()
         lastTimestamp.QuadPart = timestamp.QuadPart;
         frameNumber++;
     }
+
+    // Cleanup
+    window.RemoveWndProc(wndProcHandle);
 
     // Ensure the GPU is done with all our resources before they're implicitly destroyed by their destructors
     // If you get a deadlock here it's probably because you had the debug layer enabled and the PIX capture library loaded at the same time

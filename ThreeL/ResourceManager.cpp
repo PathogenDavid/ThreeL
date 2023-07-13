@@ -15,12 +15,17 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     ShaderBlobs depthOnlyVs = hlslCompiler.CompileShader(L"Shaders/DepthOnly.hlsl", L"VsMain", L"vs_6_0");
     ShaderBlobs depthOnlyPs = hlslCompiler.CompileShader(L"Shaders/DepthOnly.hlsl", L"PsMain", L"ps_6_0");
 
+    ShaderBlobs fullScreenQuadVs = hlslCompiler.CompileShader(L"Shaders/FullScreenQuad.vs.hlsl", L"VsMain", L"vs_6_0");
+
+    ShaderBlobs depthDownsamplePs = hlslCompiler.CompileShader(L"Shaders/DepthDownsample.ps.hlsl", L"PsMain", L"ps_6_0");
+
     ShaderBlobs generateMipMapsCsUnorm = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0", { L"GENERATE_UNORM_MIPMAP_CHAIN" });
     ShaderBlobs generateMipMapsCsFloat = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0");
 
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
     DepthOnlyRootSignature = RootSignature(Graphics, depthOnlyVs, L"DepthOnly Root Signature");
+    DepthDownsampleRootSignature = RootSignature(Graphics, depthDownsamplePs, L"DepthDownsample Root Signature");
     GenerateMipMapsRootSignature = RootSignature(Graphics, generateMipMapsCsUnorm, L"GenerateMipMaps Root Signature");
 
     // Create PBR pipeline state objects
@@ -88,6 +93,18 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         DepthOnlySingleSided = PipelineStateObject(Graphics, depthOnlyDescription, L"DepthOnly PSO - Single Sided");
         depthOnlyDescription.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         DepthOnlyDoubleSided = PipelineStateObject(Graphics, depthOnlyDescription, L"DepthOnly PSO - Double Sided");
+    }
+
+    // Create DepthDownsample pipeline state object
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC depthDownsampleDescription = PipelineStateObject::BaseDescription;
+        depthDownsampleDescription.pRootSignature = DepthDownsampleRootSignature.Get();
+        depthDownsampleDescription.VS = fullScreenQuadVs.ShaderBytecode();
+        depthDownsampleDescription.PS = depthDownsamplePs.ShaderBytecode();
+        depthDownsampleDescription.NumRenderTargets = 0;
+        depthDownsampleDescription.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+
+        DepthDownsample = PipelineStateObject(Graphics, depthDownsampleDescription, L"DepthDownsample PSO");
     }
 
     // Create GenerateMipMaps pipeline state object

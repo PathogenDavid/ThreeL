@@ -101,4 +101,13 @@ namespace ShaderInterop
 
         static const uint32_t ThreadGroupSize = 8;
     }
+
+    namespace DepthDownsample
+    {
+        // See ROOT_SIGNATURE in DepthDownsample.ps.hlsl
+        enum RootParameters
+        {
+            RpInputDepthBuffer,
+        };
+    }
 }
