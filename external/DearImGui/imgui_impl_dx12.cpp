@@ -694,6 +694,8 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
             float4 main(PS_INPUT input) : SV_Target\
             {\
               float4 out_col = input.col * texture0.Sample(sampler0, input.uv); \
+              /* Workaround for https://github.com/ocornut/imgui/issues/578 */ \
+              out_col.rgb = pow(out_col.rgb, 2.2); \
               return out_col; \
             }";
 

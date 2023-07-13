@@ -18,12 +18,27 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
 
     m_BufferSize = m_Size = { width, height };
 
+    // The view of the swap chain can be sRGB but the actual texture cannot so we drop the sRGB designation when it's used
+    DXGI_FORMAT format;
+    switch (BACK_BUFFER_FORMAT)
+    {
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+            format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            break;
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+            format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            break;
+        default:
+            format = BACK_BUFFER_FORMAT;
+            break;
+    }
+
     // Create the swap chain
     DXGI_SWAP_CHAIN_DESC1 desc =
     {
         .Width = width,
         .Height = height,
-        .Format = BACK_BUFFER_FORMAT,
+        .Format = format,
         .SampleDesc = { 1, 0 },
         .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
         .BufferCount = BACK_BUFFER_COUNT,
@@ -82,12 +97,23 @@ void SwapChain::InitializeBackBuffers()
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
     uint32_t rtvHandleSize = m_GraphicsCore.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+    D3D12_RENDER_TARGET_VIEW_DESC description =
+    {
+        .Format = BACK_BUFFER_FORMAT,
+        .ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D,
+        .Texture2D =
+        {
+            .MipSlice = 0,
+            .PlaneSlice = 0,
+        },
+    };
+
     for (uint32_t i = 0; i < std::size(m_BackBuffers); i++)
     {
         ComPtr<ID3D12Resource> renderTarget;
         AssertSuccess(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&renderTarget)));
         renderTarget->SetName(std::format(L"ARES SwapChain back buffer {}", i).c_str());
-        m_GraphicsCore.GetDevice()->CreateRenderTargetView(renderTarget.Get(), nullptr, rtvHandle);
+        m_GraphicsCore.GetDevice()->CreateRenderTargetView(renderTarget.Get(), &description, rtvHandle);
         m_BackBuffers[i] = BackBuffer(renderTarget, rtvHandle);
 
         rtvHandle.ptr += rtvHandleSize;

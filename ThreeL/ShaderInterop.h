@@ -44,8 +44,11 @@ namespace ShaderInterop
     struct PerFrameCb
     {
         float4x4 ViewProjectionTransform;
+        float3 EyePosition;
     };
-    static_assert(sizeof(PerFrameCb) == 16 * sizeof(uint32_t));
+    static_assert(sizeof(PerFrameCb) == 19 * sizeof(uint32_t));
+    static_assert(offsetof(PerFrameCb, ViewProjectionTransform) == 0);
+    static_assert(offsetof(PerFrameCb, EyePosition) == 64);
 
     struct PerNodeCb
     {
@@ -59,6 +62,8 @@ namespace ShaderInterop
     static_assert(offsetof(PerNodeCb, Transform) == 0);
     static_assert(offsetof(PerNodeCb, NormalTransform) == 64);
     static_assert(offsetof(PerNodeCb, MaterialId) == 112);
+    static_assert(offsetof(PerNodeCb, ColorsIndex) == 116);
+    static_assert(offsetof(PerNodeCb, TangentsIndex) == 120);
 
     namespace Pbr
     {

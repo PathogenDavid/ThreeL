@@ -1,4 +1,8 @@
 #define DISABLED_BUFFER 0xFFFFFFFF
+namespace Math
+{
+    static const float Pi = 3.141592653589793f;
+}
 
 struct MaterialParams
 {
@@ -25,7 +29,7 @@ struct PerNode
 {
     float4x4 Transform;
     float3x3 NormalTransform;
-    float _padding; // Ensure MatrialId is in its own row, makes CPU side struct simpler
+    float _padding; // Ensure MatrialId is in its own row, makes CPU-side struct simpler
     uint MaterialId;
     uint ColorsIndex;
     uint TangentsIndex;
@@ -34,6 +38,7 @@ struct PerNode
 struct PerFrame
 {
     float4x4 ViewProjectionTransform;
+    float3 EyePosition;
 };
 
 ConstantBuffer<PerNode> g_PerNode : register(b0);
@@ -47,7 +52,7 @@ ByteAddressBuffer g_Buffers[] : register(space3);
 #define ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
     "RootConstants(num32BitConstants = 31, b0)," \
-    "RootConstants(num32BitConstants = 16, b1)," \
+    "RootConstants(num32BitConstants = 19, b1)," \
     "SRV(t0, flags = DATA_STATIC)," \
     "DescriptorTable(" \
         "Sampler(s0, space = 1, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE)" \
@@ -92,6 +97,7 @@ struct VsInput
 struct PsInput
 {
     float4 Position : SV_Position;
+    float3 WorldPosition : WORLDPOSITION;
     float3 Normal : NORMAL;
     float4 Tangent : TANGENT;
     float4 Color : COLOR;
@@ -99,7 +105,7 @@ struct PsInput
 };
 
 //===================================================================================================================================================
-// Entry-points
+// Vertex shader
 //===================================================================================================================================================
 
 [RootSignature(ROOT_SIGNATURE)]
@@ -109,6 +115,7 @@ PsInput VsMain(VsInput input)
 
     result.Position = float4(input.Position.xyz, 1.f);
     result.Position = mul(result.Position, g_PerNode.Transform);
+    result.WorldPosition = result.Position.xyz;
     result.Position = mul(result.Position, g_PerFrame.ViewProjectionTransform);
 
     result.Normal = normalize(mul(input.Normal, g_PerNode.NormalTransform));
@@ -121,21 +128,127 @@ PsInput VsMain(VsInput input)
     return result;
 }
 
+//===================================================================================================================================================
+// Pixel shader
+//===================================================================================================================================================
+
+float clampedDot(float3 a, float3 b)
+{
+    return clamp(dot(a, b), 0.f, 1.f);
+}
+
+// The BRDF implementation here is based on the techniques recommended by the glTF specificaiton
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#appendix-b-brdf-implementation
+// (Note that the math will not match 1:1 until you reach the simplifications described in the final section.)
+struct Brdf
+{
+    // Surface-dependent fields
+    float3 BaseColor;
+    float RoughnessAlpha;
+    float3 Normal; // N
+    float3 ViewDirection; // V
+    float NdotV;
+    float3 DiffuseColor;
+    float3 F0;
+    float3 F90;
+
+    // Outputs
+    float3 Diffuse;
+    float3 Specular;
+
+    // Light-dependent temporaries
+    float3 SurfaceToLight; // L
+    float3 HalfVector; // H
+    float NdotL;
+    float NdotH;
+    float VdotH;
+
+    float3 Frensel_Schlick()
+    {
+        float vhPart = 1.f - VdotH;
+        float vh2 = vhPart * vhPart;
+        float vh5 = vh2 * vh2 * vhPart;
+
+        return F0 + (F90 - F0) * vh5;
+    }
+
+    float3 DiffuseBrdf_Lambertian()
+    {
+        return DiffuseColor / Math::Pi;
+    }
+
+    // Specular BRDF using GGX microfacet distribution
+    // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specular-brdf
+    float SpecularBrdf_GGX()
+    {
+        float alphaSquared = RoughnessAlpha * RoughnessAlpha;
+
+        // Calculate visibility function
+        // Using the derived simplificaiton described here:
+        // https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg)
+        float visibility;
+        {
+            visibility = NdotL * sqrt(NdotV * NdotV * (1.f - alphaSquared) + alphaSquared);
+            visibility += NdotV * sqrt(NdotL * NdotL * (1.f - alphaSquared) + alphaSquared);
+            visibility = visibility > 0.f ? 0.5f / visibility : 0.f;
+        }
+
+        // Calculate Trowbridge-Reitz microfacet distribution
+        float distribution;
+        {
+            distribution = NdotH * NdotH * (alphaSquared - 1.f) + 1.f;
+            distribution = alphaSquared / (Math::Pi * distribution * distribution);
+        }
+
+        return visibility * distribution;
+    }
+
+    void ApplyDirectionalLight(float3 lightDirection, float3 lightColor, float lightIntensity)
+    {
+        SurfaceToLight = -lightDirection;
+        HalfVector = normalize(SurfaceToLight + ViewDirection);
+        NdotL = dot(Normal, SurfaceToLight);
+        NdotH = clampedDot(Normal, HalfVector);
+        VdotH = clampedDot(ViewDirection, HalfVector);
+
+        // Surface is not hit by the light
+        if (NdotL <= 0.f)
+        { return; }
+
+        float3 frensel = Frensel_Schlick();
+        Diffuse += lightIntensity * lightColor * NdotL * (1.f.xxx - frensel) * DiffuseBrdf_Lambertian();
+        Specular += lightIntensity * lightColor * NdotL * frensel * SpecularBrdf_GGX();
+    }
+};
+
 [RootSignature(ROOT_SIGNATURE)]
 float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
 {
+    //=================================================================================================================
+    // Read in material attributes
+    //=================================================================================================================
     MaterialParams material = g_Materials[g_PerNode.MaterialId];
 
-    // Calculate base color
+    // Get base color
     float4 baseColor = input.Color * material.BaseColorFactor;
 
     if (material.BaseColorTexture != DISABLED_BUFFER)
-    {
-        baseColor *= g_Textures[material.BaseColorTexture].Sample(g_Samplers[material.BaseColorTextureSampler], input.Uv0);
-    }
+    { baseColor *= g_Textures[material.BaseColorTexture].Sample(g_Samplers[material.BaseColorTextureSampler], input.Uv0); }
 
+    // Only base color affects alpha so alpha cutoff can be applied at this point
     if (baseColor.a < material.AlphaCutoff)
-        discard;
+    { discard; }
+
+    // Get metalness/roughness
+    float metalness = material.MetallicFactor;
+    float roughness = material.RoughnessFactor;
+
+    if (material.MealicRoughnessTexture != DISABLED_BUFFER)
+    {
+        float4 mr = g_Textures[material.MealicRoughnessTexture].Sample(g_Samplers[material.MetalicRoughnessTextureSampler], input.Uv0);
+        metalness *= mr.b;
+        roughness *= mr.g;
+    }
 
     // Get tangent frame
     float3 normal = normalize(input.Normal);
@@ -143,7 +256,7 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     if (material.NormalTexture != DISABLED_BUFFER)
     {
         float3 tangent = normalize(input.Tangent.xyz);
-        float3 bitangent = cross(normal, tangent) * input.Tangent.w;
+        float3 bitangent = cross(tangent, normal) * input.Tangent.w;
 
         if (!isFrontFace)
         {
@@ -161,8 +274,34 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
         normal = mul(textureNormal, tangentFrame);
     }
 
-    float4 result = baseColor;
-    result.rgb = (normal + 1.f.xxx) / 2.f.xxx;
+    // Get emissive color
+    float3 emissive = material.EmissiveFactor;
+
+    if (material.EmissiveTexture != DISABLED_BUFFER)
+    { emissive *= g_Textures[material.EmissiveTexture].Sample(g_Samplers[material.EmissiveTextureSampler], input.Uv0).rgb; }
+
+    //=================================================================================================================
+    // PBR calculations
+    //=================================================================================================================
+
+    Brdf brdf;
+    brdf.BaseColor = baseColor.rgb;
+    brdf.RoughnessAlpha = roughness * roughness;
+    brdf.Normal = normal;
+    brdf.ViewDirection = normalize(g_PerFrame.EyePosition - input.WorldPosition);
+    brdf.NdotV = clampedDot(brdf.Normal, brdf.ViewDirection);
+    brdf.DiffuseColor = lerp(brdf.BaseColor, 0.f.xxx, metalness);
+    brdf.F0 = lerp(0.04.xxx, brdf.BaseColor, metalness);
+    brdf.F90 = 1.f.xxx;
+
+    brdf.Diffuse = 0.f.xxx;
+    brdf.Specular = 0.f.xxx;
+
+    //TODO: Apply actual lights from scene
+    brdf.ApplyDirectionalLight(normalize(float3(-0.5f, -0.707f, -0.5f)), float3(1.f, 1.f, 1.f), 1.f);
+    brdf.ApplyDirectionalLight(normalize(float3(0.5f, 0.707f, 0.5f)), float3(1.f, 1.f, 1.f), 0.4f);
+
+    float4 result = float4(emissive + brdf.Diffuse + brdf.Specular, baseColor.a);
 
     return result;
 }

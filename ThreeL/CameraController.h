@@ -13,5 +13,6 @@ public:
     void ApplyMovement(float2 moveVector, float2 lookVector);
     void WarpTo(float3 position, float pitch, float yaw);
 
+    inline const float3& GetPosition() const { return m_Position; }
     inline const float4x4& GetViewTransform() const { return m_ViewTransform; }
 };

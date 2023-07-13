@@ -215,6 +215,7 @@ static int MainImpl()
         {
             .ViewProjectionTransform = camera.GetViewTransform()
                 * float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f),
+            .EyePosition = camera.GetPosition(),
         };
 
         //-------------------------------------------------------------------------------------------------------------
