@@ -1,4 +1,5 @@
 #pragma once
+#include <d3d12.h>
 #include <format>
 #include <limits>
 #include <span>
@@ -6,6 +7,8 @@
 #include <Windows.h>
 
 void SetWorkingDirectoryToAppDirectory();
+
+std::wstring GetD3DObjectName(ID3D12Object* object);
 
 template<typename TFrom, typename TTo>
 inline std::span<TTo> SpanCast(std::span<TFrom> span)

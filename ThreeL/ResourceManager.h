@@ -28,6 +28,10 @@ struct ResourceManager
     PipelineStateObject PbrBlendOnSingleSided;
     PipelineStateObject PbrBlendOnDoubleSided;
 
+    RootSignature DepthOnlyRootSignature;
+    PipelineStateObject DepthOnlySingleSided;
+    PipelineStateObject DepthOnlyDoubleSided;
+
     RootSignature GenerateMipMapsRootSignature;
     PipelineStateObject GenerateMipMapsUnorm;
     PipelineStateObject GenerateMipMapsFloat;

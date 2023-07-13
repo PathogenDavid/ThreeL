@@ -129,7 +129,7 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     uint2 screenSize = uint2::Zero;
     float2 screenSizeF = (float2)screenSize;
-    DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", swapChain.Size(), DXGI_FORMAT_D32_FLOAT);
+    DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", swapChain.Size(), DEPTH_BUFFER_FORMAT);
 
     //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
@@ -200,7 +200,8 @@ static int MainImpl()
         GraphicsContext context(graphics.GetGraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
         {
             PIXScopedEvent(&context, 0, "Frame setup");
-            context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+            context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
             context.Clear(swapChain, 0.2f, 0.2f, 0.2f, 1.f);
             context.Clear(depthBuffer);
             context.SetRenderTarget(swapChain, depthBuffer.View());
@@ -228,10 +229,59 @@ static int MainImpl()
         context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.GetResourceDescriptorManager().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
 
         //-------------------------------------------------------------------------------------------------------------
+        // Depth Pre-pass
+        //-------------------------------------------------------------------------------------------------------------
+        {
+            PIXScopedEvent(&context, 1, "Depth pre-pass");
+            for (const SceneNode& node : scene)
+            {
+                // Skip unrenderable nodes (IE: nodes without meshes)
+                if (!node.IsValid()) { continue; }
+
+                ShaderInterop::PerNodeCb perNode =
+                {
+                    .Transform = node.WorldTransform(),
+                    .NormalTransform = node.NormalTransform(),
+                };
+
+                PIXScopedEvent(&context, 1, "Node '%s'", node.Name().c_str());
+                for (const MeshPrimitive& primitive : node)
+                {
+                    if (primitive.Material().IsTransparent())
+                    {
+                        continue;
+                    }
+
+                    PbrMaterial material = primitive.Material();
+                    perNode.MaterialId = material.MaterialId();
+                    perNode.TangentsIndex = primitive.TangentsBufferIndex();
+                    perNode.ColorsIndex = primitive.ColorsBufferIndex();
+                    context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerNodeCb, sizeof(perNode) / sizeof(UINT), &perNode, 0);
+
+                    context->SetPipelineState(material.IsDoubleSided() ? resources.DepthOnlyDoubleSided : resources.DepthOnlySingleSided);
+                    context->IASetVertexBuffers(MeshInputSlot::Position, 1, &primitive.Positions());
+                    context->IASetVertexBuffers(MeshInputSlot::Uv0, 1, &primitive.Uvs());
+
+                    if (primitive.IsIndexed())
+                    {
+                        context->IASetIndexBuffer(&primitive.Indices());
+                        context->DrawIndexedInstanced(primitive.VertexOrIndexCount(), 1, 0, 0, 0);
+                    }
+                    else
+                    {
+                        context->DrawInstanced(primitive.VertexOrIndexCount(), 1, 0, 0);
+                    }
+                }
+            }
+        }
+
+        context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ, true);
+
+        //-------------------------------------------------------------------------------------------------------------
         // Opaque Pass
         //-------------------------------------------------------------------------------------------------------------
         {
-            PIXScopedEvent(&context, 1, "Opaque pass");
+            PIXScopedEvent(&context, 2, "Opaque pass");
             for (const SceneNode& node : scene)
             {
                 // Skip unrenderable nodes (IE: nodes without meshes)

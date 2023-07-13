@@ -83,7 +83,7 @@ const D3D12_GRAPHICS_PIPELINE_STATE_DESC PipelineStateObject::BaseDescription =
     .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
     .NumRenderTargets = 1,
     .RTVFormats = { SwapChain::BACK_BUFFER_FORMAT },
-    .DSVFormat = DXGI_FORMAT_D32_FLOAT,
+    .DSVFormat = DEPTH_BUFFER_FORMAT,
     .SampleDesc =
     {
         .Count = 1,

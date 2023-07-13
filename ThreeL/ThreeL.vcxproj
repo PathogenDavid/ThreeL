@@ -198,8 +198,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Shaders\Common.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\DepthOnly.hlsl" />
     <FxCompile Include="Shaders\GenerateMipmapChain.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
   </ItemGroup>

@@ -76,7 +76,12 @@ void CommandContext::TransitionResource(GpuResource& resource, D3D12_RESOURCE_ST
 
     // Ignore no-op transitions
     if (currentState == desiredState)
+    {
+        if (immediate)
+            FlushResourceBarriersEarly();
+
         return;
+    }
 
     AllocateResourceBarrier() =
     {

@@ -49,7 +49,6 @@ DepthStencilBuffer::DepthStencilBuffer(GraphicsCore& graphics, const std::wstrin
     m_StencilShaderResourceView = m_StencilSrvFormat == DXGI_FORMAT_UNKNOWN ? DynamicResourceDescriptor() : graphics.GetResourceDescriptorManager().AllocateDynamicDescriptor();
 
     // Create the buffer and resource views
-    m_CurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
     Resize(size);
 }
 
@@ -62,7 +61,6 @@ void DepthStencilBuffer::Resize(uint2 newSize)
     }
 
     ID3D12Device* device = m_Graphics.GetDevice().Get();
-    Assert(m_CurrentState == D3D12_RESOURCE_STATE_DEPTH_WRITE && "Depth buffers should be in their neutral state (DEPTH_WRITE) when resized.");
 
     // Release the old buffer if we have one
     m_Resource = nullptr;
@@ -103,6 +101,7 @@ void DepthStencilBuffer::Resize(uint2 newSize)
         IID_PPV_ARGS(&m_Resource)
     ));
     m_Resource->SetName(m_Name.c_str());
+    m_CurrentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
     m_Size = newSize;
 
     // Create the depth-stencil views

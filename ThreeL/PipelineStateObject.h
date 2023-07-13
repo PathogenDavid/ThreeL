@@ -4,6 +4,8 @@
 
 class GraphicsCore;
 
+#define DEPTH_BUFFER_FORMAT DXGI_FORMAT_D32_FLOAT
+
 class PipelineStateObject
 {
 private:

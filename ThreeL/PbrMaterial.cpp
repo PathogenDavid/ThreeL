@@ -116,4 +116,6 @@ PbrMaterial::PbrMaterial(GltfLoadContext& context, int materialIndex, bool primi
         m_IsTransparent = false;
         m_PipelineStateObject = &(material.doubleSided ? resources.PbrBlendOffDoubleSided : resources.PbrBlendOffSingleSided);
     }
+
+    m_IsDoubleSided = material.doubleSided;
 }

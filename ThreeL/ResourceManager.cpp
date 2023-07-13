@@ -12,11 +12,15 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     ShaderBlobs pbrVs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"VsMain", L"vs_6_0");
     ShaderBlobs pbrPs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"PsMain", L"ps_6_0");
 
+    ShaderBlobs depthOnlyVs = hlslCompiler.CompileShader(L"Shaders/DepthOnly.hlsl", L"VsMain", L"vs_6_0");
+    ShaderBlobs depthOnlyPs = hlslCompiler.CompileShader(L"Shaders/DepthOnly.hlsl", L"PsMain", L"ps_6_0");
+
     ShaderBlobs generateMipMapsCsUnorm = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0", { L"GENERATE_UNORM_MIPMAP_CHAIN" });
     ShaderBlobs generateMipMapsCsFloat = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0");
 
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
+    DepthOnlyRootSignature = RootSignature(Graphics, depthOnlyVs, L"DepthOnly Root Signature");
     GenerateMipMapsRootSignature = RootSignature(Graphics, generateMipMapsCsUnorm, L"GenerateMipMaps Root Signature");
 
     // Create PBR pipeline state objects
@@ -24,6 +28,10 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     pbrDescription.pRootSignature = PbrRootSignature.Get();
     pbrDescription.VS = pbrVs.ShaderBytecode();
     pbrDescription.PS = pbrPs.ShaderBytecode();
+
+    // Depth pre-pass
+    pbrDescription.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_EQUAL;
+    pbrDescription.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 
     D3D12_INPUT_ELEMENT_DESC inputLayout[] =
     {
@@ -57,6 +65,26 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Double Sided");
     pbrDescription.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
     PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Single Sided");
+
+    // Create DepthOnly pipeline state object
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC depthOnlyDescription = PipelineStateObject::BaseDescription;
+    depthOnlyDescription.pRootSignature = DepthOnlyRootSignature.Get();
+    depthOnlyDescription.VS = depthOnlyVs.ShaderBytecode();
+    depthOnlyDescription.PS = depthOnlyPs.ShaderBytecode();
+    depthOnlyDescription.NumRenderTargets = 0;
+    depthOnlyDescription.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+
+    D3D12_INPUT_ELEMENT_DESC inputLayoutDepthOnly[] =
+    {
+        // SemanticName, SemanticIndex, Format, InputSlot
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, MeshInputSlot::Position },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, MeshInputSlot::Uv0 },
+    };
+    depthOnlyDescription.InputLayout = { inputLayoutDepthOnly, (UINT)std::size(inputLayoutDepthOnly) };
+
+    DepthOnlySingleSided = PipelineStateObject(Graphics, depthOnlyDescription, L"DepthOnly PSO - Single Sided");
+    depthOnlyDescription.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+    DepthOnlyDoubleSided = PipelineStateObject(Graphics, depthOnlyDescription, L"DepthOnly PSO - Double Sided");
 
     // Create GenerateMipMaps pipeline state object
     D3D12_COMPUTE_PIPELINE_STATE_DESC generateMipMapsDescription =
