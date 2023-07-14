@@ -38,13 +38,27 @@ public:
 
     inline void Clear(RenderTargetView renderTarget, float r, float g, float b, float a)
     {
+        m_Context->FlushResourceBarriers();
         float color[] = { r, g, b, a };
         GetCommandList()->ClearRenderTargetView(renderTarget.RtvHandle(), color, 0, nullptr);
     }
 
     inline void Clear(const DepthStencilBuffer& depthBuffer)
     {
+        m_Context->FlushResourceBarriers();
         GetCommandList()->ClearDepthStencilView(depthBuffer.View(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depthBuffer.DepthClearValue(), depthBuffer.StencilClearValue(), 0, nullptr);
+    }
+
+    inline void DrawInstanced(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation = 0, uint32_t startInstanceLocation = 0)
+    {
+        m_Context->FlushResourceBarriers();
+        GetCommandList()->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
+    }
+
+    inline void DrawIndexedInstanced(uint32_t indexCountPerInstance, uint32_t instanceCount, uint32_t startIndexLocation = 0, uint32_t baseVertexLocation = 0, uint32_t startInstanceLocation = 0)
+    {
+        m_Context->FlushResourceBarriers();
+        GetCommandList()->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
     }
 
     inline void SetRenderTarget(RenderTargetView renderTarget)

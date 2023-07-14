@@ -2,6 +2,7 @@
 #include "Texture.h"
 
 #include "ComputeContext.h"
+#include "DxgiFormat.h"
 #include "GraphicsCore.h"
 #include "ResourceManager.h"
 #include "ShaderInterop.h"

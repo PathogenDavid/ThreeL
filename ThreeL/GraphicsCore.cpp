@@ -131,3 +131,11 @@ extern "C" __declspec(dllexport) unsigned int NvOptimusEnablement = 0x00000001;
 
 // https://gpuopen.com/learn/amdpowerxpressrequesthighperformance/
 extern "C" __declspec(dllexport) unsigned int AmdPowerXpressRequestHighPerformance = 0x00000001;
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------
+// Enable DirectX 12 Agility SDK
+//---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// https://devblogs.microsoft.com/directx/gettingstarted-dx12agility/
+extern "C" __declspec(dllexport) extern const UINT D3D12SDKVersion = 610;
+extern "C" __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; 

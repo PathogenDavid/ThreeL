@@ -187,6 +187,8 @@ static int MainImpl()
     window.Show();
     PIXEndEvent();
 
+    OutputDebugStringW(L"Initialization complete.\n");
+
     //-----------------------------------------------------------------------------------------------------------------
     // Main loop
     //-----------------------------------------------------------------------------------------------------------------
@@ -217,7 +219,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Resize screen-dependent resources
         //-------------------------------------------------------------------------------------------------------------
-        if (screenSize != swapChain.Size())
+        if ((screenSize != swapChain.Size()).Any())
         {
             // Flush the GPU to ensure there's no outstanding usage of the resources
             graphics.WaitForGpuIdle();
@@ -239,9 +241,9 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         GraphicsContext context(graphics.GetGraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
         {
-            PIXScopedEvent(&context, 0, "Frame setup");
+            PIXScopedEvent(&context, 0, "Frame #%lld setup", frameNumber);
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET);
-            context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
+            context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
             context.Clear(swapChain, 0.2f, 0.2f, 0.2f, 1.f);
             context.Clear(depthBuffer);
         }
@@ -294,21 +296,20 @@ static int MainImpl()
                     if (primitive.IsIndexed())
                     {
                         context->IASetIndexBuffer(&primitive.Indices());
-                        context->DrawIndexedInstanced(primitive.VertexOrIndexCount(), 1, 0, 0, 0);
+                        context.DrawIndexedInstanced(primitive.VertexOrIndexCount(), 1);
                     }
                     else
                     {
-                        context->DrawInstanced(primitive.VertexOrIndexCount(), 1, 0, 0);
+                        context.DrawInstanced(primitive.VertexOrIndexCount(), 1);
                     }
                 }
             }
-
-            context.Flush();
         }
 
         //-------------------------------------------------------------------------------------------------------------
         // Downsample depth buffer
         //-------------------------------------------------------------------------------------------------------------
+        context.Flush();
         {
             PIXScopedEvent(&context, 1, "Downsample depth");
 
@@ -323,20 +324,20 @@ static int MainImpl()
                 context.SetFullViewportScissor(depthBuffer.Size());
 
                 context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
-                context->DrawInstanced(3, 1, 0, 0);
+                context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+                context.DrawInstanced(3, 1);
 
                 context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
                 previousBuffer = &depthBuffer;
             }
 
             context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
-            context.Flush();
         }
 
         //-------------------------------------------------------------------------------------------------------------
         // Opaque Pass
         //-------------------------------------------------------------------------------------------------------------
+        context.Flush();
         {
             PIXScopedEvent(&context, 2, "Opaque pass");
             context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
@@ -376,21 +377,20 @@ static int MainImpl()
                     if (primitive.IsIndexed())
                     {
                         context->IASetIndexBuffer(&primitive.Indices());
-                        context->DrawIndexedInstanced(primitive.VertexOrIndexCount(), 1, 0, 0, 0);
+                        context.DrawIndexedInstanced(primitive.VertexOrIndexCount(), 1);
                     }
                     else
                     {
-                        context->DrawInstanced(primitive.VertexOrIndexCount(), 1, 0, 0);
+                        context.DrawInstanced(primitive.VertexOrIndexCount(), 1);
                     }
                 }
             }
-
-            context.Flush();
         }
 
         //-------------------------------------------------------------------------------------------------------------
         // Transparents Pass
         //-------------------------------------------------------------------------------------------------------------
+        context.Flush();
         //TODO: Transparents pass
 
         //-------------------------------------------------------------------------------------------------------------
@@ -499,6 +499,7 @@ static int MainImpl()
                 );
             }
 
+            context.SetRenderTarget(swapChain);
             dearImGui.Render(context);
             dearImGui.RenderViewportWindows();
         }
@@ -525,6 +526,7 @@ static int MainImpl()
     }
 
     // Cleanup
+    OutputDebugStringW(L"Main loop exited, cleaning up...\n");
     window.RemoveWndProc(wndProcHandle);
 
     // Ensure the GPU is done with all our resources before they're implicitly destroyed by their destructors

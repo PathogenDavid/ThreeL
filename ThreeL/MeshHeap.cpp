@@ -47,7 +47,7 @@ ComPtr<ID3D12Resource> MeshHeap::AllocateChunk(bool isStagingBuffer)
         &heapProperties,
         D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
         &description,
-        isStagingBuffer ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
+        isStagingBuffer ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COMMON,
         nullptr,
         IID_PPV_ARGS(&newChunk)
     ));

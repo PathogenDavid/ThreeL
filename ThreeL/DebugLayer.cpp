@@ -32,9 +32,9 @@ namespace DebugLayer
             return;
         }
 
-        // Disable storage and retrieval filters
+        // Set allow-all storage filter and ensure message retrieval is disabled
         AssertSuccess(dxgiInfoQueue->PushEmptyStorageFilter(DXGI_DEBUG_ALL));
-        AssertSuccess(dxgiInfoQueue->PushEmptyRetrievalFilter(DXGI_DEBUG_ALL));
+        AssertSuccess(dxgiInfoQueue->PushDenyAllRetrievalFilter(DXGI_DEBUG_ALL));
 
         // Enable break on corruption/error severities (disabled for everything else.)
         AssertSuccess(dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true));
@@ -42,6 +42,51 @@ namespace DebugLayer
         AssertSuccess(dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_WARNING, false));
         AssertSuccess(dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_INFO, false));
         AssertSuccess(dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_MESSAGE, false));
+
+        // Suppress select D3D debug layer messages
+        // We do this as the DXGI level (IE: before the device is even initialized) allows us to suppress messages that are emitted by D3D12 internals
+        D3D12_MESSAGE_SEVERITY deniedSeverities[] =
+        {
+            //D3D12_MESSAGE_SEVERITY_INFO,
+            (D3D12_MESSAGE_SEVERITY)-1
+        };
+
+        D3D12_MESSAGE_CATEGORY deniedCategories[] =
+        {
+            D3D12_MESSAGE_CATEGORY_STATE_CREATION,
+            (D3D12_MESSAGE_CATEGORY)-1
+        };
+
+        D3D12_MESSAGE_ID deniedMessages[] =
+        {
+            // These are also covered by suppressing D3D12_MESSAGE_CATEGORY_STATE_CREATION, they're here to
+            // make it easier to toggle the category for the sake of tracking resource destruction.
+            D3D12_MESSAGE_ID_CREATE_COMMANDQUEUE,
+            D3D12_MESSAGE_ID_CREATE_COMMANDALLOCATOR,
+            D3D12_MESSAGE_ID_CREATE_PIPELINESTATE,
+            D3D12_MESSAGE_ID_CREATE_COMMANDLIST12,
+            D3D12_MESSAGE_ID_CREATE_RESOURCE,
+            D3D12_MESSAGE_ID_CREATE_DESCRIPTORHEAP,
+            D3D12_MESSAGE_ID_CREATE_ROOTSIGNATURE,
+            D3D12_MESSAGE_ID_CREATE_HEAP,
+            D3D12_MESSAGE_ID_CREATE_MONITOREDFENCE,
+            D3D12_MESSAGE_ID_CREATE_LIFETIMETRACKER,
+            (D3D12_MESSAGE_ID)-1
+        };
+
+        DXGI_INFO_QUEUE_FILTER filter =
+        {
+            .DenyList =
+            {
+                .NumCategories = (UINT)std::size(deniedCategories) - 1,
+                .pCategoryList = (DXGI_INFO_QUEUE_MESSAGE_CATEGORY*)deniedCategories,
+                .NumSeverities = (UINT)std::size(deniedSeverities) - 1,
+                .pSeverityList = (DXGI_INFO_QUEUE_MESSAGE_SEVERITY*)deniedSeverities,
+                .NumIDs = (UINT)std::size(deniedMessages) - 1,
+                .pIDList = (DXGI_INFO_QUEUE_MESSAGE_ID*)deniedMessages,
+            },
+        };
+        AssertSuccess(dxgiInfoQueue->PushStorageFilter(DXGI_DEBUG_D3D12, &filter));
 
         //---------------------------------------------------------------------------------------------------------
         // Enable debug layer
@@ -69,6 +114,9 @@ namespace DebugLayer
         {
             // This is enabled by default
             // It is known to sometimes cause major performance issues on Present when mixed-mode debugging is being used, so consider disabling if you're having perf issues
+            // !!! Disabling this is currently broken in the Agility SDK (you'll get a crash in ExecuteCommandLists), so just leave it on !!!
+            // (Also this toggle might actually just be removed soon.)
+            // https://discord.com/channels/590611987420020747/590965902564917258/1097908429160452137
             debugController1->SetEnableSynchronizedCommandQueueValidation(true);
 
             // This is disabled by default and only left here as a placeholder.
@@ -88,7 +136,6 @@ namespace DebugLayer
         if (!g_IsEnabled)
             return;
 
-        // Configure message severity debug breakpoints
         ComPtr<ID3D12InfoQueue> infoQueue;
         if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue))))
         {

@@ -70,7 +70,7 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         };
         PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Double Sided");
         pbrDescription.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-        PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Single Sided");
+        PbrBlendOnSingleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Single Sided");
     }
 
     // Create DepthOnly pipeline state object

@@ -54,7 +54,7 @@ DepthStencilBuffer::DepthStencilBuffer(GraphicsCore& graphics, const std::wstrin
 
 void DepthStencilBuffer::Resize(uint2 newSize)
 {
-    if (newSize == m_Size)
+    if ((newSize == m_Size).All())
     {
         Assert(m_Resource != nullptr);
         return;

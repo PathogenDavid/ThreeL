@@ -24,4 +24,9 @@
     <!-- Don't use legacy HLSL compiler -->
     <FxCompile Update="**" ExcludedFromBuild="true" />
   </ItemGroup>
+
+  <!-- Automatically disable runtime checks when ASAN is enabled -->
+  <PropertyGroup Condition="'$(EnableASAN)' == 'true'">
+    <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+  </PropertyGroup>
 </Project>
