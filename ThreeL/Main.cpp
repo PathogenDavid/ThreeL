@@ -170,6 +170,7 @@ static int MainImpl()
         .Color = float3::One,
         .Intensity = 1.f,
     });
+    float light0Hover = 0.f;
 
     lights.push_back
     ({
@@ -178,6 +179,8 @@ static int MainImpl()
         .Color = float3::UnitX,
         .Intensity = 2.f,
     });
+    float3 light1Center = lights[1].Position;
+    float3 light1Offset = float3::UnitX;
 
     //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
@@ -241,6 +244,11 @@ static int MainImpl()
 
         cameraInput.StartFrame();
         camera.ApplyMovement(cameraInput.MoveVector() * deltaTime * 3.f, cameraInput.LookVector() * deltaTime);
+
+        // Animate lights
+        lights[0].Position.y = 0.1f + (1.f + std::sin(light0Hover += deltaTime * 2.f)) * 0.25f;
+        light1Offset = Quaternion(float3::UnitY, -deltaTime) * light1Offset;
+        lights[1].Position = light1Center + light1Offset;
 
         //-------------------------------------------------------------------------------------------------------------
         // Resize screen-dependent resources

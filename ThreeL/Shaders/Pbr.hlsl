@@ -260,8 +260,8 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     brdf.Specular = 0.f.xxx;
 
     // Apply static direction lights
-    brdf.ApplyDirectionalLight(normalize(float3(-0.5f, -0.707f, -0.5f)), float3(1.f, 1.f, 1.f), 1.f);
-    brdf.ApplyDirectionalLight(normalize(float3(0.5f, 0.707f, 0.5f)), float3(1.f, 1.f, 1.f), 0.4f);
+    brdf.ApplyDirectionalLight(normalize(float3(-0.5f, -0.707f, -0.5f)), float3(1.f, 1.f, 1.f), 0.2f);
+    brdf.ApplyDirectionalLight(normalize(float3(0.5f, 0.707f, 0.5f)), float3(1.f, 1.f, 1.f), 0.2f * 0.4f);
 
     // Apply point lights from scene
     for (uint i = 0; i < g_PerFrame.LightCount; i++)
