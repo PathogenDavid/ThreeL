@@ -20,8 +20,5 @@ public:
 
     SamplerId Create(const D3D12_SAMPLER_DESC& sampler);
 
-    inline ID3D12DescriptorHeap* GetGpuHeap()
-    {
-        return m_DescriptorHeap.Get();
-    }
+    inline ID3D12DescriptorHeap* GpuHeap() const { return m_DescriptorHeap.Get(); }
 };

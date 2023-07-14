@@ -43,14 +43,14 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
     //---------------------------------------------------------------------------------------------------------
     // Initialize platform/renderer backends
     //---------------------------------------------------------------------------------------------------------
-    ImGui_ImplWin32_Init(window.GetHwnd());
-    auto fontDescriptor = graphicsCore.GetResourceDescriptorManager().AllocateUninitializedResidentDescriptor();
+    ImGui_ImplWin32_Init(window.Hwnd());
+    auto fontDescriptor = graphicsCore.ResourceDescriptorManager().AllocateUninitializedResidentDescriptor();
     ImGui_ImplDX12_Init
     (
-        graphicsCore.GetDevice().Get(),
+        graphicsCore.Device(),
         SwapChain::BACK_BUFFER_COUNT,
         SwapChain::BACK_BUFFER_FORMAT,
-        graphicsCore.GetResourceDescriptorManager().GetGpuHeap(),
+        graphicsCore.ResourceDescriptorManager().GpuHeap(),
         std::get<0>(fontDescriptor),
         std::get<1>(fontDescriptor)
     );
@@ -70,7 +70,7 @@ void DearImGui::Render(GraphicsContext& context)
 {
     Assert(ImGui::GetCurrentContext() == m_Context);
     ImGui::Render();
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.GetCommandList());
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.CommandList());
 }
 
 void DearImGui::RenderViewportWindows()

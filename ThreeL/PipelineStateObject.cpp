@@ -96,12 +96,12 @@ const D3D12_GRAPHICS_PIPELINE_STATE_DESC PipelineStateObject::BaseDescription =
 
 PipelineStateObject::PipelineStateObject(GraphicsCore& graphics, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDescription, const std::wstring& name)
 {
-    AssertSuccess(graphics.GetDevice()->CreateGraphicsPipelineState(&psoDescription, IID_PPV_ARGS(&m_PipelineState)));
+    AssertSuccess(graphics.Device()->CreateGraphicsPipelineState(&psoDescription, IID_PPV_ARGS(&m_PipelineState)));
     m_PipelineState->SetName(name.length() > 0 ? name.c_str() : L"Unnamed Graphics Pipeline State");
 }
 
 PipelineStateObject::PipelineStateObject(GraphicsCore& graphics, const D3D12_COMPUTE_PIPELINE_STATE_DESC& psoDescription, const std::wstring& name)
 {
-    AssertSuccess(graphics.GetDevice()->CreateComputePipelineState(&psoDescription, IID_PPV_ARGS(&m_PipelineState)));
+    AssertSuccess(graphics.Device()->CreateComputePipelineState(&psoDescription, IID_PPV_ARGS(&m_PipelineState)));
     m_PipelineState->SetName(name.length() > 0 ? name.c_str() : L"Unnamed Compute Pipeline State");
 }

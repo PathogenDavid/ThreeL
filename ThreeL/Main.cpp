@@ -119,7 +119,7 @@ static int MainImpl()
         });
 
     // Ensure PIX targets our main window and disable the HUD since it overlaps with our menu bar
-    PIXSetTargetWindow(window.GetHwnd());
+    PIXSetTargetWindow(window.Hwnd());
     PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS);
 
     SwapChain swapChain(graphics, window);
@@ -206,7 +206,7 @@ static int MainImpl()
 
     // Initiate final resource uploads and wait for them to complete
     resources.Finish();
-    graphics.GetUploadQueue().Flush();
+    graphics.UploadQueue().Flush();
 
     window.Show();
     PIXEndEvent();
@@ -223,8 +223,8 @@ static int MainImpl()
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpMaterialHeap, resources.PbrMaterials.BufferGpuAddress());
             // This is bound even in stages before the upload is complete so it's important those stages do not attempt to access it for some reason
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpLightHeap, lightHeap.BufferGpuAddress());
-            context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpSamplerHeap, graphics.GetSamplerHeap().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
-            context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.GetResourceDescriptorManager().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
+            context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpSamplerHeap, graphics.SamplerHeap().GpuHeap()->GetGPUDescriptorHandleForHeapStart());
+            context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.ResourceDescriptorManager().GpuHeap()->GetGPUDescriptorHandleForHeapStart());
         };
 
     while (Window::ProcessMessages())
@@ -266,7 +266,7 @@ static int MainImpl()
         // Frame setup
         //-------------------------------------------------------------------------------------------------------------
         GpuSyncPoint lightUpdateSyncPoint;
-        GraphicsContext context(graphics.GetGraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
+        GraphicsContext context(graphics.GraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
         {
             PIXScopedEvent(&context, 0, "Frame #%lld setup", frameNumber);
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -279,9 +279,9 @@ static int MainImpl()
 
         ShaderInterop::PerFrameCb perFrame =
         {
-            .ViewProjectionTransform = camera.GetViewTransform()
+            .ViewProjectionTransform = camera.ViewTransform()
                 * float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f),
-            .EyePosition = camera.GetPosition(),
+            .EyePosition = camera.Position(),
             .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
         };
 
@@ -349,7 +349,7 @@ static int MainImpl()
 
             for (DepthStencilBuffer& depthBuffer : downsampledDepthBuffers)
             {
-                context->SetGraphicsRootDescriptorTable(ShaderInterop::DepthDownsample::RpInputDepthBuffer, previousBuffer->DepthShaderResourceView().GetResidentHandle());
+                context->SetGraphicsRootDescriptorTable(ShaderInterop::DepthDownsample::RpInputDepthBuffer, previousBuffer->DepthShaderResourceView().ResidentHandle());
                 context.SetRenderTarget(depthBuffer.View());
                 context.SetFullViewportScissor(depthBuffer.Size());
 
@@ -368,7 +368,7 @@ static int MainImpl()
         // Light Buffer Pass
         //-------------------------------------------------------------------------------------------------------------
         context.Flush();
-        graphics.GetGraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
+        graphics.GraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
         //TODO
 
         //-------------------------------------------------------------------------------------------------------------
@@ -495,13 +495,13 @@ static int MainImpl()
             //TODO: Put these in the order they are in the descriptor table
             ImGui::Begin("Loaded Textures");
             {
-                ImGui::Image((void*)environmentHdr.SrvHandle().GetResidentHandle().ptr, ImVec2(128, 128));
+                ImGui::Image((void*)environmentHdr.SrvHandle().ResidentHandle().ptr, ImVec2(128, 128));
                 int i = 1;
                 for (auto& texture : scene.m_TextureCache)
                 {
                     if (i < 5) { ImGui::SameLine(); }
                     else { i = 0; }
-                    UINT64 handle = texture.second->SrvHandle().GetResidentHandle().ptr;
+                    UINT64 handle = texture.second->SrvHandle().ResidentHandle().ptr;
                     ImGui::Image((void*)handle, ImVec2(128, 128));
                     i++;
                 }
@@ -556,7 +556,7 @@ static int MainImpl()
         // Housekeeping
         //-------------------------------------------------------------------------------------------------------------
         PIXScopedEvent(99, "Housekeeping");
-        graphics.GetUploadQueue().Cleanup();
+        graphics.UploadQueue().Cleanup();
 
         lastTimestamp.QuadPart = timestamp.QuadPart;
         frameNumber++;

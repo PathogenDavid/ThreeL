@@ -38,7 +38,7 @@ GpuSyncPoint PbrMaterialHeap::UploadMaterials()
         .Flags = D3D12_RESOURCE_FLAG_NONE,
     };
 
-    PendingUpload pendingUpload = m_Graphics.GetUploadQueue().AllocateResource(resourceDescription, L"PBR Material Parameters");
+    PendingUpload pendingUpload = m_Graphics.UploadQueue().AllocateResource(resourceDescription, L"PBR Material Parameters");
 
     std::span<const ShaderInterop::PbrMaterialParams> sourceSpan = m_MaterialParamsStaging;
     std::span<ShaderInterop::PbrMaterialParams> destinationSpan = SpanCast<uint8_t, ShaderInterop::PbrMaterialParams>(pendingUpload.StagingBuffer());

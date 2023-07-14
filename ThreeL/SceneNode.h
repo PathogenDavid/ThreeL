@@ -14,14 +14,11 @@ class SceneNode
     std::span<const MeshPrimitive> m_MeshPrimitives;
 
 public:
-    SceneNode()
-    {
-    }
+    SceneNode() = default;
 
     SceneNode(std::string name, float4x4 worldTransform, std::span<const MeshPrimitive> meshPrimitives)
         : m_Name(name), m_WorldTransform(worldTransform), m_NormalTransform(float3x3::MakeInverseTranspose(worldTransform)), m_MeshPrimitives(meshPrimitives)
-    {
-    }
+    { }
 
     inline bool IsValid() const
     {

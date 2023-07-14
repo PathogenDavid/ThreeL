@@ -18,7 +18,7 @@ private:
 
     inline void CopyToGpu()
     {
-        m_Device->CopyDescriptorsSimple(1, m_ResidentCpuHandle, m_ResourceDescriptor.GetStagingHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        m_Device->CopyDescriptorsSimple(1, m_ResidentCpuHandle, m_ResourceDescriptor.StagingHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
 public:
@@ -28,7 +28,7 @@ public:
     //! The current resource descriptor must not be in use by the GPU or undefined behavior occurs.
     inline void UpdateConstantBufferView(const D3D12_CONSTANT_BUFFER_VIEW_DESC& description)
     {
-        m_Device->CreateConstantBufferView(&description, m_ResourceDescriptor.GetStagingHandle());
+        m_Device->CreateConstantBufferView(&description, m_ResourceDescriptor.StagingHandle());
         CopyToGpu();
     }
 
@@ -36,7 +36,7 @@ public:
     //! The current resource descriptor must not be in use by the GPU or undefined behavior occurs.
     inline void UpdateShaderResourceView(ID3D12Resource* resource, const D3D12_SHADER_RESOURCE_VIEW_DESC& description)
     {
-        m_Device->CreateShaderResourceView(resource, &description, m_ResourceDescriptor.GetStagingHandle());
+        m_Device->CreateShaderResourceView(resource, &description, m_ResourceDescriptor.StagingHandle());
         CopyToGpu();
     }
 
@@ -44,7 +44,7 @@ public:
     //! The current resource descriptor must not be in use by the GPU or undefined
     inline void UpdateUnorderedAccessView(ID3D12Resource* resource, ID3D12Resource* counterResource, const D3D12_UNORDERED_ACCESS_VIEW_DESC& description)
     {
-        m_Device->CreateUnorderedAccessView(resource, counterResource, &description, m_ResourceDescriptor.GetStagingHandle());
+        m_Device->CreateUnorderedAccessView(resource, counterResource, &description, m_ResourceDescriptor.StagingHandle());
         CopyToGpu();
     }
 

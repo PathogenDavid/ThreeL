@@ -24,40 +24,13 @@ public:
     GraphicsCore();
     GraphicsCore(const GraphicsCore&) = delete;
 
-    inline const ComPtr<ID3D12Device>& GetDevice() const
-    {
-        return m_Device;
-    }
-
-    inline const ComPtr<IDXGIFactory4>& GetDxgiFactory() const
-    {
-        return m_DxgiFactory;
-    }
-
-    inline ResourceDescriptorManager& GetResourceDescriptorManager() const
-    {
-        return *m_ResourceDescriptorManager;
-    }
-
-    inline SamplerHeap& GetSamplerHeap() const
-    {
-        return *m_SamplerHeap;
-    }
-
-    inline GraphicsQueue& GetGraphicsQueue() const
-    {
-        return *m_GraphicsQueue;
-    }
-
-    inline ComputeQueue& GetComputeQueue() const
-    {
-        return *m_ComputeQueue;
-    }
-
-    inline UploadQueue& GetUploadQueue() const
-    {
-        return *m_UploadQueue;
-    }
+    inline ID3D12Device* Device() const { return m_Device.Get(); }
+    inline IDXGIFactory4* DxgiFactory() const { return m_DxgiFactory.Get(); }
+    inline ResourceDescriptorManager& ResourceDescriptorManager() const { return *m_ResourceDescriptorManager; }
+    inline SamplerHeap& SamplerHeap() const { return *m_SamplerHeap; }
+    inline GraphicsQueue& GraphicsQueue() const { return *m_GraphicsQueue; }
+    inline ComputeQueue& ComputeQueue() const { return *m_ComputeQueue; }
+    inline UploadQueue& UploadQueue() const { return *m_UploadQueue; }
 
     //! Waits for all outstanding GPU work to complete, do not use for anything that happens frequently
     inline void WaitForGpuIdle() const

@@ -98,7 +98,7 @@ SamplerId GltfLoadContext::LoadSampler(int samplerIndex)
         description.AddressV = TranslateGltfAddressMode(sampler.wrapT);
     }
 
-    return m_Graphics.GetSamplerHeap().Create(description);
+    return m_Graphics.SamplerHeap().Create(description);
 }
 
 const Texture& GltfLoadContext::LoadTexture(int textureIndex, bool isSrgb)

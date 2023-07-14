@@ -59,7 +59,7 @@ Texture::Texture(const ResourceManager& resources, std::wstring debugName, std::
         .Flags = mipCount > 1 ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE,
     };
 
-    PendingUpload pendingUpload = graphics.GetUploadQueue().AllocateResource(textureDescription, debugName);
+    PendingUpload pendingUpload = graphics.UploadQueue().AllocateResource(textureDescription, debugName);
 
     Assert(pendingUpload.RowCount() == size.y);
     uint32_t sourceRowPitch = size.x * texelSize;
@@ -88,8 +88,8 @@ Texture::Texture(const ResourceManager& resources, std::wstring debugName, std::
             .ResourceMinLODClamp = 0.f,
         },
     };
-    m_SrvHandle = graphics.GetResourceDescriptorManager().CreateShaderResourceView(upload.Resource.Get(), srvDescription);
-    m_BindlessIndex = graphics.GetResourceDescriptorManager().GetResidentIndex(m_SrvHandle);
+    m_SrvHandle = graphics.ResourceDescriptorManager().CreateShaderResourceView(upload.Resource.Get(), srvDescription);
+    m_BindlessIndex = graphics.ResourceDescriptorManager().GetResidentIndex(m_SrvHandle);
 
     m_UploadSyncPoint = upload.SyncPoint;
     m_Resource = std::move(upload.Resource);
@@ -100,7 +100,7 @@ Texture::Texture(const ResourceManager& resources, std::wstring debugName, std::
         bool isUnorm = DxgiFormat::IsUnorm(textureDescription.Format);
         bool isSrgb = DxgiFormat::IsSrgb(textureDescription.Format);
 
-        ComputeContext context(graphics.GetComputeQueue(), resources.GenerateMipMapsRootSignature, isUnorm ? resources.GenerateMipMapsUnorm : resources.GenerateMipMapsFloat);
+        ComputeContext context(graphics.ComputeQueue(), resources.GenerateMipMapsRootSignature, isUnorm ? resources.GenerateMipMapsUnorm : resources.GenerateMipMapsFloat);
         PIXBeginEvent(&context, 0, L"Generate mipmap chain for '%s'", debugName.c_str());
 
         // Create an SRV and UAV for each mip level
@@ -128,15 +128,15 @@ Texture::Texture(const ResourceManager& resources, std::wstring debugName, std::
                 srvDescription.Texture2D.MostDetailedMip = level;
                 uavDescription.Texture2D.MipSlice = level;
 
-                mipSrvs[level] = graphics.GetResourceDescriptorManager().CreateShaderResourceView(m_Resource.Get(), srvDescription);
+                mipSrvs[level] = graphics.ResourceDescriptorManager().CreateShaderResourceView(m_Resource.Get(), srvDescription);
 
                 if (level > 0)
-                { mipUavs[level] = graphics.GetResourceDescriptorManager().CreateUnorderedAccessView(m_Resource.Get(), nullptr, uavDescription); }
+                { mipUavs[level] = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(m_Resource.Get(), nullptr, uavDescription); }
             }
         }
 
         // Wait for upload of LOD 0 to finish
-        graphics.GetComputeQueue().AwaitSyncPoint(m_UploadSyncPoint);
+        graphics.ComputeQueue().AwaitSyncPoint(m_UploadSyncPoint);
 
         uint2 mipSize = size;
         for (uint16_t level = 1; level < textureDescription.MipLevels; level++)
@@ -153,8 +153,8 @@ Texture::Texture(const ResourceManager& resources, std::wstring debugName, std::
             };
             context->SetComputeRoot32BitConstants(ShaderInterop::GenerateMipmapChain::RpParams, sizeof(params) / sizeof(UINT), &params, 0);
 
-            context->SetComputeRootDescriptorTable(ShaderInterop::GenerateMipmapChain::RpInputTexture, mipSrvs[level - 1].GetResidentHandle());
-            context->SetComputeRootDescriptorTable(ShaderInterop::GenerateMipmapChain::RpOutputTexture, mipUavs[level].GetResidentHandle());
+            context->SetComputeRootDescriptorTable(ShaderInterop::GenerateMipmapChain::RpInputTexture, mipSrvs[level - 1].ResidentHandle());
+            context->SetComputeRootDescriptorTable(ShaderInterop::GenerateMipmapChain::RpOutputTexture, mipUavs[level].ResidentHandle());
 
             // Transition the output texture to allow unordered access
             context.__AllocateResourceBarrier() =

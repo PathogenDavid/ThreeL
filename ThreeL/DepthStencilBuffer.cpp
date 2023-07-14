@@ -41,12 +41,12 @@ DepthStencilBuffer::DepthStencilBuffer(GraphicsCore& graphics, const std::wstrin
         .NumDescriptors = m_StencilSrvFormat == DXGI_FORMAT_UNKNOWN ? 2u : 4u,
         .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     };
-    AssertSuccess(graphics.GetDevice()->CreateDescriptorHeap(&heapDescription, IID_PPV_ARGS(&m_DescriptorHeap)));
+    AssertSuccess(graphics.Device()->CreateDescriptorHeap(&heapDescription, IID_PPV_ARGS(&m_DescriptorHeap)));
     m_DescriptorHeap->SetName(std::format(L"{} (Descriptor heap)", name).c_str());
 
     // Allocate descriptors for the SRVs
-    m_DepthShaderResourceView = graphics.GetResourceDescriptorManager().AllocateDynamicDescriptor();
-    m_StencilShaderResourceView = m_StencilSrvFormat == DXGI_FORMAT_UNKNOWN ? DynamicResourceDescriptor() : graphics.GetResourceDescriptorManager().AllocateDynamicDescriptor();
+    m_DepthShaderResourceView = graphics.ResourceDescriptorManager().AllocateDynamicDescriptor();
+    m_StencilShaderResourceView = m_StencilSrvFormat == DXGI_FORMAT_UNKNOWN ? DynamicResourceDescriptor() : graphics.ResourceDescriptorManager().AllocateDynamicDescriptor();
 
     // Create the buffer and resource views
     Resize(size);
@@ -60,7 +60,7 @@ void DepthStencilBuffer::Resize(uint2 newSize)
         return;
     }
 
-    ID3D12Device* device = m_Graphics.GetDevice().Get();
+    ID3D12Device* device = m_Graphics.Device();
 
     // Release the old buffer if we have one
     m_Resource = nullptr;
@@ -106,7 +106,7 @@ void DepthStencilBuffer::Resize(uint2 newSize)
 
     // Create the depth-stencil views
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    UINT dsvHandleSize = m_Graphics.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    UINT dsvHandleSize = m_Graphics.Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
     m_View = DepthStencilView(dsvHandle);
     dsvHandle.ptr += dsvHandleSize;
     m_DepthReadOnlyView = DepthStencilView(dsvHandle);

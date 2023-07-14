@@ -6,6 +6,8 @@
 
 #include <tuple>
 
+class GraphicsCore;
+
 /// <summary>Provides facilities for allocating CBV/SRV/UAV descriptors.</summary>
 /// <remarks>
 /// A single instance of this class manages all CBV/SRV/UAV descriptors for a <see cref="GraphicsCore"/>.
@@ -29,7 +31,7 @@ class ResourceDescriptorManager
     friend struct DynamicResourceDescriptor;
 
 private:
-    ComPtr<ID3D12Device> m_Device;
+    GraphicsCore& m_Graphics;
     uint32_t m_DescriptorSize;
 
     ComPtr<ID3D12DescriptorHeap> m_StagingHeap;
@@ -56,7 +58,7 @@ private:
     static const uint32_t DYNAMIC_DESCRIPTOR_COUNT = TOTAL_DESCRIPTOR_COUNT - RESIDENT_DESCRIPTOR_COUNT;
 
 public:
-    ResourceDescriptorManager(const ComPtr<ID3D12Device>& device);
+    ResourceDescriptorManager(GraphicsCore& graphics);
 
 private:
     uint32_t AllocateResidentDescriptor();
@@ -72,14 +74,11 @@ public:
 
     DynamicDescriptorTableBuilder AllocateDynamicTable(uint32_t length);
 
-    inline ID3D12DescriptorHeap* GetGpuHeap()
-    {
-        return m_GpuHeap.Get();
-    }
+    inline ID3D12DescriptorHeap* GpuHeap() const { return m_GpuHeap.Get(); }
 
     //TODO: This exists to enable bindless, ideally we should probably just rip out all the bindful stuff or make it the exception instead
     inline uint32_t GetResidentIndex(const ResourceDescriptor& descriptor)
     {
-        return (uint32_t)((descriptor.GetResidentHandle().ptr - m_ResidentGpuHandle0.ptr) / m_DescriptorSize);
+        return (uint32_t)((descriptor.ResidentHandle().ptr - m_ResidentGpuHandle0.ptr) / m_DescriptorSize);
     }
 };

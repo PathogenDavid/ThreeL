@@ -1,7 +1,7 @@
 #include "Common.hlsli"
 
 //===================================================================================================================================================
-// Mesh data
+// Vertex data
 //===================================================================================================================================================
 
 struct VsInput
@@ -50,7 +50,7 @@ PsInput VsMain(VsInput input)
 {
     PsInput result;
 
-    result.Position = float4(input.Position.xyz, 1.f);
+    result.Position = float4(input.Position, 1.f);
     result.Position = mul(result.Position, g_PerNode.Transform);
     result.WorldPosition = result.Position.xyz;
     result.Position = mul(result.Position, g_PerFrame.ViewProjectionTransform);

@@ -23,6 +23,9 @@ void SetWorkingDirectoryToAppDirectory()
 
 std::wstring GetD3DObjectName(ID3D12Object* object)
 {
+    if (object == nullptr)
+    { return L"<null>"; }
+
     UINT size = 0;
     HRESULT result = object->GetPrivateData(WKPDID_D3DDebugObjectNameW, &size, nullptr);
 

@@ -10,14 +10,14 @@ static volatile uint64_t g_NextId;
 CommandContext::CommandContext(CommandQueue& commandQueue)
     : m_CommandQueue(commandQueue)
 {
-    const ComPtr<ID3D12Device>& device = commandQueue.m_GraphicsCore.GetDevice();
+    ID3D12Device* device = commandQueue.m_GraphicsCore.Device();
     memset(m_PendingResourceBarriers, 0, sizeof(m_PendingResourceBarriers));
 
     // When Device4 is available, use it to create the command list in a closed state.
     // Otherwise simulate it by creating a command list and immediately closing it.
     // (We do not provide a path where it is created open because ideally creation should be relatively rare since contexts are pooled.)
     ComPtr<ID3D12Device4> device4;
-    if (SUCCEEDED(device.As(&device4)))
+    if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&device4))))
     {
         m_CommandAllocator = nullptr;
         AssertSuccess(device4->CreateCommandList1(0, commandQueue.m_Type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&m_CommandList)));
@@ -45,8 +45,8 @@ void CommandContext::ResetCommandList(ID3D12PipelineState* initialPipelineState)
     m_CommandList->Reset(m_CommandAllocator, initialPipelineState);
     ID3D12DescriptorHeap* heaps[] =
     {
-        m_CommandQueue.m_GraphicsCore.GetResourceDescriptorManager().GetGpuHeap(),
-        m_CommandQueue.m_GraphicsCore.GetSamplerHeap().GetGpuHeap(),
+        m_CommandQueue.m_GraphicsCore.ResourceDescriptorManager().GpuHeap(),
+        m_CommandQueue.m_GraphicsCore.SamplerHeap().GpuHeap(),
     };
 
     if (m_CommandQueue.m_Type != D3D12_COMMAND_LIST_TYPE_COPY)

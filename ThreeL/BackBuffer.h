@@ -13,8 +13,7 @@ private:
 
     BackBuffer()
         : m_Rtv({})
-    {
-    }
+    { }
 
     BackBuffer(ComPtr<ID3D12Resource> renderTarget, D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle)
         : m_Rtv(rtvHandle)
@@ -29,8 +28,5 @@ private:
     }
 
 public:
-    inline RenderTargetView GetRtv() const
-    {
-        return m_Rtv;
-    }
+    inline RenderTargetView Rtv() const { return m_Rtv; }
 };

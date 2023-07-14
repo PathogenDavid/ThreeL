@@ -20,8 +20,7 @@ private:
 public:
     Texture(const ResourceManager& resources, std::wstring debugName, std::span<const uint8_t> rgbaData, uint2 size, bool isSrgb = false)
         : Texture(resources, debugName, rgbaData, size, 4, isSrgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM)
-    {
-    }
+    { }
 
 private:
     inline DXGI_FORMAT GetHdrFormat(int channelCount)
@@ -41,8 +40,7 @@ private:
 public:
     Texture(const ResourceManager& resources, std::wstring debugName, std::span<const float> colorData, uint2 size, int channelCount)
         : Texture(resources, debugName, SpanCast<const float, const uint8_t>(colorData), size, channelCount * 4, GetHdrFormat(channelCount))
-    {
-    }
+    { }
 
     inline ResourceDescriptor SrvHandle() const { return m_SrvHandle; }
     inline uint32_t BindlessIndex() const { return m_BindlessIndex; }

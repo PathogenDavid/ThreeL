@@ -17,6 +17,6 @@ public:
         : m_StagingHandle(stagingHandle), m_ResidentHandle(residentHandle)
     { }
 
-    inline D3D12_CPU_DESCRIPTOR_HANDLE GetStagingHandle() const { return m_StagingHandle; }
-    inline D3D12_GPU_DESCRIPTOR_HANDLE GetResidentHandle() const { return m_ResidentHandle; }
+    inline D3D12_CPU_DESCRIPTOR_HANDLE StagingHandle() const { return m_StagingHandle; }
+    inline D3D12_GPU_DESCRIPTOR_HANDLE ResidentHandle() const { return m_ResidentHandle; }
 };

@@ -13,14 +13,12 @@ private:
 
     WndProcHandle(size_t handle)
         : m_Handle(handle)
-    {
-    }
+    { }
 
 public:
     WndProcHandle()
         : m_Handle(0)
-    {
-    }
+    { }
 };
 
 class Window
@@ -42,10 +40,7 @@ public:
     //! Returns true if app should continue running
     static bool ProcessMessages();
 
-    inline HWND GetHwnd()
-    {
-        return m_Hwnd;
-    }
+    inline HWND Hwnd() const { return m_Hwnd; }
 
     WndProcHandle AddWndProc(WndProcFunction function);
     void RemoveWndProc(WndProcHandle handle);

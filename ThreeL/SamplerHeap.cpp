@@ -13,12 +13,12 @@ SamplerHeap::SamplerHeap(GraphicsCore& graphics)
         .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
         .NodeMask = 0,
     };
-    AssertSuccess(graphics.GetDevice()->CreateDescriptorHeap(&description, IID_PPV_ARGS(&m_DescriptorHeap)));
+    AssertSuccess(graphics.Device()->CreateDescriptorHeap(&description, IID_PPV_ARGS(&m_DescriptorHeap)));
     m_DescriptorHeap->SetName(L"ARES Sampler Descriptor Heap");
 
     m_NextHandle = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     m_NextHandleIndex = 0;
-    m_DescriptorSize = graphics.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    m_DescriptorSize = graphics.Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
 SamplerId SamplerHeap::Create(const D3D12_SAMPLER_DESC& sampler)
@@ -32,7 +32,7 @@ SamplerId SamplerHeap::Create(const D3D12_SAMPLER_DESC& sampler)
 
     // Create a fresh sampler and cache it
     Assert(m_NextHandleIndex < D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE && "Sampler heap exhausted");
-    m_Graphics.GetDevice()->CreateSampler(&sampler, m_NextHandle);
+    m_Graphics.Device()->CreateSampler(&sampler, m_NextHandle);
 
     uint32_t result = m_NextHandleIndex;
     m_SamplerCache.insert({ sampler, result });

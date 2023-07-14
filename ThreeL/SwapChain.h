@@ -38,7 +38,7 @@ public:
 
     ~SwapChain();
 
-    inline operator RenderTargetView() const { return CurrentBackBuffer().GetRtv(); }
+    inline operator RenderTargetView() const { return CurrentBackBuffer().Rtv(); }
     inline uint2 Size() const { return m_Size; }
 
 private:

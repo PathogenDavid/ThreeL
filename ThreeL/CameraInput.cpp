@@ -30,7 +30,7 @@ CameraInput::CameraInput(Window& window)
         .usUsagePage = HID_USAGE_PAGE_GENERIC,
         .usUsage = HID_USAGE_GENERIC_MOUSE,
         .dwFlags = 0,
-        .hwndTarget = window.GetHwnd(),
+        .hwndTarget = window.Hwnd(),
     };
     AssertWinError(RegisterRawInputDevices(&rawMouse, 1, sizeof(rawMouse)));
 

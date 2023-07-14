@@ -9,7 +9,7 @@ void DynamicDescriptorTableBuilder::Add(ResourceDescriptor descriptor)
         Fail("Cannot add descriptors after the table is full!");
     }
 
-    m_Device->CopyDescriptorsSimple(1, m_NextCpuHandle, descriptor.GetStagingHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    m_Device->CopyDescriptorsSimple(1, m_NextCpuHandle, descriptor.StagingHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     m_NextCpuHandle.ptr += m_DescriptorSize;
     m_Count++;
 }

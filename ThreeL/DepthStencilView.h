@@ -14,6 +14,5 @@ public:
     { }
 
     inline D3D12_CPU_DESCRIPTOR_HANDLE DsvHandle() const { return m_DsvHandle; }
-
     inline operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return m_DsvHandle; }
 };

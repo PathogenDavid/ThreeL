@@ -42,7 +42,7 @@ ComPtr<ID3D12Resource> MeshHeap::AllocateChunk(bool isStagingBuffer)
     };
 
     ComPtr<ID3D12Resource> newChunk;
-    AssertSuccess(m_Graphics.GetDevice()->CreateCommittedResource
+    AssertSuccess(m_Graphics.Device()->CreateCommittedResource
     (
         &heapProperties,
         D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
@@ -116,8 +116,8 @@ D3D12_GPU_VIRTUAL_ADDRESS MeshHeap::Allocate(const void* buffer, size_t sizeByte
                 .Flags = D3D12_BUFFER_SRV_FLAG_RAW,
             },
         };
-        ResourceDescriptor srv = m_Graphics.GetResourceDescriptorManager().CreateShaderResourceView(m_CurrentBuffer, srvDesc);
-        *outBindlessIndex = m_Graphics.GetResourceDescriptorManager().GetResidentIndex(srv);
+        ResourceDescriptor srv = m_Graphics.ResourceDescriptorManager().CreateShaderResourceView(m_CurrentBuffer, srvDesc);
+        *outBindlessIndex = m_Graphics.ResourceDescriptorManager().GetResidentIndex(srv);
     }
 
     // Calculate the (future) GPU address of this buffer and update the offset for the next buffer (ensuring it's going to be aligned on a 4 byte boundary
@@ -137,7 +137,7 @@ void MeshHeap::Flush()
     // Upload staged data to the GPU buffer
     m_StagingBuffer->Unmap(0, nullptr);
 
-    GraphicsContext context(m_Graphics.GetGraphicsQueue());
+    GraphicsContext context(m_Graphics.GraphicsQueue());
     context->CopyResource(m_CurrentBuffer, m_StagingBuffer.Get());
 
     // Note: This explicit barrier is not needed (or possible) once we adapt this class to use the upload queue

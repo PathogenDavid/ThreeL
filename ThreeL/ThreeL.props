@@ -18,9 +18,10 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>TINYGLTF_NO_STB_IMAGE_WRITE;TINYGLTF_USE_CPP14;XXH_STATIC_LINKING_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <!--
+        C4473 - printf doesn't have enough arguments for format string
         C4477 - printf format string and arguments don't match
       -->
-      <TreatSpecificWarningsAsErrors>4477;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
+      <TreatSpecificWarningsAsErrors>4473;4477;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
     </ClCompile>
     <Link>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;Xinput.lib;%(AdditionalDependencies)</AdditionalDependencies>

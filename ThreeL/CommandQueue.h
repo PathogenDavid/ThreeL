@@ -64,10 +64,7 @@ private:
     void ReturnContext(CommandContext& context);
 
 public:
-    inline const ComPtr<ID3D12CommandQueue>& GetQueue() const
-    {
-        return m_Queue;
-    }
+    inline ID3D12CommandQueue* Queue() const { return m_Queue.Get(); }
 
     ~CommandQueue();
 };

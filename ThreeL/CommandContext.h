@@ -52,7 +52,6 @@ private:
     void TakeResource(GpuResource& resource);
 #else
     inline void TakeResource(GpuResource& resource)
-    {
-    }
+    { }
 #endif
 };

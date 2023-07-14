@@ -6,7 +6,7 @@
 
 RootSignature::RootSignature(GraphicsCore& graphics, ID3DBlob* rootSignatureBlob, const std::wstring& name)
 {
-    AssertSuccess(graphics.GetDevice()->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
+    AssertSuccess(graphics.Device()->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
     m_RootSignature->SetName(name.c_str());
 }
 

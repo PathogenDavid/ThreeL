@@ -108,15 +108,15 @@ GraphicsCore::GraphicsCore()
     //    As a result, if descriptor heaps must be changed, applications should try to do so when the GPU workload is relatively light, perhaps limiting changes to the start of a command list.
     //    https://docs.microsoft.com/en-us/windows/win32/direct3d12/descriptor-heaps-overview#switching-heaps
     // AMD doesn't seem to care since they don't mention it in any best practice guides.
-    m_ResourceDescriptorManager = std::make_unique<ResourceDescriptorManager>(m_Device);
-    m_SamplerHeap = std::make_unique<SamplerHeap>(*this);
+    m_ResourceDescriptorManager = std::make_unique<::ResourceDescriptorManager>(*this);
+    m_SamplerHeap = std::make_unique<::SamplerHeap>(*this);
 
     //---------------------------------------------------------------------------------------------------------
     // Initialize queues
     //---------------------------------------------------------------------------------------------------------
-    m_GraphicsQueue = std::make_unique<GraphicsQueue>(*this);
-    m_ComputeQueue = std::make_unique<ComputeQueue>(*this);
-    m_UploadQueue = std::make_unique<UploadQueue>(*this);
+    m_GraphicsQueue = std::make_unique<::GraphicsQueue>(*this);
+    m_ComputeQueue = std::make_unique<::ComputeQueue>(*this);
+    m_UploadQueue = std::make_unique<::UploadQueue>(*this);
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------

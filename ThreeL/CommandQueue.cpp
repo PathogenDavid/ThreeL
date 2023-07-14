@@ -14,12 +14,12 @@ CommandQueue::CommandQueue(GraphicsCore& graphicsCore, D3D12_COMMAND_LIST_TYPE t
         .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
         .NodeMask = 0,
     };
-    AssertSuccess(graphicsCore.GetDevice()->CreateCommandQueue(&description, IID_PPV_ARGS(&m_Queue)));
+    AssertSuccess(graphicsCore.Device()->CreateCommandQueue(&description, IID_PPV_ARGS(&m_Queue)));
     m_Name = std::format(L"ARES CommandQueue({})", (uint32_t)type);
     m_Queue->SetName(m_Name.c_str());
 
     m_PreviousQueueFenceValue = 0;
-    AssertSuccess(graphicsCore.GetDevice()->CreateFence(m_PreviousQueueFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_QueueFence)));
+    AssertSuccess(graphicsCore.Device()->CreateFence(m_PreviousQueueFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_QueueFence)));
     m_QueueFence->SetName(std::format(L"{} Fence", m_Name).c_str());
 }
 
@@ -49,7 +49,7 @@ ID3D12CommandAllocator* CommandQueue::RentAllocator()
     else
     {
         ComPtr<ID3D12CommandAllocator> newAllocator;
-        AssertSuccess(m_GraphicsCore.GetDevice()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&newAllocator)));
+        AssertSuccess(m_GraphicsCore.Device()->CreateCommandAllocator(m_Type, IID_PPV_ARGS(&newAllocator)));
         result = newAllocator.Get();
 
         std::lock_guard<std::mutex> lock(m_AllAllocatorsLock);

@@ -16,7 +16,7 @@ PendingUpload UploadQueue::AllocateResource(const D3D12_RESOURCE_DESC& resourceD
     // Allocate the resource
     D3D12_HEAP_PROPERTIES resourceHeapProperties = { D3D12_HEAP_TYPE_DEFAULT };
     ComPtr<ID3D12Resource> resource;
-    AssertSuccess(m_Graphics.GetDevice()->CreateCommittedResource
+    AssertSuccess(m_Graphics.Device()->CreateCommittedResource
     (
         &resourceHeapProperties,
         D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
@@ -34,7 +34,7 @@ PendingUpload UploadQueue::AllocateResource(const D3D12_RESOURCE_DESC& resourceD
     UINT rowCount;
     UINT64 rowSizeBytes;
     UINT64 uploadBufferSize;
-    m_Graphics.GetDevice()->GetCopyableFootprints(&resourceDescription, 0, 1, 0, &uploadPlacedFootprint, &rowCount, &rowSizeBytes, &uploadBufferSize);
+    m_Graphics.Device()->GetCopyableFootprints(&resourceDescription, 0, 1, 0, &uploadPlacedFootprint, &rowCount, &rowSizeBytes, &uploadBufferSize);
 
     // Create the upload buffer
     //TODO: For resources under a certain size it'd might make sense to pool and recycle buffers
@@ -54,7 +54,7 @@ PendingUpload UploadQueue::AllocateResource(const D3D12_RESOURCE_DESC& resourceD
     };
 
     ComPtr<ID3D12Resource> uploadResource;
-    AssertSuccess(m_Graphics.GetDevice()->CreateCommittedResource(
+    AssertSuccess(m_Graphics.Device()->CreateCommittedResource(
         &uploadHeapProperties,
         D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
         &uploadResourceDescription,

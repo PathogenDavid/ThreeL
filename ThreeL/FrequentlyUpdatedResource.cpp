@@ -2,7 +2,7 @@
 #include "FrequentlyUpdatedResource.h"
 
 FrequentlyUpdatedResource::FrequentlyUpdatedResource(GraphicsCore& graphics, const D3D12_RESOURCE_DESC& resourceDescription, const std::wstring& debugName)
-    : m_UploadQueue(graphics.GetUploadQueue())
+    : m_UploadQueue(graphics.UploadQueue())
 {
     Assert(resourceDescription.Dimension > D3D12_RESOURCE_DIMENSION_UNKNOWN && resourceDescription.Dimension <= D3D12_RESOURCE_DIMENSION_TEXTURE3D);
     Assert(debugName.length() > 0);
@@ -15,7 +15,7 @@ FrequentlyUpdatedResource::FrequentlyUpdatedResource(GraphicsCore& graphics, con
     // Determine the layout of the upload resource
     UINT rowCount;
     UINT64 rowSizeBytes;
-    graphics.GetDevice()->GetCopyableFootprints(&resourceDescription, 0, 1, 0, &m_UploadPlacedFootprint, &rowCount, &rowSizeBytes, &m_UploadBufferSize);
+    graphics.Device()->GetCopyableFootprints(&resourceDescription, 0, 1, 0, &m_UploadPlacedFootprint, &rowCount, &rowSizeBytes, &m_UploadBufferSize);
 
     // Describe the upload resource
     D3D12_HEAP_PROPERTIES uploadHeapProperties = { D3D12_HEAP_TYPE_UPLOAD };
@@ -37,7 +37,7 @@ FrequentlyUpdatedResource::FrequentlyUpdatedResource(GraphicsCore& graphics, con
     for (uint32_t i = 0; i < RESOURCE_COUNT; i++)
     {
         ComPtr<ID3D12Resource> resource;
-        AssertSuccess(graphics.GetDevice()->CreateCommittedResource
+        AssertSuccess(graphics.Device()->CreateCommittedResource
         (
             &resourceHeapProperties,
             D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
@@ -54,7 +54,7 @@ FrequentlyUpdatedResource::FrequentlyUpdatedResource(GraphicsCore& graphics, con
         // Create the upload buffer
         //TODO: If UploadQueue is ever modified to recycle buffers, it'd probably make more sense to borrow its buffers instead of juggling our own.
         ComPtr<ID3D12Resource> uploadResource;
-        AssertSuccess(graphics.GetDevice()->CreateCommittedResource(
+        AssertSuccess(graphics.Device()->CreateCommittedResource(
             &uploadHeapProperties,
             D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
             &uploadResourceDescription,

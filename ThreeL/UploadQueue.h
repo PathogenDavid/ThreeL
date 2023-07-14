@@ -45,8 +45,7 @@ private:
         , m_StagingBuffer(stagingBuffer)
         , m_RowCount(rowCount)
         , m_RowLengthBytes(rowLengthBytes)
-    {
-    }
+    { }
 
     // Copying a pending upload is never valid and is a recipe for state corruption
     PendingUpload(const PendingUpload&) = delete;
@@ -95,7 +94,7 @@ private:
     GpuSyncPoint PerformBufferUpload(ID3D12Resource* destination, ID3D12Resource* source, uint64_t length = -1);
 
 public:
-    //! Flushes all outstanding uploads assocaited with this queue
+    //! Flushes all outstanding uploads associated with this queue
     void Flush();
 
     //TODO: Ideally this should just happen automagically on a background thread

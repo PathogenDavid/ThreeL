@@ -11,7 +11,7 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     uint32_t height;
     {
         RECT clientRect;
-        Assert(GetClientRect(window.GetHwnd(), &clientRect));
+        Assert(GetClientRect(window.Hwnd(), &clientRect));
         width = clientRect.right - clientRect.left;
         height = clientRect.bottom - clientRect.top;
     }
@@ -49,9 +49,9 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     };
 
     ComPtr<IDXGISwapChain1> swapChain;
-    HRESULT hr = graphicsCore.GetDxgiFactory()->CreateSwapChainForHwnd(
-        graphicsCore.GetGraphicsQueue().GetQueue().Get(),
-        window.GetHwnd(),
+    HRESULT hr = graphicsCore.DxgiFactory()->CreateSwapChainForHwnd(
+        graphicsCore.GraphicsQueue().Queue(),
+        window.Hwnd(),
         &desc,
         nullptr,
         nullptr,
@@ -67,7 +67,7 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
         .NumDescriptors = BACK_BUFFER_COUNT,
         .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     };
-    AssertSuccess(graphicsCore.GetDevice()->CreateDescriptorHeap(&rtvHeapDescription, IID_PPV_ARGS(&m_RtvHeap)));
+    AssertSuccess(graphicsCore.Device()->CreateDescriptorHeap(&rtvHeapDescription, IID_PPV_ARGS(&m_RtvHeap)));
     m_RtvHeap->SetName(L"ARES SwapChain RTV heap");
     InitializeBackBuffers();
 
@@ -95,7 +95,7 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
 void SwapChain::InitializeBackBuffers()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
-    uint32_t rtvHandleSize = m_GraphicsCore.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    uint32_t rtvHandleSize = m_GraphicsCore.Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
     D3D12_RENDER_TARGET_VIEW_DESC description =
     {
@@ -113,7 +113,7 @@ void SwapChain::InitializeBackBuffers()
         ComPtr<ID3D12Resource> renderTarget;
         AssertSuccess(m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&renderTarget)));
         renderTarget->SetName(std::format(L"ARES SwapChain back buffer {}", i).c_str());
-        m_GraphicsCore.GetDevice()->CreateRenderTargetView(renderTarget.Get(), &description, rtvHandle);
+        m_GraphicsCore.Device()->CreateRenderTargetView(renderTarget.Get(), &description, rtvHandle);
         m_BackBuffers[i] = BackBuffer(renderTarget, rtvHandle);
 
         rtvHandle.ptr += rtvHandleSize;
@@ -167,7 +167,7 @@ void SwapChain::Resize(uint2 size)
 #endif
 
     // Wait for the graphics queue to become idle so we know nothing is in use
-    m_GraphicsCore.GetGraphicsQueue().QueueSyncPoint().Wait();
+    m_GraphicsCore.GraphicsQueue().QueueSyncPoint().Wait();
 
     // Release the back buffers
     for (BackBuffer& backBuffer : m_BackBuffers)
@@ -197,5 +197,5 @@ SwapChain::~SwapChain()
     m_Window.RemoveWndProc(m_WndProcHandle);
 
     // Wait for the graphics queue to become idle so we know nothing is in use
-    m_GraphicsCore.GetGraphicsQueue().QueueSyncPoint().Wait();
+    m_GraphicsCore.GraphicsQueue().QueueSyncPoint().Wait();
 }
