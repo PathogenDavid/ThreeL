@@ -28,6 +28,14 @@ struct MaterialParams
     float3 EmissiveFactor;
 };
 
+struct LightInfo
+{
+    float3 Position;
+    float Range;
+    float3 Color;
+    float Intensity;
+};
+
 struct PerNode
 {
     float4x4 Transform;
@@ -42,11 +50,13 @@ struct PerFrame
 {
     float4x4 ViewProjectionTransform;
     float3 EyePosition;
+    uint LightCount;
 };
 
 ConstantBuffer<PerNode> g_PerNode : register(b0);
 ConstantBuffer<PerFrame> g_PerFrame : register(b1);
 StructuredBuffer<MaterialParams> g_Materials : register(t0);
+StructuredBuffer<LightInfo> g_Lights : register(t1); // (Do not access in stages before the upload fence is awaited.)
 
 SamplerState g_Samplers[] : register(space1);
 Texture2D g_Textures[] : register(space2);
@@ -55,8 +65,9 @@ ByteAddressBuffer g_Buffers[] : register(space3);
 #define ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
     "RootConstants(num32BitConstants = 31, b0)," \
-    "RootConstants(num32BitConstants = 19, b1)," \
+    "RootConstants(num32BitConstants = 20, b1)," \
     "SRV(t0, flags = DATA_STATIC)," \
+    "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
     "DescriptorTable(" \
         "Sampler(s0, space = 1, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE)" \
     ")," \

@@ -96,6 +96,7 @@
     <ClCompile Include="DxgiFormat.cpp" />
     <ClCompile Include="DynamicDescriptorTableBuilder.cpp" />
     <ClCompile Include="DynamicResourceDescriptor.cpp" />
+    <ClCompile Include="FrequentlyUpdatedResource.cpp" />
     <ClCompile Include="GltfAccessorView.cpp" />
     <ClCompile Include="GltfLoadContext.cpp" />
     <ClCompile Include="GpuResource.cpp" />
@@ -105,6 +106,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="HlslCompiler.cpp" />
+    <ClCompile Include="LightHeap.cpp" />
     <ClCompile Include="Matrix3.cpp" />
     <ClCompile Include="PbrMaterialHeap.cpp" />
     <ClCompile Include="Matrix4.cpp" />
@@ -160,6 +162,7 @@
     <ClInclude Include="DynamicDescriptorTable.h" />
     <ClInclude Include="DynamicDescriptorTableBuilder.h" />
     <ClInclude Include="DynamicResourceDescriptor.h" />
+    <ClInclude Include="FrequentlyUpdatedResource.h" />
     <ClInclude Include="GltfAccessorView.h" />
     <ClInclude Include="GltfLoadContext.h" />
     <ClInclude Include="GpuResource.h" />
@@ -167,6 +170,7 @@
     <ClInclude Include="GraphicsContext.h" />
     <ClInclude Include="HashImplementations.h" />
     <ClInclude Include="HlslCompiler.h" />
+    <ClInclude Include="LightHeap.h" />
     <ClInclude Include="Matrix3.h" />
     <ClInclude Include="PbrMaterialHeap.h" />
     <ClInclude Include="MathCommon.h" />

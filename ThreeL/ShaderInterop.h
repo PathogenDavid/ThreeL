@@ -45,10 +45,12 @@ namespace ShaderInterop
     {
         float4x4 ViewProjectionTransform;
         float3 EyePosition;
+        uint32_t LightCount;
     };
-    static_assert(sizeof(PerFrameCb) == 19 * sizeof(uint32_t));
+    static_assert(sizeof(PerFrameCb) == 20 * sizeof(uint32_t));
     static_assert(offsetof(PerFrameCb, ViewProjectionTransform) == 0);
     static_assert(offsetof(PerFrameCb, EyePosition) == 64);
+    static_assert(offsetof(PerFrameCb, LightCount) == 76);
 
     struct PerNodeCb
     {
@@ -73,6 +75,7 @@ namespace ShaderInterop
             RpPerNodeCb,
             RpPerFrameCb,
             RpMaterialHeap,
+            RpLightHeap,
             RpSamplerHeap,
             RpBindlessHeap,
         };
@@ -110,4 +113,17 @@ namespace ShaderInterop
             RpInputDepthBuffer,
         };
     }
+
+    struct LightInfo
+    {
+        float3 Position;
+        float Range;
+        float3 Color;
+        float Intensity;
+    };
+    static_assert(sizeof(LightInfo) == 32);
+    static_assert(offsetof(LightInfo, Position) == 0);
+    static_assert(offsetof(LightInfo, Range) == 12);
+    static_assert(offsetof(LightInfo, Color) == 16);
+    static_assert(offsetof(LightInfo, Intensity) == 28);
 }

@@ -95,40 +95,17 @@ InitiatedUpload UploadQueue::InitiateUpload(PendingUpload& job)
     // Unmap the staging buffer
     job.m_UploadResource->Unmap(0, nullptr);
 
-    // Rent a command context for the upload
-    CommandContext& context = RentContext();
-    context.Begin(nullptr);
-
-    // Perform the copy
+    // Perform the upload
+    GpuSyncPoint syncPoint;
     if (job.m_IsTextureUpload)
-    {
-        D3D12_TEXTURE_COPY_LOCATION source =
-        {
-            .pResource = job.m_UploadResource.Get(),
-            .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-            .PlacedFootprint = job.m_UploadPlacedFootprint,
-        };
-
-        D3D12_TEXTURE_COPY_LOCATION destination =
-        {
-            .pResource = job.m_Resource.Get(),
-            .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-            .SubresourceIndex = 0,
-        };
-
-        context.m_CommandList->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
-    }
+    { syncPoint = PerformTextureUpload(job.m_Resource.Get(), job.m_UploadResource.Get(), job.m_UploadPlacedFootprint); }
     else
-    {
-        context.m_CommandList->CopyResource(job.m_Resource.Get(), job.m_UploadResource.Get());
-    }
+    { syncPoint = PerformBufferUpload(job.m_Resource.Get(), job.m_UploadResource.Get()); }
 
-    // Finish the command context
-    // Note: No resource barrier is needed or possible here.
+    // Note: No resource barrier is needed or possible after uploading.
     // Resources written on copy queues must always implicitly decay to D3D12_RESOURCE_STATE_COMMON
     // https://docs.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#state-decay-to-common
     // https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resource_states#constants
-    GpuSyncPoint syncPoint = context.Finish();
 
     // Queue the staging resource for cleanup
     {
@@ -142,6 +119,52 @@ InitiatedUpload UploadQueue::InitiateUpload(PendingUpload& job)
         .Resource = std::move(job.m_Resource),
         .SyncPoint = syncPoint,
     };
+}
+
+GpuSyncPoint UploadQueue::PerformTextureUpload(ID3D12Resource* destination, ID3D12Resource* source, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& uploadPlacedFootprint)
+{
+    CommandContext& context = RentContext();
+    context.Begin(nullptr);
+
+    D3D12_TEXTURE_COPY_LOCATION sourceLocation =
+    {
+        .pResource = source,
+        .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+        .PlacedFootprint = uploadPlacedFootprint,
+    };
+
+    D3D12_TEXTURE_COPY_LOCATION destinationLocation =
+    {
+        .pResource = destination,
+        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = 0,
+    };
+
+    context.m_CommandList->CopyTextureRegion(&destinationLocation, 0, 0, 0, &sourceLocation, nullptr);
+
+    GpuSyncPoint syncPoint = context.Finish();
+    ReturnContext(context);
+    return syncPoint;
+}
+
+GpuSyncPoint UploadQueue::PerformBufferUpload(ID3D12Resource* destination, ID3D12Resource* source, uint64_t length)
+{
+    CommandContext& context = RentContext();
+    context.Begin(nullptr);
+    
+    if (length == -1)
+    {
+        context.m_CommandList->CopyResource(destination, source);
+    }
+    else
+    {
+        Assert(length != 0);
+        context.m_CommandList->CopyBufferRegion(destination, 0, source, 0, length);
+    }
+
+    GpuSyncPoint syncPoint = context.Finish();
+    ReturnContext(context);
+    return syncPoint;
 }
 
 InitiatedUpload PendingUpload::InitiateUpload()

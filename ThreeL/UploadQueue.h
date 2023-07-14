@@ -77,6 +77,7 @@ public:
 class UploadQueue : public CommandQueue
 {
     friend struct PendingUpload;
+    friend class FrequentlyUpdatedResource;
 private:
     GraphicsCore& m_Graphics;
 
@@ -90,6 +91,8 @@ public:
 
 private:
     InitiatedUpload InitiateUpload(PendingUpload& job);
+    GpuSyncPoint PerformTextureUpload(ID3D12Resource* destination, ID3D12Resource* source, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& uploadPlacedFootprint);
+    GpuSyncPoint PerformBufferUpload(ID3D12Resource* destination, ID3D12Resource* source, uint64_t length = -1);
 
 public:
     //! Flushes all outstanding uploads assocaited with this queue

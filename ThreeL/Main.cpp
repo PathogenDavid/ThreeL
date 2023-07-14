@@ -8,6 +8,7 @@
 #include "DepthStencilBuffer.h"
 #include "GraphicsContext.h"
 #include "GraphicsCore.h"
+#include "LightHeap.h"
 #include "ResourceManager.h"
 #include "Scene.h"
 #include "ShaderInterop.h"
@@ -156,6 +157,29 @@ static int MainImpl()
     }
 
     //-----------------------------------------------------------------------------------------------------------------
+    // Allocate lighting resources
+    //-----------------------------------------------------------------------------------------------------------------
+    LightHeap lightHeap(graphics);
+    std::vector<ShaderInterop::LightInfo> lights;
+    lights.reserve(LightHeap::MAX_LIGHTS);
+
+    lights.push_back
+    ({
+        .Position = float3::Zero,
+        .Range = 1.f,
+        .Color = float3::One,
+        .Intensity = 1.f,
+    });
+
+    lights.push_back
+    ({
+        .Position = float3(-4.35f, 1.f, 0.f),
+        .Range = 2.5f,
+        .Color = float3::UnitX,
+        .Intensity = 2.f,
+    });
+
+    //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
     //-----------------------------------------------------------------------------------------------------------------
     DearImGui dearImGui(graphics, window);
@@ -197,6 +221,8 @@ static int MainImpl()
             context->SetGraphicsRootSignature(resources.PbrRootSignature);
             context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerFrameCb, sizeof(perFrame) / sizeof(UINT), &perFrame, 0);
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpMaterialHeap, resources.PbrMaterials.BufferGpuAddress());
+            // This is bound even in stages before the upload is complete so it's important those stages do not attempt to access it for some reason
+            context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpLightHeap, lightHeap.BufferGpuAddress());
             context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpSamplerHeap, graphics.GetSamplerHeap().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
             context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.GetResourceDescriptorManager().GetGpuHeap()->GetGPUDescriptorHandleForHeapStart());
         };
@@ -239,6 +265,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Frame setup
         //-------------------------------------------------------------------------------------------------------------
+        GpuSyncPoint lightUpdateSyncPoint;
         GraphicsContext context(graphics.GetGraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
         {
             PIXScopedEvent(&context, 0, "Frame #%lld setup", frameNumber);
@@ -246,6 +273,8 @@ static int MainImpl()
             context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
             context.Clear(swapChain, 0.2f, 0.2f, 0.2f, 1.f);
             context.Clear(depthBuffer);
+
+            lightUpdateSyncPoint = lightHeap.Update(lights);
         }
 
         ShaderInterop::PerFrameCb perFrame =
@@ -253,6 +282,7 @@ static int MainImpl()
             .ViewProjectionTransform = camera.GetViewTransform()
                 * float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f),
             .EyePosition = camera.GetPosition(),
+            .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
         };
 
         //-------------------------------------------------------------------------------------------------------------
@@ -333,6 +363,13 @@ static int MainImpl()
 
             context.TransitionResource(*previousBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
         }
+
+        //-------------------------------------------------------------------------------------------------------------
+        // Light Buffer Pass
+        //-------------------------------------------------------------------------------------------------------------
+        context.Flush();
+        graphics.GetGraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
+        //TODO
 
         //-------------------------------------------------------------------------------------------------------------
         // Opaque Pass

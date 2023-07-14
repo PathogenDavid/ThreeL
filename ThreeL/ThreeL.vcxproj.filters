@@ -80,6 +80,8 @@
     </ClCompile>
     <ClCompile Include="ComputeContext.cpp" />
     <ClCompile Include="DxgiFormat.cpp" />
+    <ClCompile Include="LightHeap.cpp" />
+    <ClCompile Include="FrequentlyUpdatedResource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -185,6 +187,8 @@
     </ClInclude>
     <ClInclude Include="ComputeContext.h" />
     <ClInclude Include="DxgiFormat.h" />
+    <ClInclude Include="LightHeap.h" />
+    <ClInclude Include="FrequentlyUpdatedResource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

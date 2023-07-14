@@ -82,6 +82,7 @@ struct Brdf
     // Surface-dependent fields
     float3 BaseColor;
     float RoughnessAlpha;
+    float3 WorldPosition;
     float3 Normal; // N
     float3 ViewDirection; // V
     float NdotV;
@@ -140,9 +141,9 @@ struct Brdf
         return visibility * distribution;
     }
 
-    void ApplyDirectionalLight(float3 lightDirection, float3 lightColor, float lightIntensity)
+    void ApplyLight(float3 surfaceToLight, float3 lightColor, float lightIntensity)
     {
-        SurfaceToLight = -lightDirection;
+        SurfaceToLight = surfaceToLight;
         HalfVector = normalize(SurfaceToLight + ViewDirection);
         NdotL = dot(Normal, SurfaceToLight);
         NdotH = clampedDot(Normal, HalfVector);
@@ -155,6 +156,29 @@ struct Brdf
         float3 frensel = Frensel_Schlick();
         Diffuse += lightIntensity * lightColor * NdotL * (1.f.xxx - frensel) * DiffuseBrdf_Lambertian();
         Specular += lightIntensity * lightColor * NdotL * frensel * SpecularBrdf_GGX();
+    }
+
+    void ApplyDirectionalLight(float3 lightDirection, float3 lightColor, float lightIntensity)
+    {
+        ApplyLight(-lightDirection, lightColor, lightIntensity);
+    }
+
+    void ApplyPointLight(LightInfo light)
+    {
+        float3 surfaceToLight = light.Position - WorldPosition;
+
+        // Calculate attenuation based on the KHR_lights_punctual spec with minimum bounds on denominator to avoid explosion at light center
+        // https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
+        float distanceSquared = dot(surfaceToLight, surfaceToLight);
+        float distanceOverRange = distanceSquared / (light.Range * light.Range); // pow2
+        distanceOverRange *= distanceOverRange; // pow4
+        float lightAttenuation = saturate(1.f - distanceOverRange) / max(distanceSquared, 0.0001);
+
+        // Surface is outside the range of the light
+        if (lightAttenuation <= 0.f)
+        { return; }
+
+        ApplyLight(surfaceToLight, light.Color, light.Intensity * lightAttenuation);
     }
 };
 
@@ -224,8 +248,9 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     Brdf brdf;
     brdf.BaseColor = baseColor.rgb;
     brdf.RoughnessAlpha = roughness * roughness;
+    brdf.WorldPosition = input.WorldPosition;
     brdf.Normal = normal;
-    brdf.ViewDirection = normalize(g_PerFrame.EyePosition - input.WorldPosition);
+    brdf.ViewDirection = normalize(g_PerFrame.EyePosition - brdf.WorldPosition);
     brdf.NdotV = clampedDot(brdf.Normal, brdf.ViewDirection);
     brdf.DiffuseColor = lerp(brdf.BaseColor, 0.f.xxx, metalness);
     brdf.F0 = lerp(0.04.xxx, brdf.BaseColor, metalness);
@@ -234,9 +259,15 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     brdf.Diffuse = 0.f.xxx;
     brdf.Specular = 0.f.xxx;
 
-    //TODO: Apply actual lights from scene
+    // Apply static direction lights
     brdf.ApplyDirectionalLight(normalize(float3(-0.5f, -0.707f, -0.5f)), float3(1.f, 1.f, 1.f), 1.f);
     brdf.ApplyDirectionalLight(normalize(float3(0.5f, 0.707f, 0.5f)), float3(1.f, 1.f, 1.f), 0.4f);
+
+    // Apply point lights from scene
+    for (uint i = 0; i < g_PerFrame.LightCount; i++)
+    {
+        brdf.ApplyPointLight(g_Lights[i]);
+    }
 
     float4 result = float4(emissive + brdf.Diffuse + brdf.Specular, baseColor.a);
 
