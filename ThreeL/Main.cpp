@@ -62,29 +62,6 @@ static Texture LoadHdr(ResourceManager& resources, std::string filePath)
     return texture;
 }
 
-static std::wstring GetExtraWindowTitleInfo()
-{
-    std::wstring title = L"";
-
-#ifndef NDEBUG
-    title += L"Checked";
-#endif
-
-    if (DebugLayer::IsEnabled())
-    {
-        if (title.size() > 0) { title += L"/"; }
-        title += L"DebugLayer";
-    }
-
-    if (GetModuleHandleW(L"WinPixGpuCapturer.dll") != NULL)
-    {
-        if (title.size() > 0) { title += L"/"; }
-        title += L"PIX";
-    }
-
-    return title.size() == 0 ? title : L" (" + title + L")";
-}
-
 static int MainImpl()
 {
     // Set working directory to app directory so we can easily get at our assets
@@ -98,7 +75,7 @@ static int MainImpl()
     PIXBeginEvent(0, "Initialization");
 
     std::wstring windowTitle = L"ThreeL";
-    windowTitle += GetExtraWindowTitleInfo();
+    windowTitle += DebugLayer::GetExtraWindowTitleInfo();
     Window window(windowTitle.c_str(), 1280, 720);
 
     WndProcHandle wndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>

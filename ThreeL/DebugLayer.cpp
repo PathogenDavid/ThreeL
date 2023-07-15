@@ -6,9 +6,70 @@
 #include <dxgidebug.h>
 #include <mutex>
 
+//=================================================================================================================================================//
+//                                    ______               ___ __                          __   __                                                 //
+//                                   |      |.-----.-----.'  _|__|.-----.--.--.----.---.-.|  |_|__|.-----.-----.                                   //
+//                                   |   ---||  _  |     |   _|  ||  _  |  |  |   _|  _  ||   _|  ||  _  |     |                                   //
+//                                   |______||_____|__|__|__| |__||___  |_____|__| |___._||____|__||_____|__|__|                                   //
+//                                                                |_____|                                                                          //
+//=================================================================================================================================================//
+
+// This is enabled by default
+// It is known to sometimes cause major performance issues on Present when mixed-mode debugging is being used,
+// so consider disabling if you're having perf issues
+//
+// !!! Disabling this is currently broken in the Agility SDK (you'll get a crash in ExecuteCommandLists), so just leave it on !!!
+// (Also this toggle might actually just be removed soon.)
+// https://discord.com/channels/590611987420020747/590965902564917258/1097908429160452137
+static const bool kEnableSynchronizedCommandQueueValidation = true;
+
+// This is disabled by default
+// It has a pretty major performance impact, not recommended for general use
+// Enabling this requires synchronized command queue validation.
+static const bool kEnableGPUBasedValidation = false;
+
+static const D3D12_MESSAGE_SEVERITY kDeniedSeverities[] =
+{
+    //D3D12_MESSAGE_SEVERITY_INFO,
+    (D3D12_MESSAGE_SEVERITY)-1
+};
+
+static const D3D12_MESSAGE_CATEGORY kDeniedCategories[] =
+{
+    (D3D12_MESSAGE_CATEGORY)-1
+};
+
+static const D3D12_MESSAGE_ID kDeniedMessages[] =
+{
+    D3D12_MESSAGE_ID_CREATE_COMMANDQUEUE,
+    D3D12_MESSAGE_ID_CREATE_COMMANDALLOCATOR,
+    D3D12_MESSAGE_ID_CREATE_PIPELINESTATE,
+    D3D12_MESSAGE_ID_CREATE_COMMANDLIST12,
+    D3D12_MESSAGE_ID_CREATE_RESOURCE,
+    D3D12_MESSAGE_ID_CREATE_DESCRIPTORHEAP,
+    D3D12_MESSAGE_ID_CREATE_ROOTSIGNATURE,
+    D3D12_MESSAGE_ID_CREATE_HEAP,
+    D3D12_MESSAGE_ID_CREATE_MONITOREDFENCE,
+    D3D12_MESSAGE_ID_CREATE_LIFETIMETRACKER,
+    D3D12_MESSAGE_ID_DESTROY_COMMANDQUEUE,
+    D3D12_MESSAGE_ID_DESTROY_COMMANDALLOCATOR,
+    D3D12_MESSAGE_ID_DESTROY_PIPELINESTATE,
+    D3D12_MESSAGE_ID_DESTROY_COMMANDLIST12,
+    D3D12_MESSAGE_ID_DESTROY_RESOURCE,
+    D3D12_MESSAGE_ID_DESTROY_DESCRIPTORHEAP,
+    D3D12_MESSAGE_ID_DESTROY_ROOTSIGNATURE,
+    D3D12_MESSAGE_ID_DESTROY_HEAP,
+    D3D12_MESSAGE_ID_DESTROY_MONITOREDFENCE,
+    D3D12_MESSAGE_ID_DESTROY_LIFETIMETRACKER,
+    (D3D12_MESSAGE_ID)-1
+};
+
+//=================================================================================================================================================//
+
 namespace DebugLayer
 {
     static bool g_IsEnabled = false;
+    static bool g_IsGpuBasedValidationEnabled = false;
 
     void Setup()
     {
@@ -45,45 +106,16 @@ namespace DebugLayer
 
         // Suppress select D3D debug layer messages
         // We do this as the DXGI level (IE: before the device is even initialized) allows us to suppress messages that are emitted by D3D12 internals
-        D3D12_MESSAGE_SEVERITY deniedSeverities[] =
-        {
-            //D3D12_MESSAGE_SEVERITY_INFO,
-            (D3D12_MESSAGE_SEVERITY)-1
-        };
-
-        D3D12_MESSAGE_CATEGORY deniedCategories[] =
-        {
-            D3D12_MESSAGE_CATEGORY_STATE_CREATION,
-            (D3D12_MESSAGE_CATEGORY)-1
-        };
-
-        D3D12_MESSAGE_ID deniedMessages[] =
-        {
-            // These are also covered by suppressing D3D12_MESSAGE_CATEGORY_STATE_CREATION, they're here to
-            // make it easier to toggle the category for the sake of tracking resource destruction.
-            D3D12_MESSAGE_ID_CREATE_COMMANDQUEUE,
-            D3D12_MESSAGE_ID_CREATE_COMMANDALLOCATOR,
-            D3D12_MESSAGE_ID_CREATE_PIPELINESTATE,
-            D3D12_MESSAGE_ID_CREATE_COMMANDLIST12,
-            D3D12_MESSAGE_ID_CREATE_RESOURCE,
-            D3D12_MESSAGE_ID_CREATE_DESCRIPTORHEAP,
-            D3D12_MESSAGE_ID_CREATE_ROOTSIGNATURE,
-            D3D12_MESSAGE_ID_CREATE_HEAP,
-            D3D12_MESSAGE_ID_CREATE_MONITOREDFENCE,
-            D3D12_MESSAGE_ID_CREATE_LIFETIMETRACKER,
-            (D3D12_MESSAGE_ID)-1
-        };
-
         DXGI_INFO_QUEUE_FILTER filter =
         {
             .DenyList =
             {
-                .NumCategories = (UINT)std::size(deniedCategories) - 1,
-                .pCategoryList = (DXGI_INFO_QUEUE_MESSAGE_CATEGORY*)deniedCategories,
-                .NumSeverities = (UINT)std::size(deniedSeverities) - 1,
-                .pSeverityList = (DXGI_INFO_QUEUE_MESSAGE_SEVERITY*)deniedSeverities,
-                .NumIDs = (UINT)std::size(deniedMessages) - 1,
-                .pIDList = (DXGI_INFO_QUEUE_MESSAGE_ID*)deniedMessages,
+                .NumCategories = (UINT)std::size(kDeniedCategories) - 1,
+                .pCategoryList = (DXGI_INFO_QUEUE_MESSAGE_CATEGORY*)kDeniedCategories,
+                .NumSeverities = (UINT)std::size(kDeniedSeverities) - 1,
+                .pSeverityList = (DXGI_INFO_QUEUE_MESSAGE_SEVERITY*)kDeniedSeverities,
+                .NumIDs = (UINT)std::size(kDeniedMessages) - 1,
+                .pIDList = (DXGI_INFO_QUEUE_MESSAGE_ID*)kDeniedMessages,
             },
         };
         AssertSuccess(dxgiInfoQueue->PushStorageFilter(DXGI_DEBUG_D3D12, &filter));
@@ -112,16 +144,11 @@ namespace DebugLayer
         ComPtr<ID3D12Debug1> debugController1;
         if (SUCCEEDED(debugController->QueryInterface(IID_PPV_ARGS(&debugController1))))
         {
-            // This is enabled by default
-            // It is known to sometimes cause major performance issues on Present when mixed-mode debugging is being used, so consider disabling if you're having perf issues
-            // !!! Disabling this is currently broken in the Agility SDK (you'll get a crash in ExecuteCommandLists), so just leave it on !!!
-            // (Also this toggle might actually just be removed soon.)
-            // https://discord.com/channels/590611987420020747/590965902564917258/1097908429160452137
-            debugController1->SetEnableSynchronizedCommandQueueValidation(true);
+            debugController1->SetEnableSynchronizedCommandQueueValidation(kEnableSynchronizedCommandQueueValidation);
 
-            // This is disabled by default and only left here as a placeholder.
             // Enabling this requires synchronized command queue validation.
-            debugController1->SetEnableGPUBasedValidation(false);
+            g_IsGpuBasedValidationEnabled = kEnableGPUBasedValidation && kEnableSynchronizedCommandQueueValidation;
+            debugController1->SetEnableGPUBasedValidation(g_IsGpuBasedValidationEnabled);
 
             ComPtr<ID3D12Debug2> debugController2;
             if (SUCCEEDED(debugController1->QueryInterface(IID_PPV_ARGS(&debugController2))))
@@ -148,10 +175,8 @@ namespace DebugLayer
         }
     }
 
-    bool IsEnabled()
-    {
-        return g_IsEnabled;
-    }
+    bool IsEnabled() { return g_IsEnabled; }
+    bool IsGpuBasedValidationEnabled() { return g_IsGpuBasedValidationEnabled; }
 
     void ReportLiveObjects()
     {
@@ -164,5 +189,31 @@ namespace DebugLayer
             AssertSuccess(dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)));
             OutputDebugStringW(L"===============================================================================\n");
         }
+    }
+
+    std::wstring GetExtraWindowTitleInfo()
+    {
+        std::wstring title = L"";
+
+#ifndef NDEBUG
+        title += L"Checked";
+#endif
+
+        if (DebugLayer::IsEnabled())
+        {
+            if (title.size() > 0) { title += L"/"; }
+            title += L"DebugLayer";
+
+            if (DebugLayer::IsGpuBasedValidationEnabled())
+            { title += L"+GBV"; }
+        }
+
+        if (GetModuleHandleW(L"WinPixGpuCapturer.dll") != NULL)
+        {
+            if (title.size() > 0) { title += L"/"; }
+            title += L"PIX";
+        }
+
+        return title.size() == 0 ? title : L" (" + title + L")";
     }
 }
