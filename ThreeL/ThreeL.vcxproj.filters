@@ -82,6 +82,7 @@
     <ClCompile Include="DxgiFormat.cpp" />
     <ClCompile Include="LightHeap.cpp" />
     <ClCompile Include="FrequentlyUpdatedResource.cpp" />
+    <ClCompile Include="LightLinkedList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -189,6 +190,8 @@
     <ClInclude Include="DxgiFormat.h" />
     <ClInclude Include="LightHeap.h" />
     <ClInclude Include="FrequentlyUpdatedResource.h" />
+    <ClInclude Include="LightLinkedList.h" />
+    <ClInclude Include="RawGpuResource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -224,6 +227,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\FullScreenQuad.vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\LightLinkedListFill.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

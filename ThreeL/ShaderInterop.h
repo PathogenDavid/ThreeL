@@ -46,11 +46,15 @@ namespace ShaderInterop
         float4x4 ViewProjectionTransform;
         float3 EyePosition;
         uint32_t LightCount;
+        uint32_t LightLinkedListBufferWidth;
+        uint32_t LightLinkedListBufferShift;
     };
-    static_assert(sizeof(PerFrameCb) == 20 * sizeof(uint32_t));
+    static_assert(sizeof(PerFrameCb) == 22 * sizeof(uint32_t));
     static_assert(offsetof(PerFrameCb, ViewProjectionTransform) == 0);
     static_assert(offsetof(PerFrameCb, EyePosition) == 64);
     static_assert(offsetof(PerFrameCb, LightCount) == 76);
+    static_assert(offsetof(PerFrameCb, LightLinkedListBufferWidth) == 80);
+    static_assert(offsetof(PerFrameCb, LightLinkedListBufferShift) == 84);
 
     struct PerNodeCb
     {
@@ -126,4 +130,30 @@ namespace ShaderInterop
     static_assert(offsetof(LightInfo, Range) == 12);
     static_assert(offsetof(LightInfo, Color) == 16);
     static_assert(offsetof(LightInfo, Intensity) == 28);
+
+    const static uint32_t SizeOfLightLink = sizeof(uint32_t) * 2;
+
+    namespace LightLinkedListFill
+    {
+        // See LLL_FILL_ROOT_SIGNATURE in Common.hlsli
+        enum RootParameters
+        {
+            RpPerFrameCb,
+            RpLightHeap,
+            RpDepthBuffer,
+            RpLightLinksHeap,
+            RpFirstLightLinkBuffer,
+        };
+    }
+
+    namespace LightLinkedListDebug
+    {
+        // See LLL_DEBUG_ROOT_SIGNATURE in LightLinkedListDebug.ps.hlsl
+        enum RootParameters
+        {
+            RpPerFrameCb,
+            RpLightHeap,
+            RpFirstLightLinkBuffer,
+        };
+    }
 }

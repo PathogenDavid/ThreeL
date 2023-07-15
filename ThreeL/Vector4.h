@@ -55,8 +55,42 @@ struct float4
     static const float4 Zero;
 };
 
+struct uint4
+{
+    using uint = uint32_t;
+    uint x;
+    uint y;
+    uint z;
+    uint w;
+
+    uint4()
+        : x(), y(), z(), w()
+    {
+    }
+
+    uint4(uint x, uint y, uint z, uint w)
+        : x(x), y(y), z(z), w(w)
+    {
+    }
+
+    uint4(uint s)
+        : x(s), y(s), z(s), w(s)
+    {
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Basic vectors
+    //---------------------------------------------------------------------------------------------
+    static const uint4 UnitX;
+    static const uint4 UnitY;
+    static const uint4 UnitZ;
+    static const uint4 UnitW;
+    static const uint4 One;
+    static const uint4 Zero;
+};
+
 //=====================================================================================================================
-// float3 operators
+// float4 operators
 //=====================================================================================================================
 
 //-------------------------------------------------------------------------------------------------

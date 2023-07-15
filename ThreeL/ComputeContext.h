@@ -32,7 +32,7 @@ public:
     inline void UavBarrier(bool immediate = false) { m_Context->UavBarrier(immediate); }
     inline void UavBarrier(GpuResource& resource, bool immediate = false) { m_Context->UavBarrier(resource, immediate); }
 
-    //TODO: This is to work around our resource state tracking being worefully inadequate for tracking the state of individual subresources
+    //TODO: This is to workaround our resource state tracking not working well with resources which map to multiple resourcs (IE: LightLinkedList or textures with subresources.)
     inline D3D12_RESOURCE_BARRIER& __AllocateResourceBarrier() { return m_Context->AllocateResourceBarrier(); }
 
     void Dispatch(uint3 threadGroupCount);

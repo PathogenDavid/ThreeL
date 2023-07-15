@@ -51,4 +51,6 @@ public:
     //! The resource descriptor targeted by this dynamic descriptor.
     //! Descriptor handle is valid before initialization, but its contents are not.
     inline const ResourceDescriptor& ResourceDescriptor() const { return m_ResourceDescriptor; }
+
+    operator const ::ResourceDescriptor&() const { return m_ResourceDescriptor; }
 };

@@ -107,6 +107,7 @@
     </ClCompile>
     <ClCompile Include="HlslCompiler.cpp" />
     <ClCompile Include="LightHeap.cpp" />
+    <ClCompile Include="LightLinkedList.cpp" />
     <ClCompile Include="Matrix3.cpp" />
     <ClCompile Include="PbrMaterialHeap.cpp" />
     <ClCompile Include="Matrix4.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="HashImplementations.h" />
     <ClInclude Include="HlslCompiler.h" />
     <ClInclude Include="LightHeap.h" />
+    <ClInclude Include="LightLinkedList.h" />
     <ClInclude Include="Matrix3.h" />
     <ClInclude Include="PbrMaterialHeap.h" />
     <ClInclude Include="MathCommon.h" />
@@ -179,6 +181,7 @@
     <ClInclude Include="MeshPrimitive.h" />
     <ClInclude Include="PbrMaterial.h" />
     <ClInclude Include="PipelineStateObject.h" />
+    <ClInclude Include="RawGpuResource.h" />
     <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="RootSignature.h" />
     <ClInclude Include="SamplerHeap.h" />
@@ -210,6 +213,8 @@
     <FxCompile Include="Shaders\DepthOnly.hlsl" />
     <FxCompile Include="Shaders\FullScreenQuad.vs.hlsl" />
     <FxCompile Include="Shaders\GenerateMipmapChain.cs.hlsl" />
+    <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl" />
+    <FxCompile Include="Shaders\LightLinkedListFill.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

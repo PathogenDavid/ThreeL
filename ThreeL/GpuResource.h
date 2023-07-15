@@ -6,6 +6,8 @@ class CommandContext;
 class GpuResource
 {
     friend class CommandContext;
+    friend struct GraphicsContext;
+    friend struct ComputeContext;
 
 protected:
     ComPtr<ID3D12Resource> m_Resource;

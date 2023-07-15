@@ -9,6 +9,7 @@
 #include "GraphicsContext.h"
 #include "GraphicsCore.h"
 #include "LightHeap.h"
+#include "LightLinkedList.h"
 #include "ResourceManager.h"
 #include "Scene.h"
 #include "ShaderInterop.h"
@@ -122,15 +123,15 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Allocate screen-dependent resources
     //-----------------------------------------------------------------------------------------------------------------
-    uint2 screenSize = uint2::Zero;
+    uint2 screenSize = swapChain.Size();
     float2 screenSizeF = (float2)screenSize;
-    DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", swapChain.Size(), DEPTH_BUFFER_FORMAT);
+    DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", screenSize, DEPTH_BUFFER_FORMAT);
 
     std::vector<DepthStencilBuffer> downsampledDepthBuffers;
     for (int i = 2; i <= 8; i *= 2)
     {
         std::wstring name = std::format(L"Depth Buffer (1/{})", i);
-        downsampledDepthBuffers.emplace_back(graphics, name, swapChain.Size() / i, DEPTH_BUFFER_FORMAT);
+        downsampledDepthBuffers.emplace_back(graphics, name, screenSize / i, DEPTH_BUFFER_FORMAT);
     }
 
     //-----------------------------------------------------------------------------------------------------------------
@@ -139,6 +140,10 @@ static int MainImpl()
     LightHeap lightHeap(graphics);
     std::vector<ShaderInterop::LightInfo> lights;
     lights.reserve(LightHeap::MAX_LIGHTS);
+
+    LightLinkedList lightLinkedList(resources, screenSize);
+    uint32_t lightLinkedListShift = 3; // 0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8
+    bool lightLinkedListDebugOverlay = true;
 
     lights.push_back
     ({
@@ -239,12 +244,14 @@ static int MainImpl()
 
             depthBuffer.Resize(screenSize);
 
-            int div = 2;
+            int divisor = 2;
             for (DepthStencilBuffer& depthBuffer : downsampledDepthBuffers)
             {
-                depthBuffer.Resize(screenSize / div);
-                div *= 2;
+                depthBuffer.Resize(screenSize / divisor);
+                divisor *= 2;
             }
+
+            lightLinkedList.Resize(screenSize);
         }
 
         //-------------------------------------------------------------------------------------------------------------
@@ -268,6 +275,8 @@ static int MainImpl()
                 * float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f),
             .EyePosition = camera.Position(),
             .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
+            .LightLinkedListBufferWidth = screenSize.x >> lightLinkedListShift,
+            .LightLinkedListBufferShift = lightLinkedListShift,
         };
 
         //-------------------------------------------------------------------------------------------------------------
@@ -353,8 +362,12 @@ static int MainImpl()
         // Light Buffer Pass
         //-------------------------------------------------------------------------------------------------------------
         context.Flush();
-        graphics.GraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
-        //TODO
+        {
+            PIXScopedEvent(&context, 2, "Fill light linked list");
+            graphics.GraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
+            DepthStencilBuffer& lightLinkedListDepthBuffer = lightLinkedListShift == 0 ? depthBuffer : downsampledDepthBuffers[lightLinkedListShift - 1];
+            lightLinkedList.FillLights(context, lightHeap, (uint32_t)lights.size(), LightLinkedList::MAX_LIGHT_LINKS, perFrame, lightLinkedListDepthBuffer, screenSize);
+        }
 
         //-------------------------------------------------------------------------------------------------------------
         // Opaque Pass
@@ -416,6 +429,16 @@ static int MainImpl()
         //TODO: Transparents pass
 
         //-------------------------------------------------------------------------------------------------------------
+        // Debug overlays
+        //-------------------------------------------------------------------------------------------------------------
+        if (lightLinkedListDebugOverlay)
+        {
+            context.SetRenderTarget(swapChain);
+            context.SetFullViewportScissor(screenSize);
+            lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrame);
+        }
+
+        //-------------------------------------------------------------------------------------------------------------
         // UI
         //-------------------------------------------------------------------------------------------------------------
         {
@@ -473,6 +496,33 @@ static int MainImpl()
 
                 ImGui::End();
             }
+
+            ImGui::SetNextWindowSize(ImVec2(250.f, 0.f), ImGuiCond_FirstUseEver);
+            if (ImGui::Begin("Light linked list settings"))
+            {
+                ImGui::Checkbox("Debug overlay", &lightLinkedListDebugOverlay);
+                char comboTemp[128];
+                uint2 size = screenSize >> lightLinkedListShift;
+                snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", (int)std::pow(2, lightLinkedListShift), size.x, size.y);
+                ImGui::TextUnformatted("Buffer size");
+                if (ImGui::BeginCombo("##lightLinkedListShiftCombo", comboTemp))
+                {
+                    for (uint32_t div = 1, i = 0; i <= downsampledDepthBuffers.size(); div *= 2, i++)
+                    {
+                        size = screenSize >> i;
+                        snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", div, size.x, size.y);
+                        bool isSelected = lightLinkedListShift == i;
+                        if (ImGui::Selectable(comboTemp, isSelected))
+                        {
+                            lightLinkedListShift = i;
+                        }
+
+                        if (isSelected) { ImGui::SetItemDefaultFocus(); }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+            ImGui::End();
 
 #if false
             ImGui::ShowDemoWindow();

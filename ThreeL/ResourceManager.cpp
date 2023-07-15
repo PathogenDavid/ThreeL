@@ -22,11 +22,18 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     ShaderBlobs generateMipMapsCsUnorm = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0", { L"GENERATE_UNORM_MIPMAP_CHAIN" });
     ShaderBlobs generateMipMapsCsFloat = hlslCompiler.CompileShader(L"Shaders/GenerateMipmapChain.cs.hlsl", L"Main", L"cs_6_0");
 
+    ShaderBlobs lightLinkedListFillVs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListFill.hlsl", L"VsMain", L"vs_6_0");
+    ShaderBlobs lightLinkedListFillPs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListFill.hlsl", L"PsMain", L"ps_6_0");
+
+    ShaderBlobs lightLinkedListDebugPs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListDebug.ps.hlsl", L"PsMain", L"ps_6_0");
+
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
     DepthOnlyRootSignature = RootSignature(Graphics, depthOnlyVs, L"DepthOnly Root Signature");
     DepthDownsampleRootSignature = RootSignature(Graphics, depthDownsamplePs, L"DepthDownsample Root Signature");
     GenerateMipMapsRootSignature = RootSignature(Graphics, generateMipMapsCsUnorm, L"GenerateMipMaps Root Signature");
+    LightLinkedListFillRootSignature = RootSignature(Graphics, lightLinkedListFillVs, L"LightLinkedList Fill Root Signature");
+    LightLinkedListDebugRootSignature = RootSignature(Graphics, lightLinkedListDebugPs, L"LightLinkedList Debug Root Signature");
 
     // Create PBR pipeline state objects
     {
@@ -103,6 +110,7 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         depthDownsampleDescription.PS = depthDownsamplePs.ShaderBytecode();
         depthDownsampleDescription.NumRenderTargets = 0;
         depthDownsampleDescription.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+        depthDownsampleDescription.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
         DepthDownsample = PipelineStateObject(Graphics, depthDownsampleDescription, L"DepthDownsample PSO");
     }
@@ -117,5 +125,52 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         GenerateMipMapsUnorm = PipelineStateObject(Graphics, generateMipMapsDescription, L"GenerateMipMaps PSO - UNorm");
         generateMipMapsDescription.CS = generateMipMapsCsFloat.ShaderBytecode();
         GenerateMipMapsFloat = PipelineStateObject(Graphics, generateMipMapsDescription, L"GenerateMipMaps PSO - Float");
+    }
+
+    // Create LightLinkedListFill pipeline state object
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC description = PipelineStateObject::BaseDescription;
+        description.pRootSignature = LightLinkedListFillRootSignature.Get();
+        description.VS = lightLinkedListFillVs.ShaderBytecode();
+        description.PS = lightLinkedListFillPs.ShaderBytecode();
+        description.NumRenderTargets = 0;
+        description.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+        description.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
+        description.DepthStencilState.DepthEnable = false;
+        description.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+
+        D3D12_INPUT_ELEMENT_DESC inputLayout[] =
+        {
+            // SemanticName, SemanticIndex, Format, InputSlot
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, MeshInputSlot::Position },
+        };
+        description.InputLayout = { inputLayout, (UINT)std::size(inputLayout) };
+
+        LightLinkedListFill = PipelineStateObject(Graphics, description, L"LightLinkedList Fill PSO");
+    }
+
+    // Create LightLinkedListDebug pipeline state object
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC description = PipelineStateObject::BaseDescription;
+        description.pRootSignature = LightLinkedListDebugRootSignature.Get();
+        description.VS = fullScreenQuadVs.ShaderBytecode();
+        description.PS = lightLinkedListDebugPs.ShaderBytecode();
+        description.DepthStencilState.DepthEnable = false;
+        description.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+        description.BlendState.RenderTarget[0] =
+        {
+            .BlendEnable = true,
+            .LogicOpEnable = false,
+            .SrcBlend = D3D12_BLEND_SRC_ALPHA,
+            .DestBlend = D3D12_BLEND_INV_SRC_ALPHA,
+            .BlendOp = D3D12_BLEND_OP_ADD,
+            .SrcBlendAlpha = D3D12_BLEND_ONE,
+            .DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA,
+            .BlendOpAlpha = D3D12_BLEND_OP_ADD,
+            .LogicOp = D3D12_LOGIC_OP_NOOP,
+            .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL,
+        };
+
+        LightLinkedListDebug = PipelineStateObject(Graphics, description, L"LightLinkedList Debug PSO");
     }
 }

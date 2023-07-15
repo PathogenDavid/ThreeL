@@ -184,6 +184,8 @@ inline uint2 operator +(uint2 a, uint2 b) { return uint2(a.x + b.x, a.y + b.y); 
 inline uint2 operator -(uint2 a, uint2 b) { return uint2(a.x - b.x, a.y - b.y); }
 inline uint2 operator *(uint2 a, uint2 b) { return uint2(a.x * b.x, a.y * b.y); }
 inline uint2 operator /(uint2 a, uint2 b) { return uint2(a.x / b.x, a.y / b.y); }
+inline uint2 operator <<(uint2 a, uint2 b) { return uint2(a.x << b.x, a.y << b.y); }
+inline uint2 operator >>(uint2 a, uint2 b) { return uint2(a.x >> b.x, a.y >> b.y); }
 
 //-------------------------------------------------------------------------------------------------
 // Scalar operators
@@ -196,6 +198,8 @@ inline uint2 operator +(uint32_t s, uint2 v) { return uint2(s + v.x, s + v.y); }
 inline uint2 operator -(uint32_t s, uint2 v) { return uint2(s - v.x, s - v.y); }
 inline uint2 operator *(uint32_t s, uint2 v) { return uint2(s * v.x, s * v.y); }
 inline uint2 operator /(uint32_t s, uint2 v) { return uint2(s / v.x, s / v.y); }
+inline uint2 operator <<(uint2 v, uint32_t s) { return uint2(v.x << s, v.y << s); }
+inline uint2 operator >>(uint2 v, uint32_t s) { return uint2(v.x >> s, v.y >> s); }
 
 //=====================================================================================================================
 // float2 operators

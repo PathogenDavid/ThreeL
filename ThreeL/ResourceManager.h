@@ -39,6 +39,12 @@ struct ResourceManager
     PipelineStateObject GenerateMipMapsUnorm;
     PipelineStateObject GenerateMipMapsFloat;
 
+    RootSignature LightLinkedListFillRootSignature;
+    PipelineStateObject LightLinkedListFill;
+
+    RootSignature LightLinkedListDebugRootSignature;
+    PipelineStateObject LightLinkedListDebug;
+
     explicit ResourceManager(GraphicsCore& graphics);
     ResourceManager(const ResourceManager&) = delete;
 

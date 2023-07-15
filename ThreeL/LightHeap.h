@@ -12,7 +12,7 @@ class GraphicsCore;
 class LightHeap : public GpuResource
 {
 public:
-    // Light IDs are 8 bits so that's our hard limit
+    // Limited to 8 bits because lower 24 bits of index are the next light link index. See LightLink struct.
     static const uint32_t MAX_LIGHTS = 256;
 
 private:

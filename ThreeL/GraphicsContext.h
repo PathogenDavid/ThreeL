@@ -1,8 +1,10 @@
 #pragma once
 #include "CommandContext.h"
 #include "DepthStencilBuffer.h"
+#include "GpuResource.h"
 #include "RenderTargetView.h"
 #include "SwapChain.h"
+#include "Vector4.h"
 
 class GraphicsQueue;
 
@@ -29,6 +31,12 @@ public:
         m_Context->TransitionResource(swapChain.CurrentBackBuffer(), desiredState, immediate);
     }
 
+    inline void UavBarrier(bool immediate = false) { m_Context->UavBarrier(immediate); }
+    inline void UavBarrier(GpuResource& resource, bool immediate = false) { m_Context->UavBarrier(resource, immediate); }
+
+    //TODO: This is to workaround our resource state tracking not working well with resources which map to multiple resourcs (IE: LightLinkedList or textures with subresources.)
+    inline D3D12_RESOURCE_BARRIER& __AllocateResourceBarrier() { return m_Context->AllocateResourceBarrier(); }
+
     inline void Clear(RenderTargetView renderTarget, float r, float g, float b, float a)
     {
         m_Context->FlushResourceBarriers();
@@ -40,6 +48,12 @@ public:
     {
         m_Context->FlushResourceBarriers();
         CommandList()->ClearDepthStencilView(depthBuffer.View(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depthBuffer.DepthClearValue(), depthBuffer.StencilClearValue(), 0, nullptr);
+    }
+
+    inline void ClearUav(ResourceDescriptor uavDescriptor, const GpuResource& resource, uint4 clearValue = uint4::Zero)
+    {
+        m_Context->FlushResourceBarriers();
+        CommandList()->ClearUnorderedAccessViewUint(uavDescriptor.ResidentHandle(), uavDescriptor.StagingHandle(), resource.m_Resource.Get(), &clearValue.x, 0, nullptr);
     }
 
     inline void DrawInstanced(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation = 0, uint32_t startInstanceLocation = 0)
