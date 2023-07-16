@@ -22,24 +22,8 @@ MeshHeap::MeshHeap(GraphicsCore& graphics)
 
 ComPtr<ID3D12Resource> MeshHeap::AllocateChunk(bool isStagingBuffer)
 {
-    D3D12_RESOURCE_DESC description =
-    {
-        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = 0,
-        .Width = CHUNK_SIZE,
-        .Height = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels = 1,
-        .Format = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc = {.Count = 1, .Quality = 0 },
-        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags = isStagingBuffer ? D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE : D3D12_RESOURCE_FLAG_NONE,
-    };
-
-    D3D12_HEAP_PROPERTIES heapProperties =
-    {
-        .Type = isStagingBuffer ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT,
-    };
+    D3D12_RESOURCE_DESC description = DescribeBufferResource(CHUNK_SIZE, isStagingBuffer ? D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE : D3D12_RESOURCE_FLAG_NONE);
+    D3D12_HEAP_PROPERTIES heapProperties = { isStagingBuffer ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT };
 
     ComPtr<ID3D12Resource> newChunk;
     AssertSuccess(m_Graphics.Device()->CreateCommittedResource

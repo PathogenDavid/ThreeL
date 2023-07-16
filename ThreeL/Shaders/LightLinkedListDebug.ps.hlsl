@@ -2,7 +2,7 @@
 #include "FullScreenQuad.vs.hlsl"
 
 #define LLL_DEBUG_ROOT_SIGNATURE \
-    "RootConstants(num32BitConstants = 22, b1)," \
+    "CBV(b1)," \
     "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
     "UAV(u1, space = 900, flags = DATA_VOLATILE)," \
     ""

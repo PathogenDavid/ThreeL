@@ -12,6 +12,8 @@ std::wstring GetD3DObjectName(ID3D12Object* object);
 
 std::wstring DescribeResourceState(D3D12_RESOURCE_STATES states);
 
+D3D12_RESOURCE_DESC DescribeBufferResource(uint64_t sizeBytes, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE, uint64_t alignment = 0);
+
 template<typename TFrom, typename TTo>
 inline std::span<TTo> SpanCast(std::span<TFrom> span)
 {

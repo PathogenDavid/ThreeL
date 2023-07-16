@@ -43,6 +43,15 @@ public:
     GpuSyncPoint Update(const std::span<const T> data)
     { return Update(SpanCast<const T, const uint8_t>(data)); }
 
+    //! Advances to the next GPU resource and updates it with the specified data
+    //! Must not be called more than once per frame
+    //!
+    //! For non-texture resources, `data` may be smaller than the actual buffer
+    //! However the rest of the buffer's contents will be undefined
+    template<typename T>
+    GpuSyncPoint Update(const T& data)
+    { return Update(std::span(&data, 1)); }
+
     inline ID3D12Resource* Resource(uint32_t resourceIndex) const
     {
         Assert(resourceIndex < RESOURCE_COUNT);

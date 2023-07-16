@@ -189,6 +189,10 @@ static int MainImpl()
     // Start the camera in a sensible location for Sponza
     camera.WarpTo(float3(4.35f, 1.f, 0.f), 0.f, Math::HalfPi);
 
+    // Per-frame constant buffer
+    // This is a pretty heavyweight abstraction for a constant buffer, ideally we should have a little bump allocator for this sort of thing
+    FrequentlyUpdatedResource perFrameCbResource(graphics, DescribeBufferResource(sizeof(ShaderInterop::PerFrameCb)), L"Per-frame constant buffer");
+
     // Initiate final resource uploads and wait for them to complete
     resources.Finish();
     graphics.UploadQueue().Flush();
@@ -201,10 +205,10 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Main loop
     //-----------------------------------------------------------------------------------------------------------------
-    auto BindPbrRootSignature = [&](GraphicsContext& context, ShaderInterop::PerFrameCb& perFrame)
+    auto BindPbrRootSignature = [&](GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrame)
         {
             context->SetGraphicsRootSignature(resources.PbrRootSignature);
-            context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerFrameCb, sizeof(perFrame) / sizeof(UINT), &perFrame, 0);
+            context->SetGraphicsRootConstantBufferView(ShaderInterop::Pbr::RpPerFrameCb, perFrame);
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpMaterialHeap, resources.PbrMaterials.BufferGpuAddress());
             // This is bound even in stages before the upload is complete so it's important those stages do not attempt to access it for some reason
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpLightHeap, lightHeap.BufferGpuAddress());
@@ -279,14 +283,18 @@ static int MainImpl()
             .LightLinkedListBufferShift = lightLinkedListShift,
         };
 
+        GpuSyncPoint perFrameCbSyncPoint = perFrameCbResource.Update(perFrame);
+        D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress = perFrameCbResource.Current()->GetGPUVirtualAddress();
+        graphics.GraphicsQueue().AwaitSyncPoint(perFrameCbSyncPoint); // (Part of why FrequentlyUpdatedResource isn't the ideal abstraction here)
+
         //-------------------------------------------------------------------------------------------------------------
-        // Depth Pre-pass
+        // Depth pre-pass
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(&context, 1, "Depth pre-pass");
             context.SetRenderTarget(depthBuffer.View());
             context.SetFullViewportScissor(screenSize);
-            BindPbrRootSignature(context, perFrame);
+            BindPbrRootSignature(context, perFrameCbAddress);
 
             for (const SceneNode& node : scene)
             {
@@ -359,25 +367,35 @@ static int MainImpl()
         }
 
         //-------------------------------------------------------------------------------------------------------------
-        // Light Buffer Pass
+        // Fill light linked list
         //-------------------------------------------------------------------------------------------------------------
         context.Flush();
         {
             PIXScopedEvent(&context, 2, "Fill light linked list");
             graphics.GraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
             DepthStencilBuffer& lightLinkedListDepthBuffer = lightLinkedListShift == 0 ? depthBuffer : downsampledDepthBuffers[lightLinkedListShift - 1];
-            lightLinkedList.FillLights(context, lightHeap, (uint32_t)lights.size(), LightLinkedList::MAX_LIGHT_LINKS, perFrame, lightLinkedListDepthBuffer, screenSize);
+            lightLinkedList.FillLights
+            (
+                context,
+                lightHeap,
+                (uint32_t)lights.size(),
+                LightLinkedList::MAX_LIGHT_LINKS,
+                perFrameCbAddress,
+                perFrame.LightLinkedListBufferShift,
+                lightLinkedListDepthBuffer,
+                screenSize
+            );
         }
 
         //-------------------------------------------------------------------------------------------------------------
-        // Opaque Pass
+        // Opaque pass
         //-------------------------------------------------------------------------------------------------------------
         context.Flush();
         {
             PIXScopedEvent(&context, 2, "Opaque pass");
             context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
             context.SetFullViewportScissor(screenSize);
-            BindPbrRootSignature(context, perFrame);
+            BindPbrRootSignature(context, perFrameCbAddress);
 
             for (const SceneNode& node : scene)
             {
@@ -423,7 +441,7 @@ static int MainImpl()
         }
 
         //-------------------------------------------------------------------------------------------------------------
-        // Transparents Pass
+        // Transparents pass
         //-------------------------------------------------------------------------------------------------------------
         context.Flush();
         //TODO: Transparents pass
@@ -435,7 +453,7 @@ static int MainImpl()
         {
             context.SetRenderTarget(swapChain);
             context.SetFullViewportScissor(screenSize);
-            lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrame);
+            lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrameCbAddress);
         }
 
         //-------------------------------------------------------------------------------------------------------------

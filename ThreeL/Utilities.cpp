@@ -83,3 +83,20 @@ std::wstring DescribeResourceState(D3D12_RESOURCE_STATES states)
     CHECK(VIDEO_ENCODE_WRITE);
     return result;
 }
+
+D3D12_RESOURCE_DESC DescribeBufferResource(uint64_t sizeBytes, D3D12_RESOURCE_FLAGS flags, uint64_t alignment)
+{
+    return
+    {
+        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .Alignment = alignment,
+        .Width = sizeBytes,
+        .Height = 1,
+        .DepthOrArraySize = 1,
+        .MipLevels = 1,
+        .Format = DXGI_FORMAT_UNKNOWN,
+        .SampleDesc = { .Count = 1, .Quality = 0 },
+        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+        .Flags = flags,
+    };
+}

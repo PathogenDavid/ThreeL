@@ -24,20 +24,7 @@ GpuSyncPoint PbrMaterialHeap::UploadMaterials()
     if (m_MaterialParamsStaging.size() == 0)
     { m_MaterialParamsStaging.push_back({ }); }
 
-    D3D12_RESOURCE_DESC resourceDescription =
-    {
-        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = 0,
-        .Width = m_MaterialParamsStaging.size() * sizeof(ShaderInterop::PbrMaterialParams),
-        .Height = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels = 1,
-        .Format = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc = { .Count = 1, .Quality = 0 },
-        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags = D3D12_RESOURCE_FLAG_NONE,
-    };
-
+    D3D12_RESOURCE_DESC resourceDescription = DescribeBufferResource(m_MaterialParamsStaging.size() * sizeof(ShaderInterop::PbrMaterialParams));
     PendingUpload pendingUpload = m_Graphics.UploadQueue().AllocateResource(resourceDescription, L"PBR Material Parameters");
 
     std::span<const ShaderInterop::PbrMaterialParams> sourceSpan = m_MaterialParamsStaging;

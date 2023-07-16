@@ -62,11 +62,12 @@ public:
         LightHeap& lightHeap,
         uint32_t lightCount,
         uint32_t lightLinkLimit,
-        const ShaderInterop::PerFrameCb& perFrameCb,
-        // Must match perFrameCb.LllBufferDivisor
+        D3D12_GPU_VIRTUAL_ADDRESS perFrameCb,
+        uint32_t lllBufferDivisor,
+        // Must match lllBufferDivisor
         DepthStencilBuffer& depthBuffer,
         uint2 fullScreenSize
     );
 
-    void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, const ShaderInterop::PerFrameCb& perFrameCb);
+    void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb);
 };

@@ -39,19 +39,7 @@ PendingUpload UploadQueue::AllocateResource(const D3D12_RESOURCE_DESC& resourceD
     // Create the upload buffer
     //TODO: For resources under a certain size it'd might make sense to pool and recycle buffers
     D3D12_HEAP_PROPERTIES uploadHeapProperties = { D3D12_HEAP_TYPE_UPLOAD };
-    D3D12_RESOURCE_DESC uploadResourceDescription =
-    {
-        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = 0,
-        .Width = uploadBufferSize,
-        .Height = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels = 1,
-        .Format = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc = { .Count = 1 },
-        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE,
-    };
+    D3D12_RESOURCE_DESC uploadResourceDescription = DescribeBufferResource(uploadBufferSize, D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE);
 
     ComPtr<ID3D12Resource> uploadResource;
     AssertSuccess(m_Graphics.Device()->CreateCommittedResource(

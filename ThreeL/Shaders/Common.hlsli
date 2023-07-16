@@ -78,7 +78,7 @@ ByteAddressBuffer g_Buffers[] : register(space3);
 #define ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
     "RootConstants(num32BitConstants = 31, b0)," \
-    "RootConstants(num32BitConstants = 22, b1)," \
+    "CBV(b1)," \
     "SRV(t0, flags = DATA_STATIC)," \
     "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
     "DescriptorTable(" \
@@ -114,7 +114,7 @@ uint GetFirstLightLinkAddress(uint2 position)
 
 #define LLL_FILL_ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-    "RootConstants(num32BitConstants = 22, b1)," \
+    "CBV(b1)," \
     "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
     "DescriptorTable(" \
         "SRV(t0, space = 900, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \

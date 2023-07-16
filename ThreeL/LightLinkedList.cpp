@@ -27,22 +27,8 @@ LightLinkedList::LightLinkedList(ResourceManager& resources, uint2 initialSize)
     ComPtr<ID3D12Resource> lightLinksCounter;
 
     D3D12_HEAP_PROPERTIES heapProperties = { D3D12_HEAP_TYPE_DEFAULT };
-    D3D12_RESOURCE_DESC resourceDescription =
-    {
-        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = 0,
-        .Width = ShaderInterop::SizeOfLightLink * MAX_LIGHT_LINKS,
-        .Height = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels = 1,
-        .Format = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc = { 1, 0 },
-        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-    };
-
-    D3D12_RESOURCE_DESC counterDescription = resourceDescription;
-    counterDescription.Width = sizeof(uint32_t);
+    D3D12_RESOURCE_DESC resourceDescription = DescribeBufferResource(ShaderInterop::SizeOfLightLink * MAX_LIGHT_LINKS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    D3D12_RESOURCE_DESC counterDescription = DescribeBufferResource(sizeof(uint32_t), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     AssertSuccess(graphics.Device()->CreateCommittedResource
     (
@@ -188,12 +174,13 @@ void LightLinkedList::FillLights
     LightHeap& lightHeap,
     uint32_t lightCount,
     uint32_t lightLinkLimit, //TODO: Implement
-    const ShaderInterop::PerFrameCb& perFrameCb,
+    D3D12_GPU_VIRTUAL_ADDRESS perFrameCb,
+    uint32_t lllBufferDivisor,
     DepthStencilBuffer& depthBuffer,
     uint2 fullScreenSize
 )
 {
-    uint32_t screenSizeShift = perFrameCb.LightLinkedListBufferShift;
+    uint32_t screenSizeShift = lllBufferDivisor;
     uint2 lightLinkedListBufferSize = fullScreenSize >> screenSizeShift;
     Assert((lightLinkedListBufferSize == depthBuffer.Size()).All() && "Light linked list buffer size and depth buffer size must match!");
 
@@ -210,7 +197,7 @@ void LightLinkedList::FillLights
     // Draw active lights to fill the light linked list
     context->SetGraphicsRootSignature(m_Resources.LightLinkedListFillRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListFill);
-    context->SetGraphicsRoot32BitConstants(ShaderInterop::LightLinkedListFill::RpPerFrameCb, sizeof(perFrameCb) / sizeof(uint32_t), &perFrameCb, 0);
+    context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListFill::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListFill::RpLightHeap, lightHeap.BufferGpuAddress());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::LightLinkedListFill::RpDepthBuffer, depthBuffer.DepthShaderResourceView().ResidentHandle());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::LightLinkedListFill::RpLightLinksHeap, m_LightLinksHeapUav.ResidentHandle());
@@ -228,11 +215,11 @@ void LightLinkedList::FillLights
     context.TransitionResource(m_LightLinksHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
-void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, const ShaderInterop::PerFrameCb& perFrameCb)
+void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
 {
     context->SetGraphicsRootSignature(m_Resources.LightLinkedListDebugRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListDebug);
-    context->SetGraphicsRoot32BitConstants(ShaderInterop::LightLinkedListDebug::RpPerFrameCb, sizeof(perFrameCb) / sizeof(uint32_t), &perFrameCb, 0);
+    context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListDebug::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightHeap, lightHeap.BufferGpuAddress());
     context->SetGraphicsRootUnorderedAccessView(ShaderInterop::LightLinkedListDebug::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
     context.DrawInstanced(3, 1);
