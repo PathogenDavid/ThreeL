@@ -40,6 +40,7 @@ LightLinkedList::LightLinkedList(ResourceManager& resources, uint2 initialSize)
         IID_PPV_ARGS(&lightLinksHeap)
     ));
     lightLinksHeap->SetName(L"LightLinkedList LightLinksHeap");
+    m_LightLinksHeapGpuAddress = lightLinksHeap->GetGPUVirtualAddress();
 
     AssertSuccess(graphics.Device()->CreateCommittedResource
     (
@@ -173,7 +174,7 @@ void LightLinkedList::FillLights
     GraphicsContext& context,
     LightHeap& lightHeap,
     uint32_t lightCount,
-    uint32_t lightLinkLimit, //TODO: Implement
+    uint32_t lightLinkLimit,
     D3D12_GPU_VIRTUAL_ADDRESS perFrameCb,
     uint32_t lllBufferDivisor,
     DepthStencilBuffer& depthBuffer,
@@ -197,6 +198,7 @@ void LightLinkedList::FillLights
     // Draw active lights to fill the light linked list
     context->SetGraphicsRootSignature(m_Resources.LightLinkedListFillRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListFill);
+    context->SetGraphicsRoot32BitConstant(ShaderInterop::LightLinkedListFill::RpFillParams, lightLinkLimit, 0);
     context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListFill::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListFill::RpLightHeap, lightHeap.BufferGpuAddress());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::LightLinkedListFill::RpDepthBuffer, depthBuffer.DepthShaderResourceView().ResidentHandle());
@@ -221,7 +223,8 @@ void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& ligh
     context->SetPipelineState(m_Resources.LightLinkedListDebug);
     context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListDebug::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightHeap, lightHeap.BufferGpuAddress());
-    context->SetGraphicsRootUnorderedAccessView(ShaderInterop::LightLinkedListDebug::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
+    context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightLinksHeap, m_LightLinksHeapGpuAddress);
+    context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
     context.DrawInstanced(3, 1);
 }
 

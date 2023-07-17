@@ -1,5 +1,6 @@
 #pragma once
 #include "MathCommon.h"
+#include "Vector3.h"
 #include <cmath>
 
 struct float4
@@ -11,18 +12,19 @@ struct float4
 
     float4()
         : x(), y(), z(), w()
-    {
-    }
+    { }
 
     float4(float x, float y, float z, float w)
         : x(x), y(y), z(z), w(w)
-    {
-    }
+    { }
 
     float4(float s)
         : x(s), y(s), z(s), w(s)
-    {
-    }
+    { }
+
+    float4(float3 xyz, float w)
+        : x(xyz.x), y(xyz.y), z(xyz.z), w(w)
+    { }
 
     //---------------------------------------------------------------------------------------------
     // Vector math

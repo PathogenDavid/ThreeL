@@ -31,7 +31,7 @@ struct PsInput
 // Vertex shader
 //===================================================================================================================================================
 
-[RootSignature(ROOT_SIGNATURE)]
+[RootSignature(PBR_ROOT_SIGNATURE)]
 PsInput VsMain(VsInput input)
 {
     PsInput result;
@@ -51,7 +51,7 @@ PsInput VsMain(VsInput input)
 // Pixel shader
 //===================================================================================================================================================
 
-[RootSignature(ROOT_SIGNATURE)]
+[RootSignature(PBR_ROOT_SIGNATURE)]
 void PsMain(PsInput input)
 {
     MaterialParams material = g_Materials[g_PerNode.MaterialId];

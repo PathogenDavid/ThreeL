@@ -3,6 +3,7 @@
 #include "Quaternion.h"
 #include "Vector2.h"
 #include "Vector3.h"
+#include "Vector4.h"
 
 struct float4x4
 {
@@ -65,6 +66,9 @@ struct float4x4
             m03, m13, m23, m33
         );
     }
+
+    float Determinant();
+    float4x4 Inverted();
 
     //---------------------------------------------------------------------------------------------
     // Matrix creation
@@ -140,6 +144,21 @@ struct float4x4
     static inline float4x4 Make2dTransform(float2 viewportSize)
     {
         return Make2dTransform(viewportSize.x, viewportSize.y);
+    }
+
+    //---------------------------------------------------------------------------------------------
+    // Matrix transformation
+    //---------------------------------------------------------------------------------------------
+
+    inline float4 Transform(float4 v) const
+    {
+        return float4
+        (
+            v.x * m00 + v.y * m10 + v.z * m20 + v.w * m30,
+            v.x * m01 + v.y * m11 + v.z * m21 + v.w * m31,
+            v.x * m02 + v.y * m12 + v.z * m22 + v.w * m32,
+            v.x * m03 + v.y * m13 + v.z * m23 + v.w * m33
+        );
     }
 
     //---------------------------------------------------------------------------------------------
@@ -248,3 +267,5 @@ inline float4x4 operator /(float s, const float4x4& m)
 // Matrix multiplication
 //-------------------------------------------------------------------------------------------------
 float4x4 operator *(const float4x4& a, const float4x4& b);
+
+inline float4 operator *(const float4& a, const float4x4& b) { return b.Transform(a); }

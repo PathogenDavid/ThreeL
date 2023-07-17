@@ -143,7 +143,8 @@ static int MainImpl()
 
     LightLinkedList lightLinkedList(resources, screenSize);
     uint32_t lightLinkedListShift = 3; // 0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8
-    bool lightLinkedListDebugOverlay = true;
+    uint32_t lightLinkLimit = LightLinkedList::MAX_LIGHT_LINKS;
+    bool lightLinkedListDebugOverlay = false;
 
     lights.push_back
     ({
@@ -210,8 +211,12 @@ static int MainImpl()
             context->SetGraphicsRootSignature(resources.PbrRootSignature);
             context->SetGraphicsRootConstantBufferView(ShaderInterop::Pbr::RpPerFrameCb, perFrame);
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpMaterialHeap, resources.PbrMaterials.BufferGpuAddress());
-            // This is bound even in stages before the upload is complete so it's important those stages do not attempt to access it for some reason
+            
+            //TODO: These are bound even during the depth pre-pass even though they aren't valid at that point. Maybe it should have its own separate root signature?
             context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpLightHeap, lightHeap.BufferGpuAddress());
+            context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpLightLinksHeap, lightLinkedList.LightLinksHeapGpuAddress());
+            context->SetGraphicsRootShaderResourceView(ShaderInterop::Pbr::RpFirstLightLinkBuffer, lightLinkedList.FirstLightLinkBufferGpuAddress());
+
             context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpSamplerHeap, graphics.SamplerHeap().GpuHeap()->GetGPUDescriptorHandleForHeapStart());
             context->SetGraphicsRootDescriptorTable(ShaderInterop::Pbr::RpBindlessHeap, graphics.ResourceDescriptorManager().GpuHeap()->GetGPUDescriptorHandleForHeapStart());
         };
@@ -282,6 +287,7 @@ static int MainImpl()
             .LightLinkedListBufferWidth = screenSize.x >> lightLinkedListShift,
             .LightLinkedListBufferShift = lightLinkedListShift,
         };
+        perFrame.ViewProjectionTransformInverse = perFrame.ViewProjectionTransform.Inverted();
 
         GpuSyncPoint perFrameCbSyncPoint = perFrameCbResource.Update(perFrame);
         D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress = perFrameCbResource.Current()->GetGPUVirtualAddress();
@@ -379,7 +385,7 @@ static int MainImpl()
                 context,
                 lightHeap,
                 (uint32_t)lights.size(),
-                LightLinkedList::MAX_LIGHT_LINKS,
+                lightLinkLimit,
                 perFrameCbAddress,
                 perFrame.LightLinkedListBufferShift,
                 lightLinkedListDepthBuffer,
@@ -451,6 +457,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         if (lightLinkedListDebugOverlay)
         {
+            PIXScopedEvent(&context, 4, "Debug overlay");
             context.SetRenderTarget(swapChain);
             context.SetFullViewportScissor(screenSize);
             lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrameCbAddress);
@@ -518,6 +525,7 @@ static int MainImpl()
             ImGui::SetNextWindowSize(ImVec2(250.f, 0.f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Light linked list settings"))
             {
+                ImGui::PushItemWidth(-FLT_MIN);
                 ImGui::Checkbox("Debug overlay", &lightLinkedListDebugOverlay);
                 char comboTemp[128];
                 uint2 size = screenSize >> lightLinkedListShift;
@@ -539,6 +547,20 @@ static int MainImpl()
                     }
                     ImGui::EndCombo();
                 }
+
+                {
+                    double size = (lightLinkLimit * ShaderInterop::SizeOfLightLink) / 1024.0;
+                    const char* sizeUnits = "KB";
+                    if (size > 1024.0)
+                    {
+                        size /= 1024.0;
+                        sizeUnits = "MB";
+                    }
+                    ImGui::Text("Light links limit (%.2f %s)", size, sizeUnits);
+                    ImGui::SliderInt("##lightLinksLimit", &lightLinkLimit, 0, LightLinkedList::MAX_LIGHT_LINKS, "%u", ImGuiSliderFlags_AlwaysClamp);
+                }
+
+                ImGui::PopItemWidth();
             }
             ImGui::End();
 

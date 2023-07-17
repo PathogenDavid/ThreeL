@@ -36,4 +36,9 @@ namespace ImGui
     {
         return ImGui::CalcTextSize(s.data(), s.data() + s.size(), hide_text_after_double_hash, wrap_width);
     }
+
+    inline bool SliderInt(const char* label, uint32_t* v, uint32_t v_min, uint32_t v_max, const char* format = "%u", ImGuiSliderFlags flags = 0)
+    {
+        return ImGui::SliderScalar(label, ImGuiDataType_U32, v, &v_min, &v_max, format, flags);
+    }
 }

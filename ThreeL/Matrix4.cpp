@@ -1,6 +1,43 @@
 #include "pch.h"
 #include "Matrix4.h"
 
+float float4x4::Determinant()
+{
+    return (m00 * m11 - m01 * m10) * (m22 * m33 - m23 * m32)
+        - (m00 * m12 - m02 * m10) * (m21 * m33 - m23 * m31)
+        + (m00 * m13 - m03 * m10) * (m21 * m32 - m22 * m31)
+        + (m01 * m12 - m02 * m11) * (m20 * m33 - m23 * m30)
+        - (m01 * m13 - m03 * m11) * (m20 * m32 - m22 * m30)
+        + (m02 * m13 - m03 * m12) * (m20 * m31 - m21 * m30);
+}
+
+float4x4 float4x4::Inverted()
+{
+    float det = Determinant();
+    Assert(std::abs(det) > FLT_EPSILON && "Tried to invert non-invertable matrix!");
+
+    det = 1.f / det;
+    return float4x4
+    (
+        det * (m11 * (m22 * m33 - m23 * m32) + m12 * (m23 * m31 - m21 * m33) + m13 * (m21 * m32 - m22 * m31)),
+        det * (m21 * (m02 * m33 - m03 * m32) + m22 * (m03 * m31 - m01 * m33) + m23 * (m01 * m32 - m02 * m31)),
+        det * (m31 * (m02 * m13 - m03 * m12) + m32 * (m03 * m11 - m01 * m13) + m33 * (m01 * m12 - m02 * m11)),
+        det * (m01 * (m13 * m22 - m12 * m23) + m02 * (m11 * m23 - m13 * m21) + m03 * (m12 * m21 - m11 * m22)),
+        det * (m12 * (m20 * m33 - m23 * m30) + m13 * (m22 * m30 - m20 * m32) + m10 * (m23 * m32 - m22 * m33)),
+        det * (m22 * (m00 * m33 - m03 * m30) + m23 * (m02 * m30 - m00 * m32) + m20 * (m03 * m32 - m02 * m33)),
+        det * (m32 * (m00 * m13 - m03 * m10) + m33 * (m02 * m10 - m00 * m12) + m30 * (m03 * m12 - m02 * m13)),
+        det * (m02 * (m13 * m20 - m10 * m23) + m03 * (m10 * m22 - m12 * m20) + m00 * (m12 * m23 - m13 * m22)),
+        det * (m13 * (m20 * m31 - m21 * m30) + m10 * (m21 * m33 - m23 * m31) + m11 * (m23 * m30 - m20 * m33)),
+        det * (m23 * (m00 * m31 - m01 * m30) + m20 * (m01 * m33 - m03 * m31) + m21 * (m03 * m30 - m00 * m33)),
+        det * (m33 * (m00 * m11 - m01 * m10) + m30 * (m01 * m13 - m03 * m11) + m31 * (m03 * m10 - m00 * m13)),
+        det * (m03 * (m11 * m20 - m10 * m21) + m00 * (m13 * m21 - m11 * m23) + m01 * (m10 * m23 - m13 * m20)),
+        det * (m10 * (m22 * m31 - m21 * m32) + m11 * (m20 * m32 - m22 * m30) + m12 * (m21 * m30 - m20 * m31)),
+        det * (m20 * (m02 * m31 - m01 * m32) + m21 * (m00 * m32 - m02 * m30) + m22 * (m01 * m30 - m00 * m31)),
+        det * (m30 * (m02 * m11 - m01 * m12) + m31 * (m00 * m12 - m02 * m10) + m32 * (m01 * m10 - m00 * m11)),
+        det * (m00 * (m11 * m22 - m12 * m21) + m01 * (m12 * m20 - m10 * m22) + m02 * (m10 * m21 - m11 * m20))
+    );
+}
+
 float4x4 float4x4::MakeRotation(Quaternion q)
 {
     float x = q.Vector.x;
@@ -49,6 +86,15 @@ float4x4 float4x4::MakeWorldTransform(float3 position, float3 scale, Quaternion 
     return MakeScale(scale) * MakeRotation(rotation) * MakeTranslation(position);
 }
 
+/// <summary>Creates a standard perspective transform with an infinite far plane and reversed depth.</summary>
+/// <remarks>
+/// This method generates a perspective transform without an infinite far plane as decribed in
+/// "Tightening the Precision of Perspective Rendering" by Paul Upchurch and Mathieu Desburn.
+/// https://www.cs.cornell.edu/~paulu/tightening.pdf
+///
+/// It also uses reversed depth, which improves depth precision where it matters.
+/// https://developer.nvidia.com/content/depth-precision-visualized
+/// </remarks>
 float4x4 float4x4::MakePerspectiveTransformReverseZ(float fieldOfView, float aspect, float nearPlane)
 {
     Assert(fieldOfView != 0.f);

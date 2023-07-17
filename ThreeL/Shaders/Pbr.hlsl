@@ -45,7 +45,7 @@ struct PsInput
 // Vertex shader
 //===================================================================================================================================================
 
-[RootSignature(ROOT_SIGNATURE)]
+[RootSignature(PBR_ROOT_SIGNATURE)]
 PsInput VsMain(VsInput input)
 {
     PsInput result;
@@ -182,7 +182,7 @@ struct Brdf
     }
 };
 
-[RootSignature(ROOT_SIGNATURE)]
+[RootSignature(PBR_ROOT_SIGNATURE)]
 float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
 {
     //=================================================================================================================
@@ -263,13 +263,23 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     brdf.ApplyDirectionalLight(normalize(float3(-0.5f, -0.707f, -0.5f)), float3(1.f, 1.f, 1.f), 0.2f);
     brdf.ApplyDirectionalLight(normalize(float3(0.5f, 0.707f, 0.5f)), float3(1.f, 1.f, 1.f), 0.2f * 0.4f);
 
-    // Apply point lights from scene
-    for (uint i = 0; i < g_PerFrame.LightCount; i++)
+    // Apply point lights from light linked list
+    uint2 lightLinkedListPosition = ScreenSpaceToLightLinkedListSpace((uint2)input.Position.xy);
+    uint lightLinkIndex = g_FirstLightLink.Load(GetFirstLightLinkAddress(lightLinkedListPosition)) & NO_LIGHT_LINK;
+    while (lightLinkIndex != NO_LIGHT_LINK)
     {
-        brdf.ApplyPointLight(g_Lights[i]);
+        LightLink lightLink = g_LightLinksHeap[lightLinkIndex];
+        lightLinkIndex = lightLink.NextLightIndex();
+
+        // Skip lights outside our depth
+        if (input.Position.w < lightLink.MinDepth() || input.Position.w > lightLink.MaxDepth())
+        { continue; }
+
+        LightInfo light = g_Lights[lightLink.LightId()];
+        brdf.ApplyPointLight(light);
     }
 
+    // Compute final result
     float4 result = float4(emissive + brdf.Diffuse + brdf.Specular, baseColor.a);
-
     return result;
 }

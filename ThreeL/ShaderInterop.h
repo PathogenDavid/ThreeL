@@ -44,17 +44,19 @@ namespace ShaderInterop
     struct PerFrameCb
     {
         float4x4 ViewProjectionTransform;
+        float4x4 ViewProjectionTransformInverse;
         float3 EyePosition;
         uint32_t LightCount;
         uint32_t LightLinkedListBufferWidth;
         uint32_t LightLinkedListBufferShift;
     };
-    static_assert(sizeof(PerFrameCb) == 22 * sizeof(uint32_t));
+    static_assert(sizeof(PerFrameCb) == 152);
     static_assert(offsetof(PerFrameCb, ViewProjectionTransform) == 0);
-    static_assert(offsetof(PerFrameCb, EyePosition) == 64);
-    static_assert(offsetof(PerFrameCb, LightCount) == 76);
-    static_assert(offsetof(PerFrameCb, LightLinkedListBufferWidth) == 80);
-    static_assert(offsetof(PerFrameCb, LightLinkedListBufferShift) == 84);
+    static_assert(offsetof(PerFrameCb, ViewProjectionTransformInverse) == 64);
+    static_assert(offsetof(PerFrameCb, EyePosition) == 128);
+    static_assert(offsetof(PerFrameCb, LightCount) == 140);
+    static_assert(offsetof(PerFrameCb, LightLinkedListBufferWidth) == 144);
+    static_assert(offsetof(PerFrameCb, LightLinkedListBufferShift) == 148);
 
     struct PerNodeCb
     {
@@ -73,13 +75,15 @@ namespace ShaderInterop
 
     namespace Pbr
     {
-        // See ROOT_SIGNATURE in Pbr.hlsl
+        // See PBR_ROOT_SIGNATURE in Common.hlsli
         enum RootParameters
         {
             RpPerNodeCb,
             RpPerFrameCb,
             RpMaterialHeap,
             RpLightHeap,
+            RpLightLinksHeap,
+            RpFirstLightLinkBuffer,
             RpSamplerHeap,
             RpBindlessHeap,
         };
@@ -135,9 +139,10 @@ namespace ShaderInterop
 
     namespace LightLinkedListFill
     {
-        // See LLL_FILL_ROOT_SIGNATURE in Common.hlsli
+        // See LLL_FILL_ROOT_SIGNATURE in LightLinkedListFill.hlsl
         enum RootParameters
         {
+            RpFillParams,
             RpPerFrameCb,
             RpLightHeap,
             RpDepthBuffer,
@@ -153,6 +158,7 @@ namespace ShaderInterop
         {
             RpPerFrameCb,
             RpLightHeap,
+            RpLightLinksHeap,
             RpFirstLightLinkBuffer,
         };
     }

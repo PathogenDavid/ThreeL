@@ -17,8 +17,10 @@ class LightLinkedList
 public:
     // Limited to 24 bits because upper 8 bits of index are the light index. See LightLink struct.
     // In a more refined implementation you'd likely limit this further anyway to avoid spending so much VRAM on it
-    // (m_LightLinksHeap will end up being MAX_LIGHT_LINKS * sizeof(LightLink) which is currently 127 MB.)
+    // (m_LightLinksHeap will end up being MAX_LIGHT_LINKS * sizeof(LightLink) which is currently 128 MB.)
     // It's unrestricted in ThreeL with a configurable articial limit for the sake of experimentation.
+    // Note that the number chosen in a refined implementation should result in a buffer that's as close to a multiple of 64 KB
+    // as possible, otherwise you're wasting usable light links on alignment.
     static const uint32_t MAX_LIGHT_LINKS = 0xFFFFFF;
 
 private:
@@ -41,6 +43,7 @@ private:
     // The UAV counter marks the next free link in the heap. It's not totally clear if these separate counters are
     // actually worth using over atomic adds on modern hardware (once upon a time they were optimized by vendors.)
     RawGpuResource m_LightLinksHeap;
+    D3D12_GPU_VIRTUAL_ADDRESS m_LightLinksHeapGpuAddress;
     ResourceDescriptor m_LightLinksHeapUav;
     ResourceDescriptor m_LightLinksHeapSrv;
     RawGpuResource m_LightLinksCounter;
@@ -70,4 +73,8 @@ public:
     );
 
     void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb);
+
+    inline D3D12_GPU_DESCRIPTOR_HANDLE LightLinksHeapSrv() const { return m_LightLinksHeapSrv.ResidentHandle(); }
+    inline D3D12_GPU_VIRTUAL_ADDRESS LightLinksHeapGpuAddress() const { return m_LightLinksHeapGpuAddress; }
+    inline D3D12_GPU_VIRTUAL_ADDRESS FirstLightLinkBufferGpuAddress() const { return m_FirstLightLinkBufferGpuAddress; }
 };
