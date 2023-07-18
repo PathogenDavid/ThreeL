@@ -11,6 +11,7 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     // Compile all shaders
     ShaderBlobs pbrVs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"VsMain", L"vs_6_0");
     ShaderBlobs pbrPs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"PsMain", L"ps_6_0");
+    ShaderBlobs pbrPsLightDebug = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"PsMain", L"ps_6_0", { L"DEBUG_LIGHT_BOUNDARIES" });
 
     ShaderBlobs depthOnlyVs = hlslCompiler.CompileShader(L"Shaders/DepthOnly.hlsl", L"VsMain", L"vs_6_0");
     ShaderBlobs depthOnlyPs = hlslCompiler.CompileShader(L"Shaders/DepthOnly.hlsl", L"PsMain", L"ps_6_0");
@@ -55,6 +56,8 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         };
         pbrDescription.InputLayout = { inputLayout, (UINT)std::size(inputLayout) };
 
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC pbrLightDebugDescription = pbrDescription;
+
         // Create opaque PSOs
         PbrBlendOffSingleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Opaque Single Sided");
         pbrDescription.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
@@ -78,6 +81,12 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         PbrBlendOnDoubleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Double Sided");
         pbrDescription.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
         PbrBlendOnSingleSided = PipelineStateObject(Graphics, pbrDescription, L"PBR PSO - Blended Single Sided");
+
+        // Create light boundary debug PSOs
+        pbrLightDebugDescription.PS = pbrPsLightDebug.ShaderBytecode();
+        PbrLightDebugSingleSided = PipelineStateObject(Graphics, pbrLightDebugDescription, L"PBR PSO - Light Debug Single Sided");
+        pbrLightDebugDescription.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+        PbrLightDebugDoubleSided = PipelineStateObject(Graphics, pbrLightDebugDescription, L"PBR PSO - Light Debug Double Sided");
     }
 
     // Create DepthOnly pipeline state object

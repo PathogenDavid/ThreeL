@@ -69,7 +69,8 @@ public:
         uint32_t lllBufferDivisor,
         // Must match lllBufferDivisor
         DepthStencilBuffer& depthBuffer,
-        uint2 fullScreenSize
+        uint2 fullScreenSize,
+        const float4x4& perspectiveTransform
     );
 
     void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb);

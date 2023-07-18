@@ -25,6 +25,13 @@
 #include <stb_image.h>
 #include <tiny_gltf.h>
 
+struct DebugSettings
+{
+    bool ShowLightBoundaries = false;
+    bool ShowLightBufferAverage = false;
+    bool AnimateLights = true;
+};
+
 static Scene LoadGltfScene(ResourceManager& resources, const std::string& filePath)
 {
     tinygltf::Model model;
@@ -144,7 +151,6 @@ static int MainImpl()
     LightLinkedList lightLinkedList(resources, screenSize);
     uint32_t lightLinkedListShift = 3; // 0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8
     uint32_t lightLinkLimit = LightLinkedList::MAX_LIGHT_LINKS;
-    bool lightLinkedListDebugOverlay = false;
 
     lights.push_back
     ({
@@ -168,6 +174,7 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
     //-----------------------------------------------------------------------------------------------------------------
+    DebugSettings debugSettings = DebugSettings();
     DearImGui dearImGui(graphics, window);
 
     // Time keeping
@@ -237,9 +244,12 @@ static int MainImpl()
         camera.ApplyMovement(cameraInput.MoveVector() * deltaTime * 3.f, cameraInput.LookVector() * deltaTime);
 
         // Animate lights
-        lights[0].Position.y = 0.1f + (1.f + std::sin(light0Hover += deltaTime * 2.f)) * 0.25f;
-        light1Offset = Quaternion(float3::UnitY, -deltaTime) * light1Offset;
-        lights[1].Position = light1Center + light1Offset;
+        if (debugSettings.AnimateLights)
+        {
+            lights[0].Position.y = 0.1f + (1.f + std::sin(light0Hover += deltaTime * 2.f)) * 0.25f;
+            light1Offset = Quaternion(float3::UnitY, -deltaTime) * light1Offset;
+            lights[1].Position = light1Center + light1Offset;
+        }
 
         //-------------------------------------------------------------------------------------------------------------
         // Resize screen-dependent resources
@@ -278,10 +288,10 @@ static int MainImpl()
             lightUpdateSyncPoint = lightHeap.Update(lights);
         }
 
+        float4x4 perspectiveTransform = float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f);
         ShaderInterop::PerFrameCb perFrame =
         {
-            .ViewProjectionTransform = camera.ViewTransform()
-                * float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f),
+            .ViewProjectionTransform = camera.ViewTransform() * perspectiveTransform,
             .EyePosition = camera.Position(),
             .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
             .LightLinkedListBufferWidth = screenSize.x >> lightLinkedListShift,
@@ -389,7 +399,8 @@ static int MainImpl()
                 perFrameCbAddress,
                 perFrame.LightLinkedListBufferShift,
                 lightLinkedListDepthBuffer,
-                screenSize
+                screenSize,
+                perspectiveTransform
             );
         }
 
@@ -428,7 +439,10 @@ static int MainImpl()
                     perNode.ColorsIndex = primitive.ColorsBufferIndex();
                     context->SetGraphicsRoot32BitConstants(ShaderInterop::Pbr::RpPerNodeCb, sizeof(perNode) / sizeof(UINT), &perNode, 0);
 
-                    context->SetPipelineState(material.PipelineStateObject());
+                    if (debugSettings.ShowLightBoundaries)
+                    { context->SetPipelineState(material.IsDoubleSided() ? resources.PbrLightDebugDoubleSided : resources.PbrLightDebugSingleSided); }
+                    else
+                    { context->SetPipelineState(material.PipelineStateObject()); }
                     context->IASetVertexBuffers(MeshInputSlot::Position, 1, &primitive.Positions());
                     context->IASetVertexBuffers(MeshInputSlot::Normal, 1, &primitive.Normals());
                     context->IASetVertexBuffers(MeshInputSlot::Uv0, 1, &primitive.Uvs());
@@ -455,7 +469,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Debug overlays
         //-------------------------------------------------------------------------------------------------------------
-        if (lightLinkedListDebugOverlay)
+        if (debugSettings.ShowLightBufferAverage)
         {
             PIXScopedEvent(&context, 4, "Debug overlay");
             context.SetRenderTarget(swapChain);
@@ -488,6 +502,21 @@ static int MainImpl()
 
                 if (ImGui::BeginMenuBar())
                 {
+                    if (ImGui::BeginMenu("Debug"))
+                    {
+                        if (ImGui::Button("Reset all"))
+                            debugSettings = DebugSettings();
+
+                        ImGui::Checkbox("Light boundaries", &debugSettings.ShowLightBoundaries);
+                        ImGui::Checkbox("Light buffer average colors", &debugSettings.ShowLightBufferAverage);
+
+                        ImGui::Separator();
+
+                        ImGui::Checkbox("Animate lights", &debugSettings.AnimateLights);
+
+                        ImGui::EndMenu();
+                    }
+
                     if (ImGui::BeginMenu("Settings"))
                     {
                         ImGui::SliderFloat("Mouse sensitivity", &cameraInput.m_MouseSensitivity, 0.1f, 10.f);
@@ -526,7 +555,6 @@ static int MainImpl()
             if (ImGui::Begin("Light linked list settings"))
             {
                 ImGui::PushItemWidth(-FLT_MIN);
-                ImGui::Checkbox("Debug overlay", &lightLinkedListDebugOverlay);
                 char comboTemp[128];
                 uint2 size = screenSize >> lightLinkedListShift;
                 snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", (int)std::pow(2, lightLinkedListShift), size.x, size.y);

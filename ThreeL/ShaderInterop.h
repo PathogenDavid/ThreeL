@@ -137,6 +137,15 @@ namespace ShaderInterop
 
     const static uint32_t SizeOfLightLink = sizeof(uint32_t) * 2;
 
+    struct LightLinkedListFillParams
+    {
+        uint32_t LightLinksLimit;
+        float RangeExtensionRatio;
+    };
+    static_assert(sizeof(LightLinkedListFillParams) == 2 * sizeof(uint32_t));
+    static_assert(offsetof(LightLinkedListFillParams, LightLinksLimit) == 0);
+    static_assert(offsetof(LightLinkedListFillParams, RangeExtensionRatio) == 4);
+
     namespace LightLinkedListFill
     {
         // See LLL_FILL_ROOT_SIGNATURE in LightLinkedListFill.hlsl

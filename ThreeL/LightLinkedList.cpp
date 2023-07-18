@@ -178,7 +178,8 @@ void LightLinkedList::FillLights
     D3D12_GPU_VIRTUAL_ADDRESS perFrameCb,
     uint32_t lllBufferDivisor,
     DepthStencilBuffer& depthBuffer,
-    uint2 fullScreenSize
+    uint2 fullScreenSize,
+    const float4x4& perspectiveTransform
 )
 {
     uint32_t screenSizeShift = lllBufferDivisor;
@@ -196,9 +197,15 @@ void LightLinkedList::FillLights
     context.ClearUav(m_LightLinksCounterUav, m_LightLinksCounter);
 
     // Draw active lights to fill the light linked list
+    ShaderInterop::LightLinkedListFillParams params =
+    {
+        .LightLinksLimit = lightLinkLimit,
+        .RangeExtensionRatio = 1.5f / ((float)lightLinkedListBufferSize.x * perspectiveTransform.m00),
+    };
+
     context->SetGraphicsRootSignature(m_Resources.LightLinkedListFillRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListFill);
-    context->SetGraphicsRoot32BitConstant(ShaderInterop::LightLinkedListFill::RpFillParams, lightLinkLimit, 0);
+    context->SetGraphicsRoot32BitConstants(ShaderInterop::LightLinkedListFill::RpFillParams, sizeof(params) / sizeof(uint32_t), &params, 0);
     context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListFill::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListFill::RpLightHeap, lightHeap.BufferGpuAddress());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::LightLinkedListFill::RpDepthBuffer, depthBuffer.DepthShaderResourceView().ResidentHandle());
@@ -230,7 +237,7 @@ void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& ligh
 
 // This is just a UV sphere I made in Blender with 12 segments and 6 rings with a radius of 1.07
 // The radius needs to be slightly above 1 so that the full light sphere is within this stand-in sphere
-// Radius was determined experimentally. I solved it for 2D before I decided approximating in Blender against a high ress phere was good enough.
+// Radius was determined experimentally. I solved it for 2D before I decided approximating in Blender against a high res sphere was good enough.
 namespace
 {
     const float LightSphereVertices[186] =

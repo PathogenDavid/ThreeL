@@ -28,6 +28,9 @@ struct ResourceManager
     PipelineStateObject PbrBlendOnSingleSided;
     PipelineStateObject PbrBlendOnDoubleSided;
 
+    PipelineStateObject PbrLightDebugSingleSided;
+    PipelineStateObject PbrLightDebugDoubleSided;
+
     RootSignature DepthOnlyRootSignature;
     PipelineStateObject DepthOnlySingleSided;
     PipelineStateObject DepthOnlyDoubleSided;

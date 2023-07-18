@@ -14,5 +14,7 @@ public:
     void WarpTo(float3 position, float pitch, float yaw);
 
     inline const float3& Position() const { return m_Position; }
+    inline const float Pitch() const { return m_Pitch; }
+    inline const float Yaw() const { return m_Yaw; }
     inline const float4x4& ViewTransform() const { return m_ViewTransform; }
 };

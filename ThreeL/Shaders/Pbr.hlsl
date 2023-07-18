@@ -170,15 +170,25 @@ struct Brdf
         // Calculate attenuation based on the KHR_lights_punctual spec with minimum bounds on denominator to avoid explosion at light center
         // https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
         float distanceSquared = dot(surfaceToLight, surfaceToLight);
-        float distanceOverRange = distanceSquared / (light.Range * light.Range); // pow2
+        float rangeSquared = light.Range * light.Range;
+        float distanceOverRange = distanceSquared / rangeSquared; // pow2
         distanceOverRange *= distanceOverRange; // pow4
         float lightAttenuation = saturate(1.f - distanceOverRange) / max(distanceSquared, 0.0001);
 
+        // When this is enabled it's easier to see the boundaries of light spheres, which are normally pretty hard to see since the light
+        // attenuation is approaching zero at that point. Basically this shows dim solid light for areas covered by the light linked list
+        // and bright in areas actually covered by the light. It also indirectly shows light checks lost due to depth errors.
+        // In other words, this shows that RangeExtension in LightLinkedListFill.hlsl is being calculated correctly.
+#if DEBUG_LIGHT_BOUNDARIES
+        lightAttenuation = distanceSquared < rangeSquared ? 1.f : 0.25f;
+        Diffuse += light.Color * lightAttenuation;
+#else
         // Surface is outside the range of the light
         if (lightAttenuation <= 0.f)
         { return; }
 
         ApplyLight(surfaceToLight, light.Color, light.Intensity * lightAttenuation);
+#endif
     }
 };
 

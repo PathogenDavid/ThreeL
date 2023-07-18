@@ -3,6 +3,7 @@
 struct LightLinkedListFillParams
 {
     uint LightLinksLimit;
+    float RangeExtensionRatio;
 };
 
 ConstantBuffer<LightLinkedListFillParams> g_FillParams : register(b0, space900);
@@ -12,7 +13,7 @@ RWByteAddressBuffer g_FirstLightLinkRW : register(u1, space900);
 
 #define LLL_FILL_ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-    "RootConstants(num32BitConstants = 1, b0, space = 900)," \
+    "RootConstants(num32BitConstants = 2, b0, space = 900)," \
     "CBV(b1)," \
     "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
     "DescriptorTable(" \
@@ -40,7 +41,7 @@ struct PsInput
 {
     float4 Position : SV_Position;
     uint LightIndex : LIGHTINDEX;
-    float ExtraScale : EXTRASCALE;
+    float RangeExtension : RANGEEXTENSION;
     // noperspective is needed here as these represent points on planes parallel to the near plane rather than the triangle,
     // so we want them interpolated in screen space -- IE: without the perspective correction.
     // (See https://www.david-colson.com/2021/11/30/ps1-style-renderer.html#warped-textures for details on what this does.)
@@ -58,15 +59,19 @@ PsInput VsMain(VsInput input)
     LightInfo light = g_Lights[input.LightIndex];
     PsInput result;
 
-    // Grow the light slightly to ensure it covers the center of pixels we're filling
-    //TODO: Actually calculate this value
-    float extraScale = 1.f;
+    float3 worldPosition = light.Position + input.Position * light.Range;
 
-    result.Position = float4(light.Position + input.Position * light.Range * extraScale, 1.f);
+    // Determine how much we need to extend the sphere to ensure it covers the centers of the pixels we're filling
+    // Without this pixels which would be hit by the light at full screen scale would be missing at the fractional screen level.
+    // (There is a toggle in the middle of ApplyPointLight in Pbr.hlsl to visualize the extra radius this is adding.)
+    result.RangeExtension = mul(float4(worldPosition, 1.f), g_PerFrame.ViewProjectionTransform).w * g_FillParams.RangeExtensionRatio;
+    result.RangeExtension = max(result.RangeExtension, 0.f);
+
+    worldPosition += input.Position * result.RangeExtension;
+    result.Position = float4(worldPosition, 1.f);
     result.Position = mul(result.Position, g_PerFrame.ViewProjectionTransform);
 
     result.LightIndex = input.LightIndex;
-    result.ExtraScale = extraScale;
 
     // Calculate the ray planes
     // In order to figure out the ray from the eye to our sphere, we unproject our clip space position onto two planes parallel to near plane in world space.
@@ -100,7 +105,9 @@ void PsMain(PsInput input)
     float3 point1;
     float3 point2;
     {
-        float radius = light.Range * input.ExtraScale;
+        // It's important that the range extension applies here too since our ray might miss the sphere otherwise
+        // It also gives the benefit of padding the depth out a bit, which is good because our depth bounds are real low precision.
+        float radius = light.Range + input.RangeExtension;
         float3 delta = rayOrigin - light.Position;
         float a0 = dot(delta, delta) - radius * radius;
         float a1 = dot(rayDirection, delta);
