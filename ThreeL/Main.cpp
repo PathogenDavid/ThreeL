@@ -175,6 +175,7 @@ static int MainImpl()
     // Misc initialization
     //-----------------------------------------------------------------------------------------------------------------
     DebugSettings debugSettings = DebugSettings();
+    PresentMode presentMode = PresentMode::Vsync;
     DearImGui dearImGui(graphics, window);
 
     // Time keeping
@@ -522,6 +523,7 @@ static int MainImpl()
                         ImGui::SliderFloat("Mouse sensitivity", &cameraInput.m_MouseSensitivity, 0.1f, 10.f);
                         ImGui::SliderFloat("Controller sensitivity", &cameraInput.m_ControllerLookSensitivity, 0.1f, 10.f);
                         ImGui::SliderFloat("Camera Fov", &cameraFovDegrees, 10.f, 140.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+                        ImGui::Combo("Sync Mode", (int*)&presentMode, "Vsync\0NoSync\0Tearing\0");
                         ImGui::EndMenu();
                     }
 
@@ -652,7 +654,7 @@ static int MainImpl()
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_PRESENT);
             context.Finish();
 
-            swapChain.Present();
+            swapChain.Present(presentMode);
         }
 
         //-------------------------------------------------------------------------------------------------------------

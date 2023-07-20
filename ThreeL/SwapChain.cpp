@@ -3,6 +3,8 @@
 
 #include "CommandQueue.h"
 
+#include <dxgi1_5.h>
+
 SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     : m_GraphicsCore(graphicsCore), m_Window(window)
 {
@@ -45,8 +47,23 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
         .Scaling = DXGI_SCALING_STRETCH,
         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
         .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-        .Flags = SWAP_CHAIN_FLAGS,
+        .Flags = 0,
     };
+
+    // Check for tearing support
+    {
+        ComPtr<IDXGIFactory5> factory5;
+        if (SUCCEEDED(graphicsCore.DxgiFactory()->QueryInterface(IID_PPV_ARGS(&factory5))))
+        {
+            BOOL supportsTearing = false;
+            HRESULT hr = factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &supportsTearing, sizeof(supportsTearing));
+            if (SUCCEEDED(hr) && supportsTearing)
+            {
+                m_SupportsTearing = true;
+                desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+            }
+        }
+    }
 
     ComPtr<IDXGISwapChain1> swapChain;
     HRESULT hr = graphicsCore.DxgiFactory()->CreateSwapChainForHwnd(
@@ -59,6 +76,11 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     );
     AssertSuccess(hr);
     AssertSuccess(swapChain.As(&this->m_SwapChain));
+    m_SwapChainFlags = (DXGI_SWAP_CHAIN_FLAG)desc.Flags;
+
+    // Disable Alt+Enter as the default fullscreen behavior doesn't play nice with tearing
+    // (In general though I don't particularly care for these features regardless becuase they're so opaque and underdocumented.)
+    graphicsCore.DxgiFactory()->MakeWindowAssociation(window.Hwnd(), DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_PRINT_SCREEN | DXGI_MWA_NO_WINDOW_CHANGES);
 
     // Create render target view descriptor heap and corresponding views
     D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDescription =
@@ -122,10 +144,22 @@ void SwapChain::InitializeBackBuffers()
     m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 }
 
-void SwapChain::Present()
+void SwapChain::Present(PresentMode mode)
 {
-    AssertSuccess(m_SwapChain->Present(0, 0));
+    Assert(m_SupportsTearing || mode != PresentMode::Tearing && "Cannot specify tearing when the system does not support it.");
+    AssertSuccess(m_SwapChain->Present
+    (
+        mode == PresentMode::Vsync ? 1 : 0,
+        mode == PresentMode::Tearing && m_SupportsTearing ? DXGI_PRESENT_ALLOW_TEARING : 0
+    ));
+    m_SyncPoints[m_CurrentBackBufferIndex] = m_GraphicsCore.GraphicsQueue().QueueSyncPoint();
+
     m_CurrentBackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
+
+    // Wait if this back buffer is still in use by the GPU for an earlier frame
+    // The compositor will throttle us from getting too far ahead the GPU, but it won't always outright block us
+    // As such if we don't wait here we'll clobber resources in use on the graphics queue if we modify them on the copy queue or from the CPU
+    m_SyncPoints[m_CurrentBackBufferIndex].Wait();
 }
 
 
@@ -182,7 +216,7 @@ void SwapChain::Resize(uint2 size)
         size.x,
         size.y,
         BACK_BUFFER_FORMAT,
-        SWAP_CHAIN_FLAGS
+        m_SwapChainFlags
     );
     AssertSuccess(hr);
     AssertSuccess(m_SwapChain->SetSourceSize(size.x, size.y));
