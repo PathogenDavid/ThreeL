@@ -26,17 +26,19 @@ private:
     float2 m_MoveVector = float2::Zero;
     float2 m_LookVector = float2::Zero;
 
+    float m_MoveSpeed = 3.f; // units per second
     float m_MoveFastMultiplier = 3.f;
     float m_MoveSlowMultiplier = 0.25f;
 
 public:
+    float m_LookSpeed = 0.01f;
     float m_MouseSensitivity = 1.f;
     float m_ControllerLookSensitivity = 3.f;
 
     CameraInput(Window& window);
     ~CameraInput();
 
-    void StartFrame();
+    void StartFrame(float deltaTime);
 
     inline const std::string& WasdName() const { return m_WasdName; }
 

@@ -25,9 +25,9 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
     m_Context = ImGui::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // More annoying than anything since it requires unfocusing the window to move the camera
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; //TODO: Need to handle fullscreen transitions ourselves for viewports to work correctly
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.IniFilename = nullptr;
 
     //---------------------------------------------------------------------------------------------------------

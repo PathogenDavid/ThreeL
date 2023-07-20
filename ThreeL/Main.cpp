@@ -241,8 +241,8 @@ static int MainImpl()
 
         dearImGui.NewFrame();
 
-        cameraInput.StartFrame();
-        camera.ApplyMovement(cameraInput.MoveVector() * deltaTime * 3.f, cameraInput.LookVector() * deltaTime);
+        cameraInput.StartFrame(deltaTime);
+        camera.ApplyMovement(cameraInput.MoveVector(), cameraInput.LookVector());
 
         // Animate lights
         if (debugSettings.AnimateLights)

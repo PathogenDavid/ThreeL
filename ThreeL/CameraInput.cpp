@@ -68,7 +68,7 @@ CameraInput::CameraInput(Window& window)
                         m_NextMouseDelta.x += rawInput.data.mouse.lLastX;
                         m_NextMouseDelta.y += rawInput.data.mouse.lLastY;
                     }
-                    break;
+                    return 0;
                 }
                 case WM_LBUTTONDOWN:
                 {
@@ -118,7 +118,7 @@ CameraInput::CameraInput(Window& window)
         });
 }
 
-void CameraInput::StartFrame()
+void CameraInput::StartFrame(float deltaTime)
 {
     m_MouseDelta = m_NextMouseDelta;
     m_NextMouseDelta = int2::Zero;
@@ -127,14 +127,17 @@ void CameraInput::StartFrame()
     m_LookVector = float2::Zero;
 
     // Keyboard movement
-    if (m_MoveW) { m_MoveVector.y += 1.f; }
-    if (m_MoveS) { m_MoveVector.y -= 1.f; }
-    if (m_MoveA) { m_MoveVector.x -= 1.f; }
-    if (m_MoveD) { m_MoveVector.x += 1.f; }
+    if (!ImGui::GetIO().WantCaptureKeyboard)
+    {
+        if (m_MoveW) { m_MoveVector.y += 1.f; }
+        if (m_MoveS) { m_MoveVector.y -= 1.f; }
+        if (m_MoveA) { m_MoveVector.x -= 1.f; }
+        if (m_MoveD) { m_MoveVector.x += 1.f; }
+    }
 
     if (m_MoveVector.LengthSquared() > 0.1f)
     {
-        m_MoveVector = m_MoveVector.Normalized();
+        m_MoveVector = m_MoveVector.Normalized() * deltaTime * m_MoveSpeed;
 
         if (m_MoveSlow)
         { m_MoveVector = m_MoveVector * m_MoveSlowMultiplier; }
@@ -145,7 +148,7 @@ void CameraInput::StartFrame()
     // Mouse movement
     if (m_EnableLook)
     {
-        m_LookVector = ((float2)m_MouseDelta) * m_MouseSensitivity;
+        m_LookVector = ((float2)m_MouseDelta) * 0.01f * m_MouseSensitivity;
         m_LookVector.y *= -1.f; // Flip Y so positive is looking up
     }
 
@@ -162,13 +165,13 @@ void CameraInput::StartFrame()
 
         // "Debugging" this code is how I found out my dev Xbox controller had succumbed the drift virus :(
         if (leftStick.Length() > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-        { m_MoveVector = leftStick / extent; }
+        { m_MoveVector = (leftStick / extent) * deltaTime * m_MoveSpeed; }
 
         if ((gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0)
         { m_MoveVector = m_MoveVector * m_MoveFastMultiplier; }
 
         if (rightStick.Length() > XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
-        { m_LookVector = (rightStick / extent) * m_ControllerLookSensitivity; }
+        { m_LookVector = (rightStick / extent) * deltaTime * m_ControllerLookSensitivity; }
     }
 }
 
