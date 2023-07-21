@@ -170,7 +170,7 @@ void LightLinkedList::FillLights
     const float4x4& perspectiveTransform
 )
 {
-    uint2 lightLinkedListBufferSize = fullScreenSize >> lllBufferShift;
+    uint2 lightLinkedListBufferSize = ScreenSizeToLllBufferSize(fullScreenSize, lllBufferShift);
     Assert((lightLinkedListBufferSize == depthBuffer.Size()).All() && "Light linked list buffer size and depth buffer size must match!");
 
     // Transition resources to their required states
@@ -227,7 +227,7 @@ void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& ligh
 
 void LightLinkedList::CollectStatistics(GraphicsContext& context, uint2 fullScreenSize, uint32_t lllBufferShift, D3D12_GPU_VIRTUAL_ADDRESS resultsBuffer)
 {
-    uint2 lightLinkedListBufferSize = fullScreenSize >> lllBufferShift;
+    uint2 lightLinkedListBufferSize = ScreenSizeToLllBufferSize(fullScreenSize, lllBufferShift);
     uint32_t lightLinkedListBufferLength = lightLinkedListBufferSize.x * lightLinkedListBufferSize.y;
     context->SetComputeRootSignature(m_Resources.LightLinkedListStatsRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListStats);

@@ -81,4 +81,9 @@ public:
     inline D3D12_GPU_DESCRIPTOR_HANDLE LightLinksHeapSrv() const { return m_LightLinksHeapSrv.ResidentHandle(); }
     inline D3D12_GPU_VIRTUAL_ADDRESS LightLinksHeapGpuAddress() const { return m_LightLinksHeapGpuAddress; }
     inline D3D12_GPU_VIRTUAL_ADDRESS FirstLightLinkBufferGpuAddress() const { return m_FirstLightLinkBufferGpuAddress; }
+
+    static inline uint2 ScreenSizeToLllBufferSize(uint2 fullScreenSize, uint32_t lllBufferShift)
+    {
+        return (fullScreenSize + uint2((1 << lllBufferShift) - 1)) >> lllBufferShift;
+    }
 };

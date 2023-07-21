@@ -124,10 +124,10 @@ static int MainImpl()
     DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", screenSize, DEPTH_BUFFER_FORMAT);
 
     std::vector<DepthStencilBuffer> downsampledDepthBuffers;
-    for (int i = 2; i <= 8; i *= 2)
+    for (int div = 2, shift = 1; div <= 8; div *= 2, shift++)
     {
-        std::wstring name = std::format(L"Depth Buffer (1/{})", i);
-        downsampledDepthBuffers.emplace_back(graphics, name, screenSize / i, DEPTH_BUFFER_FORMAT);
+        std::wstring name = std::format(L"Depth Buffer (1/{})", div);
+        downsampledDepthBuffers.emplace_back(graphics, name, LightLinkedList::ScreenSizeToLllBufferSize(screenSize, shift), DEPTH_BUFFER_FORMAT);
     }
 
     //-----------------------------------------------------------------------------------------------------------------
@@ -321,11 +321,11 @@ static int MainImpl()
 
             depthBuffer.Resize(screenSize);
 
-            int divisor = 2;
+            int shift = 1;
             for (DepthStencilBuffer& depthBuffer : downsampledDepthBuffers)
             {
-                depthBuffer.Resize(screenSize / divisor);
-                divisor *= 2;
+                depthBuffer.Resize(LightLinkedList::ScreenSizeToLllBufferSize(screenSize, shift));
+                shift++;
             }
 
             lightLinkedList.Resize(screenSize);
@@ -352,7 +352,7 @@ static int MainImpl()
             .ViewProjectionTransform = camera.ViewTransform() * perspectiveTransform,
             .EyePosition = camera.Position(),
             .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
-            .LightLinkedListBufferWidth = screenSize.x >> lightLinkedListShift,
+            .LightLinkedListBufferWidth = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, lightLinkedListShift).x,
             .LightLinkedListBufferShift = lightLinkedListShift,
         };
         perFrame.ViewProjectionTransformInverse = perFrame.ViewProjectionTransform.Inverted();
@@ -635,7 +635,7 @@ static int MainImpl()
             {
                 ImGui::PushItemWidth(-FLT_MIN);
                 char comboTemp[128];
-                uint2 size = screenSize >> lightLinkedListShift;
+                uint2 size = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, lightLinkedListShift);
                 uint2 currentLightBufferSize = size;
                 snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", (int)std::pow(2, lightLinkedListShift), size.x, size.y);
                 ImGui::TextUnformatted("Buffer size");
@@ -643,7 +643,7 @@ static int MainImpl()
                 {
                     for (uint32_t div = 1, i = 0; i <= downsampledDepthBuffers.size(); div *= 2, i++)
                     {
-                        size = screenSize >> i;
+                        size = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, i);
                         snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", div, size.x, size.y);
                         bool isSelected = lightLinkedListShift == i;
                         if (ImGui::Selectable(comboTemp, isSelected))
