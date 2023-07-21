@@ -590,7 +590,17 @@ static int MainImpl()
                         ImGui::SliderFloat("Mouse sensitivity", &cameraInput.m_MouseSensitivity, 0.1f, 10.f);
                         ImGui::SliderFloat("Controller sensitivity", &cameraInput.m_ControllerLookSensitivity, 0.1f, 10.f);
                         ImGui::SliderFloat("Camera Fov", &cameraFovDegrees, 10.f, 140.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-                        ImGui::Combo("Sync Mode", (int*)&presentMode, "Vsync\0NoSync\0Tearing\0");
+                        const char* syncModes[] = { "Vsync", "No sync", "Tearing" };
+                        if (ImGui::BeginCombo("Sync Mode", syncModes[(int)presentMode]))
+                        {
+                            if (ImGui::Selectable("Vsync", presentMode == PresentMode::Vsync)) { presentMode = PresentMode::Vsync; }
+                            if (ImGui::Selectable("No sync", presentMode == PresentMode::NoSync)) { presentMode = PresentMode::NoSync; }
+                            ImGui::BeginDisabled(!swapChain.SupportsTearing());
+                            if (ImGui::Selectable("Tearing", presentMode == PresentMode::Tearing)) { presentMode = PresentMode::Tearing; }
+                            if (!swapChain.SupportsTearing()) { ImGui::SetItemTooltip("Your computer doesn't support modern tearing."); }
+                            ImGui::EndDisabled();
+                            ImGui::EndCombo();
+                        }
                         ImGui::EndMenu();
                     }
 

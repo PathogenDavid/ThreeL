@@ -37,6 +37,10 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
     ImGuiStyle& style = ImGui::GetStyle();
     ImGui::StyleColorsDark();
 
+    // Show tooltips on disabled items
+    style.HoverFlagsForTooltipMouse |= ImGuiHoveredFlags_AllowWhenDisabled;
+    style.HoverFlagsForTooltipNav |= ImGuiHoveredFlags_AllowWhenDisabled;
+
     // Disable window rounding and window background alpha since it doesn't play nice with multiple viewports
     style.WindowRounding = 0.f;
     style.Colors[ImGuiCol_WindowBg].w = 1.f;
