@@ -160,11 +160,32 @@ namespace ShaderInterop
         };
     }
 
+    static const char* LightLinkedListDebugModeNames = "None\0Light count\0Average light color\0Nearest light\0";
+    enum class LightLinkedListDebugMode : uint32_t
+    {
+        None,
+        LightCount,
+        AverageLightColor,
+        NearestLight,
+    };
+
+    struct LightLinkedListDebugParams
+    {
+        LightLinkedListDebugMode Mode;
+        uint32_t MaxLightsPerPixel;
+        float DebugOverlayAlpha;
+    };
+    static_assert(sizeof(LightLinkedListDebugParams) == 3 * sizeof(uint32_t));
+    static_assert(offsetof(LightLinkedListDebugParams, Mode) == 0);
+    static_assert(offsetof(LightLinkedListDebugParams, MaxLightsPerPixel) == 4);
+    static_assert(offsetof(LightLinkedListDebugParams, DebugOverlayAlpha) == 8);
+
     namespace LightLinkedListDebug
     {
         // See LLL_DEBUG_ROOT_SIGNATURE in LightLinkedListDebug.ps.hlsl
         enum RootParameters
         {
+            RpDebugParams,
             RpPerFrameCb,
             RpLightHeap,
             RpLightLinksHeap,

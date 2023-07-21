@@ -22,17 +22,21 @@
 #include <imgui_internal.h>
 #include <iostream>
 #include <pix3.h>
+#include <random>
 #include <stb_image.h>
 #include <tiny_gltf.h>
+
+using ShaderInterop::LightLinkedListDebugMode;
 
 struct DebugSettings
 {
     bool ShowLightBoundaries = false;
-    bool ShowLightBufferAverage = false;
+    LightLinkedListDebugMode OverlayMode = LightLinkedListDebugMode::None;
+    float OverlayAlpha = 0.25f;
     bool AnimateLights = true;
 };
 
-static Scene LoadGltfScene(ResourceManager& resources, const std::string& filePath)
+static Scene LoadGltfScene(ResourceManager& resources, const std::string& filePath, const float4x4& transform = float4x4::Identity)
 {
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
@@ -54,7 +58,7 @@ static Scene LoadGltfScene(ResourceManager& resources, const std::string& filePa
     }
 
     printf("Loading glTF scene...\n");
-    return Scene(resources, model);
+    return Scene(resources, model, transform);
 }
 
 static Texture LoadHdr(ResourceManager& resources, std::string filePath)
@@ -120,10 +124,11 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Load glTF model
     //-----------------------------------------------------------------------------------------------------------------
-    Scene scene = LoadGltfScene(resources,
-        // Note: If you change this be sure to change the default camera location below
-        //"Assets/MetalRoughSpheres/MetalRoughSpheres.gltf"
-        "Assets/Sponza/Sponza.gltf"
+    Scene scene = LoadGltfScene
+    (
+        resources,
+        // Sponza isn't centered for some reason, so we manually center it on the XZ plane to make spawning random lights easier
+        "Assets/Sponza/Sponza.gltf", float4x4::MakeTranslation(0.531749f, 0.f, 0.253336f)
     );
     printf("Done.\n");
 
@@ -170,6 +175,32 @@ static int MainImpl()
     });
     float3 light1Center = lights[1].Position;
     float3 light1Offset = float3::UnitX;
+
+    std::mt19937 randomGenerator(3226);
+
+    while (lights.size() < LightHeap::MAX_LIGHTS)
+    {
+        lights.push_back
+        ({
+            .Position = float3
+            (
+                std::uniform_real_distribution(-10.83f, 10.83f)(randomGenerator),
+                std::uniform_real_distribution(0.f, 6.91f)(randomGenerator),
+                std::uniform_real_distribution(-5.43f, 5.43f)(randomGenerator)
+            ),
+            .Range = std::uniform_real_distribution(0.1f, 2.5f)(randomGenerator),
+            .Color = ImGui::ColorConvertHSVtoRGB
+            (
+                float3
+                (
+                    std::uniform_real_distribution(0.f, 1.f)(randomGenerator),
+                    std::uniform_real_distribution(0.f, 1.f)(randomGenerator),
+                    std::uniform_real_distribution(0.5f, 1.f)(randomGenerator)
+                )
+            ),
+            .Intensity = std::uniform_real_distribution(0.5f, 3.f)(randomGenerator),
+        });
+    }
 
     //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
@@ -470,12 +501,18 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Debug overlays
         //-------------------------------------------------------------------------------------------------------------
-        if (debugSettings.ShowLightBufferAverage)
+        if (debugSettings.OverlayMode != LightLinkedListDebugMode::None)
         {
             PIXScopedEvent(&context, 4, "Debug overlay");
             context.SetRenderTarget(swapChain);
             context.SetFullViewportScissor(screenSize);
-            lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrameCbAddress);
+            ShaderInterop::LightLinkedListDebugParams params =
+            {
+                .Mode = debugSettings.OverlayMode,
+                .MaxLightsPerPixel = 20, //TODO: Use a compute shader to determine this value
+                .DebugOverlayAlpha = debugSettings.OverlayAlpha,
+            };
+            lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrameCbAddress, params);
         }
 
         //-------------------------------------------------------------------------------------------------------------
@@ -509,7 +546,8 @@ static int MainImpl()
                             debugSettings = DebugSettings();
 
                         ImGui::Checkbox("Light boundaries", &debugSettings.ShowLightBoundaries);
-                        ImGui::Checkbox("Light buffer average colors", &debugSettings.ShowLightBufferAverage);
+                        ImGui::Combo("Overlay", (int*)&debugSettings.OverlayMode, ShaderInterop::LightLinkedListDebugModeNames);
+                        ImGui::SliderFloat("Overlay Alpha", &debugSettings.OverlayAlpha, 0.05f, 1.f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
 
                         ImGui::Separator();
 
@@ -587,7 +625,8 @@ static int MainImpl()
                         sizeUnits = "MB";
                     }
                     ImGui::Text("Light links limit (%.2f %s)", size, sizeUnits);
-                    ImGui::SliderInt("##lightLinksLimit", &lightLinkLimit, 0, LightLinkedList::MAX_LIGHT_LINKS, "%u", ImGuiSliderFlags_AlwaysClamp);
+                    double speed = 16.0 + std::pow((double)lightLinkLimit / (double)LightLinkedList::MAX_LIGHT_LINKS, 2.0) * 5120000.0;
+                    ImGui::DragInt("##lightLinksLimit", &lightLinkLimit, (float)std::max(1.0, speed), 0, LightLinkedList::MAX_LIGHT_LINKS, "%u", ImGuiSliderFlags_AlwaysClamp);
                 }
 
                 ImGui::PopItemWidth();

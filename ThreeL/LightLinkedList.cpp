@@ -224,10 +224,13 @@ void LightLinkedList::FillLights
     context.TransitionResource(m_LightLinksHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
-void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
+void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, const ShaderInterop::LightLinkedListDebugParams& params)
 {
+    using ShaderInterop::LightLinkedListDebugMode;
+    Assert(params.Mode > LightLinkedListDebugMode::None && params.Mode <= LightLinkedListDebugMode::NearestLight && "Debug overlay mode must be valid!");
     context->SetGraphicsRootSignature(m_Resources.LightLinkedListDebugRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListDebug);
+    context->SetGraphicsRoot32BitConstants(ShaderInterop::LightLinkedListDebug::RpDebugParams, sizeof(params) / sizeof(uint32_t), &params, 0);
     context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListDebug::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightHeap, lightHeap.BufferGpuAddress());
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightLinksHeap, m_LightLinksHeapGpuAddress);

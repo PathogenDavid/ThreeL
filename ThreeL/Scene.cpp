@@ -12,7 +12,7 @@ static const float4x4 g_CoordinateSpaceConversion
     0.f, 0.f, 0.f, 1.f
 );
 
-Scene::Scene(ResourceManager& resources, const tinygltf::Model& model)
+Scene::Scene(ResourceManager& resources, const tinygltf::Model& model, const float4x4& transform)
 {
     GltfLoadContext context(resources.Graphics, resources, model, *this);
     const tinygltf::Scene& scene = model.scenes[model.defaultScene];
@@ -124,9 +124,10 @@ Scene::Scene(ResourceManager& resources, const tinygltf::Model& model)
             }
         };
 
+    float4x4 rootTransform = transform * g_CoordinateSpaceConversion;
     for (int nodeIndex : scene.nodes)
     {
-        LoadNode(nodeIndex, g_CoordinateSpaceConversion);
+        LoadNode(nodeIndex, rootTransform);
     }
 }
 

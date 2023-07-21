@@ -1,4 +1,5 @@
 #pragma once
+#include "Matrix4.h"
 #include "MeshPrimitive.h"
 #include "ResourceManager.h"
 #include "SceneNode.h"
@@ -22,7 +23,7 @@ public://TODO: TEMP
     std::unordered_map<uint64_t, std::unique_ptr<Texture>> m_TextureCache;
 
 public:
-    Scene(ResourceManager& resources, const tinygltf::Model& model);
+    Scene(ResourceManager& resources, const tinygltf::Model& model, const float4x4& transform);
 
     inline std::span<const SceneNode> SceneNodes() const { return m_SceneNodes; }
     inline auto begin() const { return SceneNodes().begin(); }

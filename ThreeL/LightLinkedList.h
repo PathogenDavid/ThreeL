@@ -73,7 +73,7 @@ public:
         const float4x4& perspectiveTransform
     );
 
-    void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb);
+    void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, const ShaderInterop::LightLinkedListDebugParams& params);
 
     inline D3D12_GPU_DESCRIPTOR_HANDLE LightLinksHeapSrv() const { return m_LightLinksHeapSrv.ResidentHandle(); }
     inline D3D12_GPU_VIRTUAL_ADDRESS LightLinksHeapGpuAddress() const { return m_LightLinksHeapGpuAddress; }

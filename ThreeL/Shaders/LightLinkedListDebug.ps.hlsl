@@ -1,9 +1,27 @@
 #include "Common.hlsli"
 #include "FullScreenQuad.vs.hlsl"
 
+enum class LightLinkedListDebugMode : uint
+{
+    None,
+    LightCount,
+    AverageLightColor,
+    NearestLight,
+};
+
+struct LightLinkedListDebugParams
+{
+    LightLinkedListDebugMode Mode;
+    uint MaxLightsPerPixel;
+    float DebugOverlayAlpha;
+};
+
+ConstantBuffer<LightLinkedListDebugParams> g_Params : register(b0, space900);
+
 #define LLL_DEBUG_ROOT_SIGNATURE \
-    "CBV(b1)," \
-    "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
+    "RootConstants(num32BitConstants = 3, b0, space = 900, visibility = SHADER_VISIBILITY_PIXEL)," \
+    "CBV(b1, visibility = SHADER_VISIBILITY_PIXEL)," \
+    "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE, visibility = SHADER_VISIBILITY_PIXEL)," \
     "SRV(t2, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE, visibility = SHADER_VISIBILITY_PIXEL)," \
     "SRV(t3, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE, visibility = SHADER_VISIBILITY_PIXEL)," \
     ""
@@ -15,13 +33,13 @@ float4 PsMain(PsInput input) : SV_Target
     uint2 lightLinkedListPosition = ScreenSpaceToLightLinkedListSpace(position);
     uint lightLinkIndex = g_FirstLightLink.Load(GetFirstLightLinkAddress(lightLinkedListPosition)) & NO_LIGHT_LINK;
     
-    uint count = 0;
+    uint lightCount = 0;
     LightLink closestLight;
-    float closestLightMinDepth = 999999999.f;
+    float closestLightMinDepth = 1.#INF;
     float3 averageColor = 0.f.xxx;
     while (lightLinkIndex != NO_LIGHT_LINK)
     {
-        count++;
+        lightCount++;
         LightLink lightLink = g_LightLinksHeap[lightLinkIndex];
         lightLinkIndex = lightLink.NextLightIndex();
 
@@ -35,42 +53,43 @@ float4 PsMain(PsInput input) : SV_Target
         }
     }
 
-    averageColor /= (float)count;
+    averageColor /= (float)lightCount;
 
-#if !true
-    if (count == 0)
+    float3 color = 0.f.xxx;
+    switch (g_Params.Mode)
     {
-        discard;
-        return 0.f.xxxx;
-    }
-    else
-    {
-        return float4((float)count, 1.f, (float)lastLightLink.LightId(), 1.f);
-    }
-#elif false
-    switch (count)
-    {
-        case 0: return float4(0.f, 0.f, 1.f, 0.7f);
-        case 1:
-            switch (lastLightLink.LightId())
+        case LightLinkedListDebugMode::None: // This value exists for the CPU, draws shouldn't be submitted for it.
+        case LightLinkedListDebugMode::LightCount:
+        {
+            float x = (float)lightCount / (float)g_Params.MaxLightsPerPixel;
+            color = saturate(float3
+            (
+                x * 3.f - 2.f,
+                x * 3.f,
+                2.f - x * 3.f
+            ));
+            break;
+        }
+        case LightLinkedListDebugMode::AverageLightColor:
+        {
+            if (lightCount == 0)
+            { discard; }
+            else
+            { color = averageColor; }
+            break;
+        }
+        case LightLinkedListDebugMode::NearestLight:
+        {
+            if (lightCount == 0)
+            { discard; }
+            else
             {
-                case 0: return float4(1.f, 0.f, 0.f, 0.7f);
-                case 1: return float4(1.f, 0.f, 1.f, 0.7f);
-                default: return float4(0.f, 1.f, 0.f, 0.7f);
+                LightInfo light = g_Lights[closestLight.LightId()];
+                color = light.Color;
             }
-            //return float4(0.f, 1.f, 0.f, 0.7f);
-        case 2: return float4(0.f, 1.f, 1.f, 0.7f);
-        default: return float4(1.f, 0.f, 0.f, 0.7f);
-    }
-#else
-    if (count == 0)
-    {
-        discard;
-        return 0.f.xxxx;
+            break;
+        }
     }
 
-    //LightInfo light = g_Lights[closestLight.LightId()];
-    //return float4(light.Color, 0.7f);
-    return float4(averageColor, 0.25f);
-#endif
+    return float4(color, g_Params.DebugOverlayAlpha);
 }
