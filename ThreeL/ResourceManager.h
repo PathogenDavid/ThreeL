@@ -48,6 +48,9 @@ struct ResourceManager
     RootSignature LightLinkedListDebugRootSignature;
     PipelineStateObject LightLinkedListDebug;
 
+    RootSignature LightLinkedListStatsRootSignature;
+    PipelineStateObject LightLinkedListStats;
+
     explicit ResourceManager(GraphicsCore& graphics);
     ResourceManager(const ResourceManager&) = delete;
 

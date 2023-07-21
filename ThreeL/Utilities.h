@@ -8,6 +8,8 @@
 
 void SetWorkingDirectoryToAppDirectory();
 
+double GetHumanFriendlySize(size_t sizeBytes, const char*& sizeUnits);
+
 std::wstring GetD3DObjectName(ID3D12Object* object);
 
 std::wstring DescribeResourceState(D3D12_RESOURCE_STATES states);

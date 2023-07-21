@@ -192,4 +192,19 @@ namespace ShaderInterop
             RpFirstLightLinkBuffer,
         };
     }
+
+    namespace LightLinkedListStats
+    {
+        // See LLL_DEBUG_ROOT_SIGNATURE in LightLinkedListStats.cs.hlsl
+        enum RootParameters
+        {
+            RpParams,
+            RpLightLinksHeapCounter,
+            RpResults,
+            RpLightLinksHeap,
+            RpFirstLightLinkBuffer,
+        };
+
+        static const uint32_t ThreadGroupSize = 1024;
+    }
 }

@@ -96,6 +96,7 @@
     <ClCompile Include="DxgiFormat.cpp" />
     <ClCompile Include="DynamicDescriptorTableBuilder.cpp" />
     <ClCompile Include="DynamicResourceDescriptor.cpp" />
+    <ClCompile Include="FrameStatistics.cpp" />
     <ClCompile Include="FrequentlyUpdatedResource.cpp" />
     <ClCompile Include="GltfAccessorView.cpp" />
     <ClCompile Include="GltfLoadContext.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="DynamicDescriptorTable.h" />
     <ClInclude Include="DynamicDescriptorTableBuilder.h" />
     <ClInclude Include="DynamicResourceDescriptor.h" />
+    <ClInclude Include="FrameStatistics.h" />
     <ClInclude Include="FrequentlyUpdatedResource.h" />
     <ClInclude Include="GltfAccessorView.h" />
     <ClInclude Include="GltfLoadContext.h" />
@@ -215,6 +217,7 @@
     <FxCompile Include="Shaders\GenerateMipmapChain.cs.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListFill.hlsl" />
+    <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

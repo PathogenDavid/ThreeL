@@ -83,6 +83,7 @@
     <ClCompile Include="LightHeap.cpp" />
     <ClCompile Include="FrequentlyUpdatedResource.cpp" />
     <ClCompile Include="LightLinkedList.cpp" />
+    <ClCompile Include="FrameStatistics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -192,6 +193,7 @@
     <ClInclude Include="FrequentlyUpdatedResource.h" />
     <ClInclude Include="LightLinkedList.h" />
     <ClInclude Include="RawGpuResource.h" />
+    <ClInclude Include="FrameStatistics.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -235,5 +237,6 @@
     <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
   </ItemGroup>
 </Project>

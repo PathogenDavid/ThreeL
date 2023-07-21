@@ -112,19 +112,7 @@ void LightLinkedList::Resize(uint2 size)
 
     // Allocate the first light link buffer
     D3D12_HEAP_PROPERTIES heapProperties = { D3D12_HEAP_TYPE_DEFAULT };
-    D3D12_RESOURCE_DESC resourceDescription =
-    {
-        .Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment = 0,
-        .Width = size.x * size.y * sizeof(uint32_t),
-        .Height = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels = 1,
-        .Format = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc = { 1, 0 },
-        .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-    };
+    D3D12_RESOURCE_DESC resourceDescription = DescribeBufferResource(size.x * size.y * sizeof(uint32_t), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     AssertSuccess(m_Resources.Graphics.Device()->CreateCommittedResource
     (
@@ -176,14 +164,13 @@ void LightLinkedList::FillLights
     uint32_t lightCount,
     uint32_t lightLinkLimit,
     D3D12_GPU_VIRTUAL_ADDRESS perFrameCb,
-    uint32_t lllBufferDivisor,
+    uint32_t lllBufferShift,
     DepthStencilBuffer& depthBuffer,
     uint2 fullScreenSize,
     const float4x4& perspectiveTransform
 )
 {
-    uint32_t screenSizeShift = lllBufferDivisor;
-    uint2 lightLinkedListBufferSize = fullScreenSize >> screenSizeShift;
+    uint2 lightLinkedListBufferSize = fullScreenSize >> lllBufferShift;
     Assert((lightLinkedListBufferSize == depthBuffer.Size()).All() && "Light linked list buffer size and depth buffer size must match!");
 
     // Transition resources to their required states
@@ -236,6 +223,20 @@ void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& ligh
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightLinksHeap, m_LightLinksHeapGpuAddress);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
     context.DrawInstanced(3, 1);
+}
+
+void LightLinkedList::CollectStatistics(GraphicsContext& context, uint2 fullScreenSize, uint32_t lllBufferShift, D3D12_GPU_VIRTUAL_ADDRESS resultsBuffer)
+{
+    uint2 lightLinkedListBufferSize = fullScreenSize >> lllBufferShift;
+    uint32_t lightLinkedListBufferLength = lightLinkedListBufferSize.x * lightLinkedListBufferSize.y;
+    context->SetComputeRootSignature(m_Resources.LightLinkedListStatsRootSignature);
+    context->SetPipelineState(m_Resources.LightLinkedListStats);
+    context->SetComputeRoot32BitConstant(ShaderInterop::LightLinkedListStats::RpParams, lightLinkedListBufferLength, 0);
+    context->SetComputeRootDescriptorTable(ShaderInterop::LightLinkedListStats::RpLightLinksHeapCounter, m_LightLinksCounterUav.ResidentHandle());
+    context->SetComputeRootUnorderedAccessView(ShaderInterop::LightLinkedListStats::RpResults, resultsBuffer);
+    context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpLightLinksHeap, m_LightLinksHeapGpuAddress);
+    context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
+    context.Dispatch(uint3((lightLinkedListBufferLength + ShaderInterop::LightLinkedListStats::ThreadGroupSize - 1) / ShaderInterop::LightLinkedListStats::ThreadGroupSize, 1, 1));
 }
 
 // This is just a UV sphere I made in Blender with 12 segments and 6 rings with a radius of 1.07

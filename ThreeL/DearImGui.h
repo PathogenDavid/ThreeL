@@ -61,4 +61,17 @@ namespace ImGui
         ImGui::ColorConvertHSVtoRGB(hsv.x, hsv.y, hsv.z, rgb.x, rgb.y, rgb.z);
         return rgb;
     }
+
+    inline void HudText(ImDrawList* draw_list, const ImVec2& pos, const std::string& text, float wrap_width = 0.f, ImU32 col = IM_COL32(255, 255, 255, 255), ImU32 shadow_col = IM_COL32(0, 0, 0, 255))
+    {
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x - 1.f, pos.y - 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 0.f, pos.y - 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 1.f, pos.y - 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x - 1.f, pos.y + 0.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 1.f, pos.y + 0.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x - 1.f, pos.y + 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 0.f, pos.y + 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 1.f, pos.y + 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
+        draw_list->AddText(nullptr, 0.f, pos, col, text.data(), text.data() + text.size(), wrap_width);
+    }
 }

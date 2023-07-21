@@ -21,6 +21,28 @@ void SetWorkingDirectoryToAppDirectory()
     std::filesystem::current_path(p.parent_path());
 }
 
+double GetHumanFriendlySize(size_t sizeBytes, const char*& sizeUnits)
+{
+    double size = (double)sizeBytes;
+    sizeUnits = "bytes";
+    if (size < 1024.0)
+        return size;
+
+    size /= 1024.0;
+    sizeUnits = "KB";
+    if (size < 1024.0)
+        return size;
+
+    size /= 1024.0;
+    sizeUnits = "MB";
+    if (size < 1024.0)
+        return size;
+
+    size /= 1024.0;
+    sizeUnits = "GB";
+    return size;
+}
+
 std::wstring GetD3DObjectName(ID3D12Object* object)
 {
     if (object == nullptr)

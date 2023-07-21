@@ -68,6 +68,13 @@ public:
         CommandList()->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
     }
 
+    //TODO: Actual intent is that there'd be a cast from GraphicsContext to ComputeContext, but the adjacent infrastrucutre making that worth it is missing so didn't bother.
+    inline void Dispatch(uint3 threadGroupCount)
+    {
+        m_Context->FlushResourceBarriers();
+        m_Context->m_CommandList->Dispatch(threadGroupCount.x, threadGroupCount.y, threadGroupCount.z);
+    }
+
     inline void SetRenderTarget(RenderTargetView renderTarget)
     {
         D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTarget.RtvHandle();

@@ -6,6 +6,7 @@
 #include "DearImGui.h"
 #include "DebugLayer.h"
 #include "DepthStencilBuffer.h"
+#include "FrameStatistics.h"
 #include "GraphicsContext.h"
 #include "GraphicsCore.h"
 #include "LightHeap.h"
@@ -208,6 +209,7 @@ static int MainImpl()
     DebugSettings debugSettings = DebugSettings();
     PresentMode presentMode = PresentMode::Vsync;
     DearImGui dearImGui(graphics, window);
+    FrameStatistics stats(graphics);
 
     // Time keeping
     LARGE_INTEGER performanceFrequency;
@@ -271,6 +273,8 @@ static int MainImpl()
         frameTimes[frameNumber % std::size(frameTimes)] = deltaTimeMs;
 
         dearImGui.NewFrame();
+
+        stats.StartFrame();
 
         cameraInput.StartFrame(deltaTime);
         camera.ApplyMovement(cameraInput.MoveVector(), cameraInput.LookVector());
@@ -501,6 +505,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Debug overlays
         //-------------------------------------------------------------------------------------------------------------
+        uint32_t maxLightsPerPixelForOverlay = 0;
         if (debugSettings.OverlayMode != LightLinkedListDebugMode::None)
         {
             PIXScopedEvent(&context, 4, "Debug overlay");
@@ -509,7 +514,7 @@ static int MainImpl()
             ShaderInterop::LightLinkedListDebugParams params =
             {
                 .Mode = debugSettings.OverlayMode,
-                .MaxLightsPerPixel = 20, //TODO: Use a compute shader to determine this value
+                .MaxLightsPerPixel = maxLightsPerPixelForOverlay = (std::max(1u, stats.MaximumLightCountForAnyPixel()) + 9) / 10 * 10,
                 .DebugOverlayAlpha = debugSettings.OverlayAlpha,
             };
             lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrameCbAddress, params);
@@ -523,6 +528,7 @@ static int MainImpl()
             ImGuiStyle& style = ImGui::GetStyle();
 
             // Submit main dockspace and menu bar
+            ImGuiDockNode* centralNode;
             {
                 ImGuiViewport* viewport = ImGui::GetMainViewport();
                 ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -537,6 +543,7 @@ static int MainImpl()
                 ImGui::PopStyleVar(3);
 
                 ImGui::DockSpace(0xC0FFEEEE, ImVec2(), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+                centralNode = ImGui::DockBuilderGetCentralNode(0xC0FFEEEE);
 
                 if (ImGui::BeginMenuBar())
                 {
@@ -591,12 +598,13 @@ static int MainImpl()
                 ImGui::End();
             }
 
-            ImGui::SetNextWindowSize(ImVec2(250.f, 0.f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(275.f, 0.f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Light linked list settings"))
             {
                 ImGui::PushItemWidth(-FLT_MIN);
                 char comboTemp[128];
                 uint2 size = screenSize >> lightLinkedListShift;
+                uint2 currentLightBufferSize = size;
                 snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", (int)std::pow(2, lightLinkedListShift), size.x, size.y);
                 ImGui::TextUnformatted("Buffer size");
                 if (ImGui::BeginCombo("##lightLinkedListShiftCombo", comboTemp))
@@ -617,16 +625,36 @@ static int MainImpl()
                 }
 
                 {
-                    double size = (lightLinkLimit * ShaderInterop::SizeOfLightLink) / 1024.0;
-                    const char* sizeUnits = "KB";
-                    if (size > 1024.0)
-                    {
-                        size /= 1024.0;
-                        sizeUnits = "MB";
-                    }
-                    ImGui::Text("Light links limit (%.2f %s)", size, sizeUnits);
+                    ImGui::Text("Light links heap");
                     double speed = 16.0 + std::pow((double)lightLinkLimit / (double)LightLinkedList::MAX_LIGHT_LINKS, 2.0) * 5120000.0;
                     ImGui::DragInt("##lightLinksLimit", &lightLinkLimit, (float)std::max(1.0, speed), 0, LightLinkedList::MAX_LIGHT_LINKS, "%u", ImGuiSliderFlags_AlwaysClamp);
+                }
+
+                ImGui::SeparatorText("Buffer Sizes");
+                {
+                    const char* sizeUnits;
+                    size_t sizeBytes;
+                    double size;
+                    size_t totalSize = 0;
+
+                    totalSize += sizeBytes = currentLightBufferSize.x * currentLightBufferSize.y * sizeof(uint32_t);
+                    size = GetHumanFriendlySize(sizeBytes, sizeUnits);
+                    ImGui::Text("First link buffer: %.2f %s", size, sizeUnits);
+
+                    totalSize += sizeBytes = lightLinkLimit * ShaderInterop::SizeOfLightLink;
+                    double heapUsed = ((double)stats.NumberOfLightLinksUsed() / (double)lightLinkLimit) * 100.0;
+                    size = GetHumanFriendlySize(sizeBytes, sizeUnits);
+                    ImGui::Text(" Light links heap: %.2f %s (%.2f%%)", size, sizeUnits, heapUsed);
+
+                    size = GetHumanFriendlySize(sizeBytes, sizeUnits);
+                    ImGui::Text("            Total: %.2f %s", size, sizeUnits);
+                }
+
+                ImGui::SeparatorText("Frame Statistics");
+                {
+                    ImGui::Text("Light links used: %d", stats.NumberOfLightLinksUsed());
+                    ImGui::Text("Max lights per pixel: %d", stats.MaximumLightCountForAnyPixel());
+                    ImGui::Text("Average lights per pixel: %.1f", (double)stats.NumberOfLightLinksUsed() / (double)(currentLightBufferSize.x * currentLightBufferSize.y));
                 }
 
                 ImGui::PopItemWidth();
@@ -653,31 +681,53 @@ static int MainImpl()
             ImGui::End();
 #endif
 
-            // Show controls hint
+            // Show viewport overlays
             {
-                std::string controlsHint = std::format("Move with {}, click+drag look around or use Xbox controller.", cameraInput.WasdName());
                 float padding = 5.f;
-                float wrapWidth = screenSizeF.x - padding * 2.f;
-                ImVec2 hintSize = ImGui::CalcTextSize(controlsHint, wrapWidth);
-                ImVec2 position = ImVec2(padding, screenSize.y - hintSize.y - padding);
+                ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+                ImU32 white = IM_COL32(255, 255, 255, 255);
+                ImU32 black = IM_COL32(0, 0, 0, 255);
 
-                ImGui::GetForegroundDrawList()->AddText
-                (
-                    nullptr, 0.f,
-                    ImVec2(position.x - 1.f, position.y + 1.f),
-                    IM_COL32(0, 0, 0, 255),
-                    controlsHint.data(), controlsHint.data() + controlsHint.size(),
-                    wrapWidth
-                );
+                // Show overlay legend
+                float overlayLegendWidth = 0.f;
+                if (debugSettings.OverlayMode == LightLinkedListDebugMode::LightCount)
+                {
+                    float w = std::min(screenSizeF.x * 0.25f, 270.f);
+                    overlayLegendWidth = w + padding + 2.f;
+                    float h = 20.f;
 
-                ImGui::GetForegroundDrawList()->AddText
-                (
-                    nullptr, 0.f,
-                    position,
-                    IM_COL32(255, 255, 255, 255),
-                    controlsHint.data(), controlsHint.data() + controlsHint.size(),
-                    wrapWidth
-                );
+                    float x0 = centralNode->Pos.x + centralNode->Size.x - w - padding - 1.f;
+                    float x1 = x0 + (w / 3.f);
+                    float x2 = x0 + (w / 3.f * 2.f);
+                    float x3 = x0 + w;
+
+                    float y0 = centralNode->Pos.y + centralNode->Size.y - h - padding - 1.f;
+                    float y1 = y0 + h;
+
+                    drawList->AddRectFilled(ImVec2(x0 - 1.f, y0 - 1.f), ImVec2(x3 + 1.f, y1 + 1.f), white);
+                    uint32_t color0 = IM_COL32(0, 0, 255, 255);
+                    uint32_t color1 = IM_COL32(0, 255, 255, 255);
+                    uint32_t color2 = IM_COL32(0, 255, 0, 255);
+                    uint32_t color3 = IM_COL32(255, 255, 0, 255);
+                    drawList->AddRectFilledMultiColor(ImVec2(x0, y0), ImVec2(x1, y1), color0, color1, color1, color0);
+                    drawList->AddRectFilledMultiColor(ImVec2(x1, y0), ImVec2(x2, y1), color1, color2, color2, color1);
+                    drawList->AddRectFilledMultiColor(ImVec2(x2, y0), ImVec2(x3, y1), color2, color3, color3, color2);
+
+                    std::string labelMax = std::format("{}", maxLightsPerPixelForOverlay);
+                    ImVec2 labelSize = ImGui::CalcTextSize(labelMax);
+                    float labelY = y0 + h * 0.5f - labelSize.y * 0.5f;
+                    ImGui::HudText(drawList, ImVec2(x0 + padding, labelY), "0");
+                    ImGui::HudText(drawList, ImVec2(x3 - labelSize.x - padding, labelY), labelMax);
+                }
+
+                // Show controls hint
+                {
+                    std::string controlsHint = std::format("Move with {}, click+drag look around or use Xbox controller.", cameraInput.WasdName());
+                    float wrapWidth = centralNode->Size.x - padding * 2.f - overlayLegendWidth;
+                    ImVec2 hintSize = ImGui::CalcTextSize(controlsHint, false, wrapWidth);
+                    ImVec2 position = ImVec2(centralNode->Pos.x + padding, centralNode->Pos.y + centralNode->Size.y - hintSize.y - padding);
+                    ImGui::HudText(drawList, position, controlsHint, wrapWidth);
+                }
             }
 
             context.SetRenderTarget(swapChain);
@@ -691,15 +741,27 @@ static int MainImpl()
         {
             PIXScopedEvent(98, "Present");
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_PRESENT);
-            context.Finish();
+            context.Flush();
 
             swapChain.Present(presentMode);
+        }
+
+        //-------------------------------------------------------------------------------------------------------------
+        // Collect frame statistics
+        //-------------------------------------------------------------------------------------------------------------
+        {
+            PIXScopedEvent(&context, 99, "Collect frame statistics");
+            stats.StartCollectStatistics(context);
+            lightLinkedList.CollectStatistics(context, screenSize, perFrame.LightLinkedListBufferShift, stats.LightLinkedListStatisticsLocation());
+            stats.FinishCollectStatistics(context);
         }
 
         //-------------------------------------------------------------------------------------------------------------
         // Housekeeping
         //-------------------------------------------------------------------------------------------------------------
         PIXScopedEvent(99, "Housekeeping");
+        context.Finish();
+
         graphics.UploadQueue().Cleanup();
 
         lastTimestamp.QuadPart = timestamp.QuadPart;

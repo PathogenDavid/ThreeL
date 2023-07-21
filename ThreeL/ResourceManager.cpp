@@ -28,6 +28,8 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
 
     ShaderBlobs lightLinkedListDebugPs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListDebug.ps.hlsl", L"PsMain", L"ps_6_0");
 
+    ShaderBlobs lightLinkedListStatsCs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListStats.cs.hlsl", L"Main", L"cs_6_0");
+
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
     DepthOnlyRootSignature = RootSignature(Graphics, depthOnlyVs, L"DepthOnly Root Signature");
@@ -35,6 +37,7 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     GenerateMipMapsRootSignature = RootSignature(Graphics, generateMipMapsCsUnorm, L"GenerateMipMaps Root Signature");
     LightLinkedListFillRootSignature = RootSignature(Graphics, lightLinkedListFillVs, L"LightLinkedList Fill Root Signature");
     LightLinkedListDebugRootSignature = RootSignature(Graphics, lightLinkedListDebugPs, L"LightLinkedList Debug Root Signature");
+    LightLinkedListStatsRootSignature = RootSignature(Graphics, lightLinkedListStatsCs, L"LightLinkedList Statistics Root Signature");
 
     // Create PBR pipeline state objects
     {
@@ -181,5 +184,15 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         };
 
         LightLinkedListDebug = PipelineStateObject(Graphics, description, L"LightLinkedList Debug PSO");
+    }
+
+    // Create LightLinkedListStats pipeline state object
+    {
+        D3D12_COMPUTE_PIPELINE_STATE_DESC generateMipMapsDescription =
+        {
+            .pRootSignature = LightLinkedListStatsRootSignature.Get(),
+            .CS = lightLinkedListStatsCs.ShaderBytecode(),
+        };
+        LightLinkedListStats = PipelineStateObject(Graphics, generateMipMapsDescription, L"LightLinkedList Statistics PSO");
     }
 }

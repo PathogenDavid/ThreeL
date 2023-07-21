@@ -17,4 +17,8 @@ public:
         m_Resource = resource;
         m_CurrentState = initialState;
     }
+
+    inline ID3D12Resource* Resource() const { return m_Resource.Get(); }
+    inline operator ID3D12Resource* () const { return Resource(); }
+    inline ID3D12Resource* operator->() const { return Resource(); }
 };
