@@ -91,23 +91,6 @@ static int MainImpl()
     windowTitle += DebugLayer::GetExtraWindowTitleInfo();
     Window window(windowTitle.c_str(), 1280, 720);
 
-    WndProcHandle wndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>
-        {
-            switch (message)
-            {
-                // Prevent the user from making the window super tiny
-                // (This mainly saves us from having to do something sensible in response to a buffer or half-buffer being 0-sized.)
-                case WM_GETMINMAXINFO:
-                {
-                    MINMAXINFO* info = (MINMAXINFO*)lParam;
-                    info->ptMinTrackSize = { 200, 200 };
-                    return 0;
-                }
-                default:
-                    return { };
-            }
-        });
-
     // Ensure PIX targets our main window and disable the HUD since it overlaps with our menu bar
     PIXSetTargetWindow(window.Hwnd());
     PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS);
@@ -234,6 +217,45 @@ static int MainImpl()
     // Per-frame constant buffer
     // This is a pretty heavyweight abstraction for a constant buffer, ideally we should have a little bump allocator for this sort of thing
     FrequentlyUpdatedResource perFrameCbResource(graphics, DescribeBufferResource(sizeof(ShaderInterop::PerFrameCb)), L"Per-frame constant buffer");
+
+    // Custom WndProc
+    WndProcHandle wndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>
+        {
+            switch (message)
+            {
+                // Prevent the user from making the window super tiny
+                // (This mainly saves us from having to do something sensible in response to a buffer or half-buffer being 0-sized.)
+                case WM_GETMINMAXINFO:
+                {
+                    MINMAXINFO* info = (MINMAXINFO*)lParam;
+                    info->ptMinTrackSize = { 200, 200 };
+                    return 0;
+                }
+                case WM_DPICHANGED:
+                {
+                    WORD dpi = HIWORD(wParam);
+                    Assert(dpi == LOWORD(wParam) && "The X and Y DPIs should match!");
+                    float dpiScale = (float)dpi / (float)USER_DEFAULT_SCREEN_DPI;
+                    dearImGui.ScaleUi(dpiScale);
+
+                    RECT* suggestedRectangle = (RECT*)lParam;
+                    AssertWinError(SetWindowPos
+                    (
+                        hwnd,
+                        nullptr,
+                        suggestedRectangle->left,
+                        suggestedRectangle->top,
+                        suggestedRectangle->right - suggestedRectangle->left,
+                        suggestedRectangle->bottom - suggestedRectangle->top,
+                        SWP_NOZORDER | SWP_NOACTIVATE
+                    ));
+
+                    return 0;
+                }
+                default:
+                    return { };
+            }
+        });
 
     // Initiate final resource uploads and wait for them to complete
     resources.Finish();
@@ -598,7 +620,7 @@ static int MainImpl()
                 ImGui::End();
             }
 
-            ImGui::SetNextWindowSize(ImVec2(275.f, 0.f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(275.f * dearImGui.DpiScale(), 0.f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Light linked list settings"))
             {
                 ImGui::PushItemWidth(-FLT_MIN);
@@ -692,9 +714,9 @@ static int MainImpl()
                 float overlayLegendWidth = 0.f;
                 if (debugSettings.OverlayMode == LightLinkedListDebugMode::LightCount)
                 {
-                    float w = std::min(screenSizeF.x * 0.25f, 270.f);
+                    float w = std::min(screenSizeF.x * 0.25f, 270.f * dearImGui.DpiScale());
                     overlayLegendWidth = w + padding + 2.f;
-                    float h = 20.f;
+                    float h = 20.f * dearImGui.DpiScale();
 
                     float x0 = centralNode->Pos.x + centralNode->Size.x - w - padding - 1.f;
                     float x1 = x0 + (w / 3.f);

@@ -110,6 +110,7 @@
     <ClCompile Include="LightHeap.cpp" />
     <ClCompile Include="LightLinkedList.cpp" />
     <ClCompile Include="Matrix3.cpp" />
+    <ClCompile Include="ModernDpi.cpp" />
     <ClCompile Include="PbrMaterialHeap.cpp" />
     <ClCompile Include="Matrix4.cpp" />
     <ClCompile Include="MeshHeap.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="LightHeap.h" />
     <ClInclude Include="LightLinkedList.h" />
     <ClInclude Include="Matrix3.h" />
+    <ClInclude Include="ModernDpi.h" />
     <ClInclude Include="PbrMaterialHeap.h" />
     <ClInclude Include="MathCommon.h" />
     <ClInclude Include="Matrix4.h" />
@@ -219,6 +221,9 @@
     <FxCompile Include="Shaders\LightLinkedListFill.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="ThreeL.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

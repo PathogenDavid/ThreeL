@@ -2,36 +2,36 @@
 #include "Window.h"
 
 #include "Math.h"
+#include "ModernDpi.h"
 
 #include <ranges>
+#include <ShellScalingApi.h>
 
-static int2 GetDefaultWindowLocation(int2 windowSize)
+struct Monitor
 {
-    int2 data[] =
-    {
-        windowSize,
-        int2(CW_USEDEFAULT, CW_USEDEFAULT)
-    };
+    HMONITOR Monitor;
+    MONITORINFO Info;
+};
+
+static Monitor GetPrimaryMonitor()
+{
+    Monitor monitor = { };
 
     EnumDisplayMonitors(NULL, NULL, [](HMONITOR monitor, HDC, LPRECT, LPARAM extra) -> BOOL
         {
             MONITORINFO monitorInfo = { sizeof(monitorInfo) };
             if (GetMonitorInfoW(monitor, &monitorInfo) && (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0)
             {
-                int2* data = (int2*)extra;
-                const int2& windowSize = data[0];
-                int2& result = data[1];
-
-                result.x = (monitorInfo.rcWork.right - monitorInfo.rcWork.left) / 2 - (windowSize.x / 2);
-                result.y = (monitorInfo.rcWork.bottom - monitorInfo.rcWork.top) / 2 - (windowSize.y / 2);
-
+                Monitor* result = (Monitor*)extra;
+                result->Monitor = monitor;
+                result->Info = monitorInfo;
                 return FALSE;
             }
 
             return TRUE;
-        }, (LPARAM)data);
+        }, (LPARAM)&monitor);
 
-    return data[1];
+    return monitor;
 }
 
 Window::Window(LPCWSTR title, int width, int height)
@@ -73,11 +73,39 @@ Window::Window(LPCWSTR title, int width, int height)
         DWORD styleEx = 0;
         DWORD style = WS_OVERLAPPEDWINDOW;
 
+        Monitor monitor = GetPrimaryMonitor();
+
+        // Apply target monitor's DPI scale to the initial window size
+        UINT dpi = USER_DEFAULT_SCREEN_DPI;
+        if (monitor.Monitor != NULL && ModernDpi::IsAvailable())
+        {
+            UINT dpiX, dpiY;
+            HRESULT hr = GetDpiForMonitor(monitor.Monitor, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+            AssertSuccess(hr);
+            if (SUCCEEDED(hr))
+            {
+                Assert(dpiX == dpiY && "The X and Y DPIs should match!");
+                dpi = dpiX;
+                width = MulDiv(width, dpiX, USER_DEFAULT_SCREEN_DPI);
+                height = MulDiv(height, dpiY, USER_DEFAULT_SCREEN_DPI);
+            }
+        }
+
         RECT rect = { 0, 0, width, height };
-        Assert(AdjustWindowRectEx(&rect, style, false, styleEx));
+
+        if (ModernDpi::IsAvailable())
+        { Assert(ModernDpi::AdjustWindowRectExForDpi(&rect, style, false, styleEx, dpi)); }
+        else
+        { Assert(AdjustWindowRectEx(&rect, style, false, styleEx)); }
 
         int2 size(rect.right - rect.left, rect.bottom - rect.top);
-        int2 position = GetDefaultWindowLocation(size);
+        int2 position = int2(CW_USEDEFAULT, CW_USEDEFAULT);
+
+        if (monitor.Monitor != NULL)
+        {
+            position.x = monitor.Info.rcWork.left + (monitor.Info.rcWork.right - monitor.Info.rcWork.left) / 2 - (size.x / 2);
+            position.y = monitor.Info.rcWork.top + (monitor.Info.rcWork.bottom - monitor.Info.rcWork.top) / 2 - (size.y / 2);
+        }
 
         m_Hwnd = nullptr;
         m_Hwnd = CreateWindowExW
@@ -148,7 +176,10 @@ LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
     {
         Assert(GetWindowLongPtrW(hwnd, GWLP_USERDATA) == 0); // WM_NCCREATE should not be sent to windows more than once.
 
-        //TODO: Enable non-client area DPI scaling for legacy platforms
+        // Enable non-client area DPI scaling for legacy platforms
+        // This isn't necessary on platforms that support Per-Monitor DPI awareness v2, but you can't easily check for that so we just do it regardless.
+        if (ModernDpi::IsEnableNonClientDpiScalingAvailable())
+        { ModernDpi::EnableNonClientDpiScaling(hwnd); }
 
         // Save the Window's pointer in the window's user data
         CREATESTRUCTW* windowCreationArguments = (CREATESTRUCTW*)lParam;

@@ -84,6 +84,7 @@
     <ClCompile Include="FrequentlyUpdatedResource.cpp" />
     <ClCompile Include="LightLinkedList.cpp" />
     <ClCompile Include="FrameStatistics.cpp" />
+    <ClCompile Include="ModernDpi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="LightLinkedList.h" />
     <ClInclude Include="RawGpuResource.h" />
     <ClInclude Include="FrameStatistics.h" />
+    <ClInclude Include="ModernDpi.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -238,5 +240,8 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="ThreeL.manifest" />
   </ItemGroup>
 </Project>

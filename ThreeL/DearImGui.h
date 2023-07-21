@@ -15,6 +15,8 @@ private:
     ImGuiContext* m_Context;
     WndProcHandle m_WndProcHandle;
     Window& m_Window;
+    ImGuiStyle m_BaseStyle;
+    float m_LastScale = 1.f;
 
 public:
     DearImGui(GraphicsCore& graphicsCore, Window& window);
@@ -22,6 +24,10 @@ public:
     void NewFrame();
     void Render(GraphicsContext& context);
     void RenderViewportWindows();
+
+    void ScaleUi(float scale);
+
+    inline float DpiScale() const { return m_LastScale; }
     
     ~DearImGui();
 

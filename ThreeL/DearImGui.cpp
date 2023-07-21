@@ -7,6 +7,7 @@
 #include "Window.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx12.h>
 
@@ -39,6 +40,14 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
     // Disable window rounding and window background alpha since it doesn't play nice with multiple viewports
     style.WindowRounding = 0.f;
     style.Colors[ImGuiCol_WindowBg].w = 1.f;
+
+    m_BaseStyle = style;
+
+    // Apply initial scaling
+    UINT dpi = GetDpiForWindow(window.Hwnd());
+    Assert(dpi != 0);
+    if (dpi != 0)
+    { ScaleUi((float)dpi / (float)USER_DEFAULT_SCREEN_DPI); }
 
     //---------------------------------------------------------------------------------------------------------
     // Initialize platform/renderer backends
@@ -80,6 +89,38 @@ void DearImGui::RenderViewportWindows()
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault(nullptr, nullptr);
     }
+}
+
+void DearImGui::ScaleUi(float scale)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    style = m_BaseStyle;
+    style.ScaleAllSizes(scale);
+    ImGui::GetIO().FontGlobalScale = scale;
+
+    // Reposition and resize windows so their relative positions and sizes remain the same
+    // Dear ImGui doesn't have super great support for handling DPI changes, so this is only best effort
+    // This does not handle resizing windows docked to the main dockspace
+    // Chances are some other edge cases not being handled as well, but it's good enough for ThreeL
+    float scaleChange = scale / m_LastScale;
+    ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+    for (int i = 0; i < m_Context->Windows.size(); i++)
+    {
+        ImGuiWindow* window = m_Context->Windows[i];
+
+        if (window->ParentWindow != nullptr || window->Viewport != mainViewport)
+        { continue; }
+
+        ImVec2 pos = window->Pos;
+        ImVec2 size = window->Size;
+        pos.x -= mainViewport->Pos.x;
+        pos.y -= mainViewport->Pos.y;
+
+        ImGui::SetWindowPos(window, ImVec2(mainViewport->Pos.x + pos.x * scaleChange, mainViewport->Pos.y + pos.y * scaleChange));
+        ImGui::SetWindowSize(window, ImVec2(size.x * scaleChange, size.y * scaleChange));
+    }
+
+    m_LastScale = scale;
 }
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
