@@ -224,6 +224,9 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     // Get tangent frame
     float3 normal = normalize(input.Normal);
 
+    if (!isFrontFace)
+    { normal *= -1.f; }
+
     if (material.NormalTexture != DISABLED_BUFFER)
     {
         float3 tangent = normalize(input.Tangent.xyz);
@@ -231,7 +234,6 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
 
         if (!isFrontFace)
         {
-            normal *= -1.f;
             tangent *= -1.f;
             bitangent *= -1.f;
         }

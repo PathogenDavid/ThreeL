@@ -56,7 +56,7 @@ struct float4x4
     //---------------------------------------------------------------------------------------------
     // Matrix properties
     //---------------------------------------------------------------------------------------------
-    inline float4x4 Transposed()
+    inline float4x4 Transposed() const
     {
         return float4x4
         (
@@ -67,8 +67,8 @@ struct float4x4
         );
     }
 
-    float Determinant();
-    float4x4 Inverted();
+    float Determinant() const;
+    float4x4 Inverted() const;
 
     //---------------------------------------------------------------------------------------------
     // Matrix creation
@@ -112,7 +112,7 @@ struct float4x4
 
     static float4x4 MakeRotation(Quaternion q);
 
-    inline float4x4 MakeRotation(float3 axis, float angle)
+    static inline float4x4 MakeRotation(float3 axis, float angle)
     {
         return MakeRotation(Quaternion(axis, angle));
     }

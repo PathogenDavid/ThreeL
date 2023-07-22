@@ -20,7 +20,7 @@ struct float2
     {
     }
 
-    float2(float s)
+    explicit float2(float s)
         : x(s), y(s)
     {
     }
@@ -69,7 +69,7 @@ struct int2
     {
     }
 
-    int2(int s)
+    explicit int2(int s)
         : x(s), y(s)
     {
     }
@@ -104,7 +104,7 @@ struct uint2
     {
     }
 
-    constexpr uint2(uint s)
+    explicit constexpr uint2(uint s)
         : x(s), y(s)
     {
     }
@@ -138,7 +138,7 @@ struct bool2
     {
     }
 
-    bool2(bool s)
+    explicit bool2(bool s)
         : x(s), y(s)
     {
     }

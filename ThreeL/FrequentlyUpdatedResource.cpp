@@ -48,7 +48,7 @@ FrequentlyUpdatedResource::FrequentlyUpdatedResource(GraphicsCore& graphics, con
             nullptr,
             IID_PPV_ARGS(&resource)
         ));
-        resource->SetName(std::format(L"{} #{} (Upload)", debugName, i).c_str());
+        resource->SetName(std::format(L"{} #{}", debugName, i).c_str());
         m_Resources[i] = std::move(resource);
 
         // Create the upload buffer

@@ -19,7 +19,7 @@ struct float3
     {
     }
 
-    float3(float s)
+    explicit float3(float s)
         : x(s), y(s), z(s)
     {
     }
@@ -70,7 +70,7 @@ struct uint3
     constexpr uint3(uint x, uint y, uint z) : x(x), y(y), z(z) { }
     constexpr uint3(uint2 xy, uint z) : x(xy.x), y(xy.y), z(z) { }
     constexpr uint3(uint x, uint2 yz) : x(x), y(yz.x), z(yz.y) { }
-    constexpr uint3(uint s) : x(s), y(s), z(s) { }
+    explicit constexpr uint3(uint s) : x(s), y(s), z(s) { }
 
     //---------------------------------------------------------------------------------------------
     // Conversion operators

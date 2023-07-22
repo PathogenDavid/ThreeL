@@ -125,11 +125,10 @@ void FrameStatistics::FinishCollectStatistics(GraphicsContext& context)
         Assert(m_NextWriteBuffer != m_CurrentReadBuffer && "Statistics collection is going to try to write to the buffer currently mapped for reading!");
     }
 
-    context.UavBarrier(m_StatisticsReadbackBuffer);
+    context.UavBarrier(m_StatisticsComputeBuffer);
     context.TransitionResource(m_StatisticsComputeBuffer, D3D12_RESOURCE_STATE_COPY_SOURCE, true);
     context->CopyBufferRegion(m_StatisticsReadbackBuffer.Get(), sizeof(StatisticsBuffer) * m_NextWriteBuffer, m_StatisticsComputeBuffer, 0, sizeof(StatisticsBuffer));
-    context.Flush();
-    m_SyncPoints[m_NextWriteBuffer] = m_Graphics.GraphicsQueue().QueueSyncPoint();
+    m_SyncPoints[m_NextWriteBuffer] = context.Flush();
 
     m_NextWriteBuffer = (m_NextWriteBuffer + 1) % BUFFER_COUNT;
 }

@@ -165,7 +165,7 @@ void SwapChain::Present(PresentMode mode)
 
 void SwapChain::Resize(uint2 size)
 {
-    Assert((size.x > uint2::Zero).All() && "The swap chain size must be positive and non-zero!");
+    Assert((size > uint2::Zero).All() && "The swap chain size must be positive and non-zero!");
 
     // If there is no change, don't do anything
     if ((m_Size == size).All())

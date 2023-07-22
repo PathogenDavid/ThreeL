@@ -18,7 +18,7 @@ struct float4
         : x(x), y(y), z(z), w(w)
     { }
 
-    float4(float s)
+    explicit float4(float s)
         : x(s), y(s), z(s), w(s)
     { }
 
@@ -75,7 +75,7 @@ struct uint4
     {
     }
 
-    uint4(uint s)
+    explicit uint4(uint s)
         : x(s), y(s), z(s), w(s)
     {
     }

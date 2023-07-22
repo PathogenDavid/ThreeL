@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Matrix4.h"
 
-float float4x4::Determinant()
+float float4x4::Determinant() const
 {
     return (m00 * m11 - m01 * m10) * (m22 * m33 - m23 * m32)
         - (m00 * m12 - m02 * m10) * (m21 * m33 - m23 * m31)
@@ -11,7 +11,7 @@ float float4x4::Determinant()
         + (m02 * m13 - m03 * m12) * (m20 * m31 - m21 * m30);
 }
 
-float4x4 float4x4::Inverted()
+float4x4 float4x4::Inverted() const
 {
     float det = Determinant();
     Assert(std::abs(det) > FLT_EPSILON && "Tried to invert non-invertable matrix!");

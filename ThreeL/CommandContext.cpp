@@ -83,6 +83,7 @@ void CommandContext::TransitionResource(GpuResource& resource, D3D12_RESOURCE_ST
         return;
     }
 
+    Assert(resource.m_Resource.Get() != nullptr && "Tried to transition an uninitialized resource!");
     AllocateResourceBarrier() =
     {
         .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,

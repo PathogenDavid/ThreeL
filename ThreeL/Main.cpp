@@ -69,6 +69,7 @@ static Texture LoadHdr(ResourceManager& resources, std::string filePath)
     int channels;
     // Forcing 4 channels because R32G32B32 cannot be accessed via UAV which is required for mipmap chain generation.
     float* data = stbi_loadf(filePath.c_str(), &width, &height, &channels, 4);
+    Assert(data != nullptr);
     channels = 4;
     Texture texture(resources, std::format(L"{}", filePath), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), channels);
     stbi_image_free(data);
@@ -334,32 +335,38 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Frame setup
         //-------------------------------------------------------------------------------------------------------------
+        float4x4 perspectiveTransform;
+        ShaderInterop::PerFrameCb perFrame;
+        D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress;
+
         GpuSyncPoint lightUpdateSyncPoint;
+
         GraphicsContext context(graphics.GraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
         {
             PIXScopedEvent(&context, 0, "Frame #%lld setup", frameNumber);
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET);
             context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-            context.Clear(swapChain, 0.2f, 0.2f, 0.2f, 1.f);
+            context.Clear(swapChain, 0.01f, 0.01f, 0.01f, 1.f);
             context.Clear(depthBuffer);
+
+            perspectiveTransform = float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f);
+            perFrame =
+            {
+                .ViewProjectionTransform = camera.ViewTransform() * perspectiveTransform,
+                .EyePosition = camera.Position(),
+                .LightLinkedListBufferWidth = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, lightLinkedListShift).x,
+                .LightLinkedListBufferShift = lightLinkedListShift,
+                .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
+                .ViewTransformInverse = camera.ViewTransform().Inverted(),
+            };
+            perFrame.ViewProjectionTransformInverse = perFrame.ViewProjectionTransform.Inverted();
+
+            GpuSyncPoint perFrameCbSyncPoint = perFrameCbResource.Update(perFrame);
+            graphics.GraphicsQueue().AwaitSyncPoint(perFrameCbSyncPoint); // (This is part of why FrequentlyUpdatedResource isn't the ideal abstraction here)
+            perFrameCbAddress = perFrameCbResource.Current()->GetGPUVirtualAddress();
 
             lightUpdateSyncPoint = lightHeap.Update(lights);
         }
-
-        float4x4 perspectiveTransform = float4x4::MakePerspectiveTransformReverseZ(Math::Deg2Rad(cameraFovDegrees) , screenSizeF.x / screenSizeF.y, 0.0001f);
-        ShaderInterop::PerFrameCb perFrame =
-        {
-            .ViewProjectionTransform = camera.ViewTransform() * perspectiveTransform,
-            .EyePosition = camera.Position(),
-            .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
-            .LightLinkedListBufferWidth = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, lightLinkedListShift).x,
-            .LightLinkedListBufferShift = lightLinkedListShift,
-        };
-        perFrame.ViewProjectionTransformInverse = perFrame.ViewProjectionTransform.Inverted();
-
-        GpuSyncPoint perFrameCbSyncPoint = perFrameCbResource.Update(perFrame);
-        D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress = perFrameCbResource.Current()->GetGPUVirtualAddress();
-        graphics.GraphicsQueue().AwaitSyncPoint(perFrameCbSyncPoint); // (Part of why FrequentlyUpdatedResource isn't the ideal abstraction here)
 
         //-------------------------------------------------------------------------------------------------------------
         // Depth pre-pass
@@ -455,7 +462,7 @@ static int MainImpl()
                 (uint32_t)lights.size(),
                 lightLinkLimit,
                 perFrameCbAddress,
-                perFrame.LightLinkedListBufferShift,
+                lightLinkedListShift,
                 lightLinkedListDepthBuffer,
                 screenSize,
                 perspectiveTransform
@@ -784,7 +791,7 @@ static int MainImpl()
         {
             PIXScopedEvent(&context, 99, "Collect frame statistics");
             stats.StartCollectStatistics(context);
-            lightLinkedList.CollectStatistics(context, screenSize, perFrame.LightLinkedListBufferShift, stats.LightLinkedListStatisticsLocation());
+            lightLinkedList.CollectStatistics(context, screenSize, lightLinkedListShift, stats.LightLinkedListStatisticsLocation());
             stats.FinishCollectStatistics(context);
         }
 
