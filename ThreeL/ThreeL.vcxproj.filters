@@ -85,6 +85,7 @@
     <ClCompile Include="LightLinkedList.cpp" />
     <ClCompile Include="FrameStatistics.cpp" />
     <ClCompile Include="ModernDpi.cpp" />
+    <ClCompile Include="UavCounter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -196,6 +197,7 @@
     <ClInclude Include="RawGpuResource.h" />
     <ClInclude Include="FrameStatistics.h" />
     <ClInclude Include="ModernDpi.h" />
+    <ClInclude Include="UavCounter.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

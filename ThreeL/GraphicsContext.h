@@ -7,6 +7,7 @@
 #include "Vector4.h"
 
 class GraphicsQueue;
+class UavCounter;
 
 struct GraphicsContext
 {
@@ -55,6 +56,8 @@ public:
         m_Context->FlushResourceBarriers();
         CommandList()->ClearUnorderedAccessViewUint(uavDescriptor.ResidentHandle(), uavDescriptor.StagingHandle(), resource.m_Resource.Get(), &clearValue.x, 0, nullptr);
     }
+
+    void ClearUav(const UavCounter& counter, uint4 clearValue = uint4::Zero);
 
     inline void DrawInstanced(uint32_t vertexCountPerInstance, uint32_t instanceCount, uint32_t startVertexLocation = 0, uint32_t startInstanceLocation = 0)
     {

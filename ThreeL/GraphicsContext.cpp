@@ -2,6 +2,7 @@
 #include "GraphicsContext.h"
 
 #include "CommandQueue.h"
+#include "UavCounter.h"
 
 GraphicsContext::GraphicsContext(GraphicsQueue& queue)
 {
@@ -18,6 +19,11 @@ GraphicsContext::GraphicsContext(GraphicsQueue& queue, ID3D12RootSignature* root
     m_Context = &queue.RentContext();
     m_Context->Begin(pipelineState);
     m_Context->m_CommandList->SetGraphicsRootSignature(rootSignature);
+}
+
+void GraphicsContext::ClearUav(const UavCounter& counter, uint4 clearValue)
+{
+    ClearUav(counter.Uav(), counter, clearValue);
 }
 
 GpuSyncPoint GraphicsContext::Finish()

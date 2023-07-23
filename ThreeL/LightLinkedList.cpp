@@ -24,11 +24,9 @@ LightLinkedList::LightLinkedList(ResourceManager& resources, uint2 initialSize)
 
     // Create light links heap and counter
     ComPtr<ID3D12Resource> lightLinksHeap;
-    ComPtr<ID3D12Resource> lightLinksCounter;
 
     D3D12_HEAP_PROPERTIES heapProperties = { D3D12_HEAP_TYPE_DEFAULT };
     D3D12_RESOURCE_DESC resourceDescription = DescribeBufferResource(ShaderInterop::SizeOfLightLink * MAX_LIGHT_LINKS, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    D3D12_RESOURCE_DESC counterDescription = DescribeBufferResource(sizeof(uint32_t), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
     AssertSuccess(graphics.Device()->CreateCommittedResource
     (
@@ -40,20 +38,10 @@ LightLinkedList::LightLinkedList(ResourceManager& resources, uint2 initialSize)
         IID_PPV_ARGS(&lightLinksHeap)
     ));
     lightLinksHeap->SetName(L"LightLinkedList LightLinksHeap");
-    m_LightLinksHeapGpuAddress = lightLinksHeap->GetGPUVirtualAddress();
 
-    AssertSuccess(graphics.Device()->CreateCommittedResource
-    (
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &counterDescription,
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr,
-        IID_PPV_ARGS(&lightLinksCounter)
-    ));
-    lightLinksCounter->SetName(L"LightLinkedList LightLinksHeap (Counter)");
+    m_LightLinksCounter = UavCounter(graphics, L"LightLinkedList LightLinksHeap (Counter)");
 
-    // Create resource views for light links heap and counter
+    // Create resource views for light links heap
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDescription =
     {
         .Format = DXGI_FORMAT_UNKNOWN,
@@ -67,7 +55,7 @@ LightLinkedList::LightLinkedList(ResourceManager& resources, uint2 initialSize)
             .Flags = D3D12_BUFFER_UAV_FLAG_NONE,
         },
     };
-    m_LightLinksHeapUav = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(lightLinksHeap.Get(), lightLinksCounter.Get(), uavDescription);
+    m_LightLinksHeapUav = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(lightLinksHeap.Get(), m_LightLinksCounter, uavDescription);
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDescription =
     {
@@ -84,21 +72,7 @@ LightLinkedList::LightLinkedList(ResourceManager& resources, uint2 initialSize)
     };
     m_LightLinksHeapSrv = graphics.ResourceDescriptorManager().CreateShaderResourceView(lightLinksHeap.Get(), srvDescription);
 
-    D3D12_UNORDERED_ACCESS_VIEW_DESC counterUavDescription =
-    {
-        .Format = DXGI_FORMAT_R32_TYPELESS,
-        .ViewDimension = D3D12_UAV_DIMENSION_BUFFER,
-        .Buffer =
-        {
-            .FirstElement = 0,
-            .NumElements = 1,
-            .Flags = D3D12_BUFFER_UAV_FLAG_RAW,
-        },
-    };
-    m_LightLinksCounterUav = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(lightLinksCounter.Get(), nullptr, counterUavDescription);
-
     m_LightLinksHeap = RawGpuResource(std::move(lightLinksHeap));
-    m_LightLinksCounter = RawGpuResource(std::move(lightLinksCounter));
 
     // Allocate the descriptors for the first light link buffer and "resize" to allocate the actual buffer
     m_FirstLightLinkBufferUav = graphics.ResourceDescriptorManager().AllocateDynamicDescriptor();
@@ -124,7 +98,6 @@ void LightLinkedList::Resize(uint2 size)
         IID_PPV_ARGS(&firstLightLink)
     ));
     firstLightLink->SetName(L"LightLinkedList FirstLightLink Buffer");
-    m_FirstLightLinkBufferGpuAddress = firstLightLink->GetGPUVirtualAddress();
 
     // Update the descriptors
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDescription =
@@ -181,7 +154,7 @@ void LightLinkedList::FillLights
 
     // Reset light buffers
     context.ClearUav(m_FirstLightLinkBufferUav, m_FirstLightLinkBuffer, uint4(0xFFFFFFFF));
-    context.ClearUav(m_LightLinksCounterUav, m_LightLinksCounter);
+    context.ClearUav(m_LightLinksCounter);
 
     // Draw active lights to fill the light linked list
     ShaderInterop::LightLinkedListFillParams params =
@@ -197,7 +170,7 @@ void LightLinkedList::FillLights
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListFill::RpLightHeap, lightHeap.BufferGpuAddress());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::LightLinkedListFill::RpDepthBuffer, depthBuffer.DepthShaderResourceView().ResidentHandle());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::LightLinkedListFill::RpLightLinksHeap, m_LightLinksHeapUav.ResidentHandle());
-    context->SetGraphicsRootUnorderedAccessView(ShaderInterop::LightLinkedListFill::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
+    context->SetGraphicsRootUnorderedAccessView(ShaderInterop::LightLinkedListFill::RpFirstLightLinkBuffer, m_FirstLightLinkBuffer.GpuAddress());
     context->IASetIndexBuffer(&m_LightSphereIndices);
     context->IASetVertexBuffers(MeshInputSlot::Position, 1, &m_LightSphereVertices);
     context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -220,8 +193,8 @@ void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& ligh
     context->SetGraphicsRoot32BitConstants(ShaderInterop::LightLinkedListDebug::RpDebugParams, sizeof(params) / sizeof(uint32_t), &params, 0);
     context->SetGraphicsRootConstantBufferView(ShaderInterop::LightLinkedListDebug::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightHeap, lightHeap.BufferGpuAddress());
-    context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightLinksHeap, m_LightLinksHeapGpuAddress);
-    context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
+    context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpLightLinksHeap, m_LightLinksHeap.GpuAddress());
+    context->SetGraphicsRootShaderResourceView(ShaderInterop::LightLinkedListDebug::RpFirstLightLinkBuffer, m_FirstLightLinkBuffer.GpuAddress());
     context.DrawInstanced(3, 1);
 }
 
@@ -232,10 +205,10 @@ void LightLinkedList::CollectStatistics(GraphicsContext& context, uint2 fullScre
     context->SetComputeRootSignature(m_Resources.LightLinkedListStatsRootSignature);
     context->SetPipelineState(m_Resources.LightLinkedListStats);
     context->SetComputeRoot32BitConstant(ShaderInterop::LightLinkedListStats::RpParams, lightLinkedListBufferLength, 0);
-    context->SetComputeRootDescriptorTable(ShaderInterop::LightLinkedListStats::RpLightLinksHeapCounter, m_LightLinksCounterUav.ResidentHandle());
+    context->SetComputeRootDescriptorTable(ShaderInterop::LightLinkedListStats::RpLightLinksHeapCounter, m_LightLinksCounter.Uav().ResidentHandle());
     context->SetComputeRootUnorderedAccessView(ShaderInterop::LightLinkedListStats::RpResults, resultsBuffer);
-    context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpLightLinksHeap, m_LightLinksHeapGpuAddress);
-    context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpFirstLightLinkBuffer, m_FirstLightLinkBufferGpuAddress);
+    context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpLightLinksHeap, m_LightLinksHeap.GpuAddress());
+    context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpFirstLightLinkBuffer, m_FirstLightLinkBuffer.GpuAddress());
     context.Dispatch(uint3((lightLinkedListBufferLength + ShaderInterop::LightLinkedListStats::ThreadGroupSize - 1) / ShaderInterop::LightLinkedListStats::ThreadGroupSize, 1, 1));
 }
 

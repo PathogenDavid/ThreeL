@@ -9,6 +9,8 @@
 // handling as it is (and it's the main reason GpuResource exists in the first place.)
 class RawGpuResource final : public GpuResource
 {
+private:
+    D3D12_GPU_VIRTUAL_ADDRESS m_GpuAddress;
 public:
     RawGpuResource() = default;
 
@@ -16,9 +18,12 @@ public:
     {
         m_Resource = resource;
         m_CurrentState = initialState;
+        m_GpuAddress = m_Resource->GetGPUVirtualAddress();
     }
 
     inline ID3D12Resource* Resource() const { return m_Resource.Get(); }
     inline operator ID3D12Resource* () const { return Resource(); }
     inline ID3D12Resource* operator->() const { return Resource(); }
+
+    inline D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return m_GpuAddress; }
 };

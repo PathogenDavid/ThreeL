@@ -36,8 +36,6 @@ FrameStatistics::FrameStatistics(GraphicsCore& graphics)
             },
         };
         m_StatisticsComputeBufferUav = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(computeBuffer.Get(), nullptr, uavDescription);
-
-        m_StatisticsComputeBufferAddress = computeBuffer->GetGPUVirtualAddress();
         m_StatisticsComputeBuffer = RawGpuResource(std::move(computeBuffer));
     }
 

@@ -16,7 +16,6 @@ private:
     GraphicsCore& m_Graphics;
 
     RawGpuResource m_StatisticsComputeBuffer;
-    D3D12_GPU_VIRTUAL_ADDRESS m_StatisticsComputeBufferAddress;
     ResourceDescriptor m_StatisticsComputeBufferUav;
 
     ComPtr<ID3D12Resource> m_StatisticsReadbackBuffer;
@@ -44,7 +43,7 @@ public:
     void StartCollectStatistics(GraphicsContext& context);
     void FinishCollectStatistics(GraphicsContext& context);
 
-    inline D3D12_GPU_VIRTUAL_ADDRESS LightLinkedListStatisticsLocation() const { return m_StatisticsComputeBufferAddress; }
+    inline D3D12_GPU_VIRTUAL_ADDRESS LightLinkedListStatisticsLocation() const { return m_StatisticsComputeBuffer.GpuAddress(); }
 
     inline uint32_t NumberOfLightLinksUsed() const { return m_CurrentStatistics->NumberOfLightLinksUsed; }
     inline uint32_t MaximumLightCountForAnyPixel() const { return m_CurrentStatistics->MaximumLightCountForAnyPixel; }
