@@ -126,6 +126,7 @@
     </ClCompile>
     <ClCompile Include="Quaternion.cpp" />
     <ClCompile Include="ResourceDescriptorManager.cpp" />
+    <ClCompile Include="Stopwatch.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="GraphicsCore.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="SceneNode.h" />
     <ClInclude Include="ShaderInterop.h" />
+    <ClInclude Include="Stopwatch.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="UavCounter.h" />
     <ClInclude Include="UploadQueue.h" />
