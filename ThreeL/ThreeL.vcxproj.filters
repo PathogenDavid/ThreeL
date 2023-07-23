@@ -85,6 +85,7 @@
     <ClCompile Include="LightLinkedList.cpp" />
     <ClCompile Include="FrameStatistics.cpp" />
     <ClCompile Include="ModernDpi.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="UavCounter.cpp" />
     <ClCompile Include="Stopwatch.cpp" />
   </ItemGroup>
@@ -198,12 +199,16 @@
     <ClInclude Include="RawGpuResource.h" />
     <ClInclude Include="FrameStatistics.h" />
     <ClInclude Include="ModernDpi.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="UavCounter.h" />
     <ClInclude Include="Stopwatch.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\Common.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ParticleCommon.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
@@ -243,7 +248,15 @@
     <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
+    <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ParticleRender.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ParticleSystem.cs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="ThreeL.manifest" />

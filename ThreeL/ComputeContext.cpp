@@ -2,6 +2,7 @@
 #include "ComputeContext.h"
 
 #include "CommandQueue.h"
+#include "UavCounter.h"
 
 ComputeContext::ComputeContext(CommandQueue& queue)
 {
@@ -20,10 +21,9 @@ ComputeContext::ComputeContext(CommandQueue& queue, ID3D12RootSignature* rootSig
     m_Context->m_CommandList->SetComputeRootSignature(rootSignature);
 }
 
-void ComputeContext::Dispatch(uint3 threadGroupCount)
+void ComputeContext::ClearUav(const UavCounter& counter, uint4 clearValue)
 {
-    m_Context->FlushResourceBarriers();
-    m_Context->m_CommandList->Dispatch(threadGroupCount.x, threadGroupCount.y, threadGroupCount.z);
+    ClearUav(counter.Uav(), counter, clearValue);
 }
 
 GpuSyncPoint ComputeContext::Finish()

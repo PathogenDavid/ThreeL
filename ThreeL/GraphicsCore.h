@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "CommandContext.h"
 #include "CommandQueue.h"
+#include "GraphicsCore.h"
 #include "ResourceDescriptorManager.h"
 #include "SamplerHeap.h"
 #include "UploadQueue.h"
@@ -20,6 +21,10 @@ private:
     std::unique_ptr<GraphicsQueue> m_GraphicsQueue;
     std::unique_ptr<ComputeQueue> m_ComputeQueue;
     std::unique_ptr<UploadQueue> m_UploadQueue;
+
+    ComPtr<ID3D12CommandSignature> m_DrawIndirectCommandSignature;
+    ComPtr<ID3D12CommandSignature> m_DrawIndexedIndirectCommandSignature;
+    ComPtr<ID3D12CommandSignature> m_DispatchIndirectCommandSignature;
 public:
     GraphicsCore();
     GraphicsCore(const GraphicsCore&) = delete;
@@ -31,6 +36,10 @@ public:
     inline GraphicsQueue& GraphicsQueue() const { return *m_GraphicsQueue; }
     inline ComputeQueue& ComputeQueue() const { return *m_ComputeQueue; }
     inline UploadQueue& UploadQueue() const { return *m_UploadQueue; }
+
+    inline ID3D12CommandSignature* DrawIndirectCommandSignature() const { return m_DrawIndirectCommandSignature.Get(); }
+    inline ID3D12CommandSignature* DrawIndexedIndirectCommandSignature() const { return m_DrawIndexedIndirectCommandSignature.Get(); }
+    inline ID3D12CommandSignature* DispatchIndirectCommandSignature() const { return m_DispatchIndirectCommandSignature.Get(); }
 
     //! Waits for all outstanding GPU work to complete, do not use for anything that happens frequently
     inline void WaitForGpuIdle() const

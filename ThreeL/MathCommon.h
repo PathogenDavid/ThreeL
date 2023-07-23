@@ -23,4 +23,15 @@ namespace Math
     {
         return x / Pi * 180.f;
     }
+
+    inline float Frac(float x)
+    {
+        float _unused;
+        return std::modf(x, &_unused);
+    }
+
+    inline uint32_t DivRoundUp(uint32_t numerator, uint32_t denominator)
+    {
+        return (numerator + denominator - 1) / denominator;
+    }
 }

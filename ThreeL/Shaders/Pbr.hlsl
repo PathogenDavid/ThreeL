@@ -39,6 +39,9 @@ struct PsInput
     float4 Tangent : TANGENT;
     float4 Color : COLOR;
     float2 Uv0 : TEXCOORD0;
+#ifdef PBR_IS_PARTICLE // Material comes from vertex shader for particles since they're instanced (see ParticleRender.hlsl)
+    uint MaterialId : MATERIALID;
+#endif
 };
 
 //===================================================================================================================================================
@@ -146,12 +149,28 @@ struct Brdf
         SurfaceToLight = surfaceToLight;
         HalfVector = normalize(SurfaceToLight + ViewDirection);
         NdotL = dot(Normal, SurfaceToLight);
+
+#ifdef PBR_IS_PARTICLE
+        // For particles only we do an extreme approximation of light transmission through the particle
+        // This isn't physically accurate, but it's good enough to make our particles lit in a way that makes sense
+        // The proper way to do this would probably be to incorporate a proper BTDF
+        // (IE: along the lines of the KHR_materials_transmission glTF extension.)
+        // That might be a bit heavy for particles though (this shader is already a bit much for particles as it is.)
+        if (NdotL < 0.f)
+        {
+            NdotL = -NdotL;
+            Normal = -Normal;
+        }
+#endif
+
         NdotH = clampedDot(Normal, HalfVector);
         VdotH = clampedDot(ViewDirection, HalfVector);
 
+#ifndef PBR_IS_PARTICLE
         // Surface is not hit by the light
         if (NdotL <= 0.f)
         { return; }
+#endif
 
         float3 frensel = Frensel_Schlick();
         Diffuse += lightIntensity * lightColor * NdotL * (1.f.xxx - frensel) * DiffuseBrdf_Lambertian();
@@ -198,7 +217,11 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     //=================================================================================================================
     // Read in material attributes
     //=================================================================================================================
+#ifdef PBR_IS_PARTICLE
+    MaterialParams material = g_Materials[input.MaterialId];
+#else
     MaterialParams material = g_Materials[g_PerNode.MaterialId];
+#endif
 
     // Get base color
     float4 baseColor = input.Color * material.BaseColorFactor;

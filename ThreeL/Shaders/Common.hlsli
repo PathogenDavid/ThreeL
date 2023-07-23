@@ -64,7 +64,7 @@ struct PerNode
 {
     float4x4 Transform;
     float3x3 NormalTransform;
-    float _padding; // Ensure MatrialId is in its own row, makes CPU-side struct simpler
+    float _Padding; // Ensure MatrialId is in its own row, makes CPU-side struct simpler
     uint MaterialId;
     uint ColorsIndex;
     uint TangentsIndex;
@@ -73,11 +73,14 @@ struct PerNode
 struct PerFrame
 {
     float4x4 ViewProjectionTransform;
-    float4x4 ViewProjectionTransformInverse;
     float3 EyePosition;
-    uint LightCount;
     uint LightLinkedListBufferWidth;
     uint LightLinkedListBufferShift;
+    // Less frequently used members go below so that frequently accessed members fit in a single cache line on Nvidia
+    float DeltaTime;
+    uint LightCount;
+    float4x4 ViewProjectionTransformInverse;
+    float4x4 ViewTransformInverse;
 };
 
 ConstantBuffer<PerNode> g_PerNode : register(b0);
@@ -92,6 +95,7 @@ SamplerState g_Samplers[] : register(space1);
 Texture2D g_Textures[] : register(space2);
 ByteAddressBuffer g_Buffers[] : register(space3);
 
+#ifndef PBR_ROOT_SIGNATURE
 #define PBR_ROOT_SIGNATURE \
     "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
     "RootConstants(num32BitConstants = 31, b0)," \
@@ -108,6 +112,7 @@ ByteAddressBuffer g_Buffers[] : register(space3);
         "SRV(t0, space = 3, offset = 0, numDescriptors = unbounded, flags = DESCRIPTORS_VOLATILE | DATA_VOLATILE)" \
     ")," \
     ""
+#endif
 
 uint2 ScreenSpaceToLightLinkedListSpace(uint2 position)
 {

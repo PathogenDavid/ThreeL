@@ -51,6 +51,14 @@ struct ResourceManager
     RootSignature LightLinkedListStatsRootSignature;
     PipelineStateObject LightLinkedListStats;
 
+    RootSignature ParticleSystemRootSignature;
+    PipelineStateObject ParticleSystemSpawn;
+    PipelineStateObject ParticleSystemUpdate;
+    PipelineStateObject ParticleSystemPrepareDrawIndirect;
+
+    RootSignature ParticleRenderRootSignature;
+    PipelineStateObject ParticleRender;
+
     explicit ResourceManager(GraphicsCore& graphics);
     ResourceManager(const ResourceManager&) = delete;
 

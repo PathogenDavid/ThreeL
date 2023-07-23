@@ -74,7 +74,13 @@ PbrMaterial::PbrMaterial(GltfLoadContext& context, int materialIndex, bool primi
 
     // occlusionTexture
     {
-        Assert(material.occlusionTexture.index == -1 && "Occlusion textures are not supported.");
+        // The occlusion texture is not implemented in our renderer mainly because we don't have a canonical ambient light.
+        // (We have a pseudo ambient light in the form of two directional lights, but it's not quite the same.)
+        // Additionally Sponza doesn't use occlusion textures anywhere.
+        if (material.occlusionTexture.index != -1)
+        {
+            printf("Warning: glTF material #%d's occlusion texture will be ignored.\n", materialIndex);
+        }
     }
 
     // emissiveTexture

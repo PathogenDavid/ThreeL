@@ -1,9 +1,14 @@
 #pragma once
 #include "CommandContext.h"
+#include "GpuResource.h"
+#include "GraphicsCore.h"
+#include "ResourceDescriptor.h"
 #include "Vector3.h"
+#include "Vector4.h"
 
 class ComputeQueue;
 class GraphicsQueue;
+class UavCounter;
 
 struct ComputeContext
 {
@@ -35,7 +40,27 @@ public:
     //TODO: This is to workaround our resource state tracking not working well with resources which map to multiple resourcs (IE: LightLinkedList or textures with subresources.)
     inline D3D12_RESOURCE_BARRIER& __AllocateResourceBarrier() { return m_Context->AllocateResourceBarrier(); }
 
-    void Dispatch(uint3 threadGroupCount);
+    inline void ClearUav(ResourceDescriptor uavDescriptor, const GpuResource& resource, uint4 clearValue = uint4::Zero)
+    {
+        m_Context->FlushResourceBarriers();
+        CommandList()->ClearUnorderedAccessViewUint(uavDescriptor.ResidentHandle(), uavDescriptor.StagingHandle(), resource.m_Resource.Get(), &clearValue.x, 0, nullptr);
+    }
+
+    void ClearUav(const UavCounter& counter, uint4 clearValue = uint4::Zero);
+
+    inline void Dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
+    {
+        m_Context->FlushResourceBarriers();
+        m_Context->m_CommandList->Dispatch(x, y, z);
+    }
+
+    inline void Dispatch(uint3 threadGroupCount) { Dispatch(threadGroupCount.x, threadGroupCount.y, threadGroupCount.z); }
+
+    inline void DispatchIndirect(const GpuResource& argumentResource, uint32_t argumentOffset = 0)
+    {
+        m_Context->FlushResourceBarriers();
+        CommandList()->ExecuteIndirect(m_Context->m_CommandQueue.m_GraphicsCore.DispatchIndirectCommandSignature(), 1, argumentResource.m_Resource.Get(), argumentOffset, nullptr, 0);
+    }
 
     inline GpuSyncPoint Flush(ID3D12PipelineState* newState)
     {

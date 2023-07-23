@@ -111,6 +111,7 @@
     <ClCompile Include="LightLinkedList.cpp" />
     <ClCompile Include="Matrix3.cpp" />
     <ClCompile Include="ModernDpi.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="PbrMaterialHeap.cpp" />
     <ClCompile Include="Matrix4.cpp" />
     <ClCompile Include="MeshHeap.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="LightLinkedList.h" />
     <ClInclude Include="Matrix3.h" />
     <ClInclude Include="ModernDpi.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="PbrMaterialHeap.h" />
     <ClInclude Include="MathCommon.h" />
     <ClInclude Include="Matrix4.h" />
@@ -215,6 +217,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\Common.hlsli" />
+    <None Include="Shaders\ParticleCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DepthDownsample.ps.hlsl" />
@@ -224,6 +227,8 @@
     <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListFill.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
+    <FxCompile Include="Shaders\ParticleRender.hlsl" />
+    <FxCompile Include="Shaders\ParticleSystem.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />
   </ItemGroup>
   <ItemGroup>

@@ -5,6 +5,7 @@ ThreeL incorporates third-party libraries and assets licensed as follows.
 - [Dear ImGui](#dear-imgui)
 - [DirectX Agility SDK](#directx-agility-sdk)
 - [DirectX Shader Compiler](#directx-shader-compiler)
+- [Kenney Particle Pack](#kenney-particle-pack)
 - [JSON for Modern C++](#json-for-modern-c)
 - [Metal-Rough Spheres](#metal-rough-spheres)
 - [Ninomaru Teien](#ninomaru-teien)
@@ -285,6 +286,34 @@ pyyaml tests        llvm/test/YAMLParser/{*.data, LICENSE.TXT}
 ARM contributions   llvm/lib/Target/ARM/LICENSE.TXT
 md5 contributions   llvm/lib/Support/MD5.cpp llvm/include/llvm/Support/MD5.h
 miniz               llvm/lib/Miniz/miniz.c llvm/include/miniz/miniz.h llvm/lib/Miniz/LICENSE.txt
+```
+
+# Kenney Particle Pack
+
+https://kenney.nl/assets/particle-pack
+
+```
+	Particle Pack (1.1)
+
+	by Kenney Vleugels (Kenney.nl)
+
+	Additional credit for creating filter templates:
+	Indigo Ray, Craig Nisbet, Zoltan Erdokovy, Heliagon, ThreeDee, Killst4r and Tim2501
+
+			------------------------------
+
+	License (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You may use these assets in personal and commercial projects.
+	Credit (Kenney or www.kenney.nl) would be nice but is not mandatory.
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+
+	Follow on Twitter for updates: @KenneyNL (www.twitter.com/kenneynl)
 ```
 
 # JSON for Modern C++

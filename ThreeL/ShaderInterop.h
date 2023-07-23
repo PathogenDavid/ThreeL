@@ -44,19 +44,24 @@ namespace ShaderInterop
     struct PerFrameCb
     {
         float4x4 ViewProjectionTransform;
-        float4x4 ViewProjectionTransformInverse;
         float3 EyePosition;
-        uint32_t LightCount;
         uint32_t LightLinkedListBufferWidth;
         uint32_t LightLinkedListBufferShift;
+        float DeltaTime;
+        uint32_t LightCount;
+        uint32_t _Padding;
+        float4x4 ViewProjectionTransformInverse;
+        float4x4 ViewTransformInverse;
     };
-    static_assert(sizeof(PerFrameCb) == 152);
+    static_assert(sizeof(PerFrameCb) == 224);
     static_assert(offsetof(PerFrameCb, ViewProjectionTransform) == 0);
-    static_assert(offsetof(PerFrameCb, ViewProjectionTransformInverse) == 64);
-    static_assert(offsetof(PerFrameCb, EyePosition) == 128);
-    static_assert(offsetof(PerFrameCb, LightCount) == 140);
-    static_assert(offsetof(PerFrameCb, LightLinkedListBufferWidth) == 144);
-    static_assert(offsetof(PerFrameCb, LightLinkedListBufferShift) == 148);
+    static_assert(offsetof(PerFrameCb, EyePosition) == 64);
+    static_assert(offsetof(PerFrameCb, LightLinkedListBufferWidth) == 76);
+    static_assert(offsetof(PerFrameCb, LightLinkedListBufferShift) == 80);
+    static_assert(offsetof(PerFrameCb, DeltaTime) == 84);
+    static_assert(offsetof(PerFrameCb, LightCount) == 88);
+    static_assert(offsetof(PerFrameCb, ViewProjectionTransformInverse) == 96);
+    static_assert(offsetof(PerFrameCb, ViewTransformInverse) == 160);
 
     struct PerNodeCb
     {
@@ -87,6 +92,53 @@ namespace ShaderInterop
             RpSamplerHeap,
             RpBindlessHeap,
         };
+    }
+
+    const static uint32_t SizeOfParticleState = 32;
+    const static uint32_t SizeOfParticleSprite = 48;
+
+    namespace ParticleRender
+    {
+        // See PBR_ROOT_SIGNATURE in ParticleRender.hlsl
+        enum RootParameters
+        {
+            RpParticleBuffer,
+            RpPerFrameCb,
+            RpMaterialHeap,
+            RpLightHeap,
+            RpLightLinksHeap,
+            RpFirstLightLinkBuffer,
+            RpSamplerHeap,
+            RpBindlessHeap,
+        };
+    }
+
+    struct ParticleSystemParams
+    {
+        uint32_t ParticleCapacity;
+        uint32_t ToSpawnThisFrame;
+    };
+    static_assert(sizeof(ParticleSystemParams) == 2 * sizeof(uint32_t));
+    static_assert(offsetof(ParticleSystemParams, ParticleCapacity) == 0);
+    static_assert(offsetof(ParticleSystemParams, ToSpawnThisFrame) == 4);
+
+    namespace ParticleSystem
+    {
+        // See ROOT_SIGNATURE in ParticleSystem.cs.hlsl
+        enum RootParameters
+        {
+            RpParams,
+            RpPerFrameCb,
+            RpParticleStatesIn,
+            RpLivingParticleCount,
+            RpParticleStatesOut,
+            RpParticleSpritesOut,
+            RpLivingParticleCountOut,
+            RpDrawIndirectArguments,
+        };
+
+        static const uint32_t SpawnGroupSize = 64;
+        static const uint32_t UpdateGroupSize = 64;
     }
 
     struct GenerateMipmapChainParams

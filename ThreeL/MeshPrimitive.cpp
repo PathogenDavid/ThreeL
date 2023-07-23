@@ -109,4 +109,9 @@ MeshPrimitive::MeshPrimitive(GltfLoadContext& context, int meshIndex, int primit
 
     // Create material and load textures
     m_Material = PbrMaterial(context, primitive.material, hasTangents);
+
+    // Warn about transparent materials not being implemented
+    // (Sponza doesn't use any so I never got around to implementing sorting and rendeirng them.)
+    if (m_Material.IsTransparent())
+    { printf("Warning: Mesh primitive '%s' will not be rendered because it uses alpha blending, which is currently unimplemented in ThreeL.\n", m_Name.c_str()); }
 }

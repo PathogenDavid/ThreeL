@@ -30,6 +30,13 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
 
     ShaderBlobs lightLinkedListStatsCs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListStats.cs.hlsl", L"Main", L"cs_6_0");
 
+    ShaderBlobs particleSystemSpawn = hlslCompiler.CompileShader(L"Shaders/ParticleSystem.cs.hlsl", L"MainSpawn", L"cs_6_0");
+    ShaderBlobs particleSystemUpdate = hlslCompiler.CompileShader(L"Shaders/ParticleSystem.cs.hlsl", L"MainUpdate", L"cs_6_0");
+    ShaderBlobs particleSystemPrepareDrawIndirect = hlslCompiler.CompileShader(L"Shaders/ParticleSystem.cs.hlsl", L"MainPrepareDrawIndirect", L"cs_6_0");
+
+    ShaderBlobs particleRenderVs = hlslCompiler.CompileShader(L"Shaders/ParticleRender.hlsl", L"VsMainParticle", L"vs_6_0");
+    ShaderBlobs particleRenderPs = hlslCompiler.CompileShader(L"Shaders/ParticleRender.hlsl", L"PsMain", L"ps_6_0");
+
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
     DepthOnlyRootSignature = RootSignature(Graphics, depthOnlyVs, L"DepthOnly Root Signature");
@@ -38,6 +45,8 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     LightLinkedListFillRootSignature = RootSignature(Graphics, lightLinkedListFillVs, L"LightLinkedList Fill Root Signature");
     LightLinkedListDebugRootSignature = RootSignature(Graphics, lightLinkedListDebugPs, L"LightLinkedList Debug Root Signature");
     LightLinkedListStatsRootSignature = RootSignature(Graphics, lightLinkedListStatsCs, L"LightLinkedList Statistics Root Signature");
+    ParticleSystemRootSignature = RootSignature(Graphics, particleSystemSpawn, L"Particle System Root Signature");
+    ParticleRenderRootSignature = RootSignature(Graphics, particleRenderVs, L"Particle Render Root Signature");
 
     // Create PBR pipeline state objects
     {
@@ -194,5 +203,46 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
             .CS = lightLinkedListStatsCs.ShaderBytecode(),
         };
         LightLinkedListStats = PipelineStateObject(Graphics, generateMipMapsDescription, L"LightLinkedList Statistics PSO");
+    }
+
+    // Create ParticleSystem pipeline state objects
+    {
+        D3D12_COMPUTE_PIPELINE_STATE_DESC description =
+        {
+            .pRootSignature = ParticleSystemRootSignature.Get(),
+            .CS = particleSystemSpawn.ShaderBytecode(),
+        };
+        ParticleSystemSpawn = PipelineStateObject(Graphics, description, L"Particle System Spawn PSO");
+
+        description.CS = particleSystemUpdate.ShaderBytecode();
+        ParticleSystemUpdate = PipelineStateObject(Graphics, description, L"Particle System Update PSO");
+
+        description.CS = particleSystemPrepareDrawIndirect.ShaderBytecode();
+        ParticleSystemPrepareDrawIndirect = PipelineStateObject(Graphics, description, L"Particle System Prepare DrawIndirect PSO");
+    }
+
+    // Create ParticleRender pipeline state object
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC description = PipelineStateObject::BaseDescription;
+        description.pRootSignature = ParticleRenderRootSignature.Get();
+        description.VS = particleRenderVs.ShaderBytecode();
+        description.PS = particleRenderPs.ShaderBytecode();
+        description.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+        description.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+        description.BlendState.RenderTarget[0] =
+        {
+            .BlendEnable = true,
+            .LogicOpEnable = false,
+            .SrcBlend = D3D12_BLEND_SRC_ALPHA, // It's tempting to use pre-multiplied alpha, but the textures only *sort-of* look like they're pre-multiplied.
+            .DestBlend = D3D12_BLEND_INV_SRC_ALPHA,
+            .BlendOp = D3D12_BLEND_OP_ADD,
+            .SrcBlendAlpha = D3D12_BLEND_ONE,
+            .DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA,
+            .BlendOpAlpha = D3D12_BLEND_OP_ADD,
+            .LogicOp = D3D12_LOGIC_OP_NOOP,
+            .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL,
+        };
+
+        ParticleRender = PipelineStateObject(Graphics, description, L"Particle Render PSO");
     }
 }

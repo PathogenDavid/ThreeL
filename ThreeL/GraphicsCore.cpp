@@ -117,6 +117,32 @@ GraphicsCore::GraphicsCore()
     m_GraphicsQueue = std::make_unique<::GraphicsQueue>(*this);
     m_ComputeQueue = std::make_unique<::ComputeQueue>(*this);
     m_UploadQueue = std::make_unique<::UploadQueue>(*this);
+
+    //---------------------------------------------------------------------------------------------------------
+    // Create common ExecuteIndirect command signatures
+    //---------------------------------------------------------------------------------------------------------
+    {
+        D3D12_INDIRECT_ARGUMENT_DESC argument = { .Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW };
+        D3D12_COMMAND_SIGNATURE_DESC commandSignatureDescription =
+        {
+            .ByteStride = sizeof(D3D12_DRAW_ARGUMENTS),
+            .NumArgumentDescs = 1,
+            .pArgumentDescs = &argument,
+            .NodeMask = 0
+        };
+        AssertSuccess(m_Device->CreateCommandSignature(&commandSignatureDescription, nullptr, IID_PPV_ARGS(&m_DrawIndirectCommandSignature)));
+        m_DrawIndirectCommandSignature->SetName(L"ARES DrawIndirect Command Signature");
+
+        argument.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+        commandSignatureDescription.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+        AssertSuccess(m_Device->CreateCommandSignature(&commandSignatureDescription, nullptr, IID_PPV_ARGS(&m_DrawIndexedIndirectCommandSignature)));
+        m_DrawIndexedIndirectCommandSignature->SetName(L"ARES DrawIndexedIndirect Command Signature");
+
+        argument.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+        commandSignatureDescription.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+        AssertSuccess(m_Device->CreateCommandSignature(&commandSignatureDescription, nullptr, IID_PPV_ARGS(&m_DispatchIndirectCommandSignature)));
+        m_DispatchIndirectCommandSignature->SetName(L"ARES DispatchIndirect Command Signature");
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------

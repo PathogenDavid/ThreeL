@@ -11,6 +11,7 @@
 #include "GraphicsCore.h"
 #include "LightHeap.h"
 #include "LightLinkedList.h"
+#include "ParticleSystem.h"
 #include "ResourceManager.h"
 #include "Scene.h"
 #include "ShaderInterop.h"
@@ -188,6 +189,72 @@ static int MainImpl()
     }
 
     //-----------------------------------------------------------------------------------------------------------------
+    // Particle system initialization
+    //-----------------------------------------------------------------------------------------------------------------
+    ParticleSystem smoke(resources, L"Smoke", 1024, 5.f);
+    std::vector<Texture> particleTextures;
+    {
+        D3D12_SAMPLER_DESC description =
+        {
+            .Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            .AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            .AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            .AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            .MipLODBias = 0.f,
+            .MaxAnisotropy = 0,
+            .ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
+            .BorderColor = { },
+            .MinLOD = 0.f,
+            .MaxLOD = D3D12_FLOAT32_MAX,
+        };
+        SamplerId sampler = graphics.SamplerHeap().Create(description);
+
+        for (int i = 1; i <= 1; i++)
+        {
+            std::string fileName = std::format("Assets/KenneyParticles/smoke_{:02}.png", i);
+            int width;
+            int height;
+            int channels;
+            uint8_t* data = stbi_load(fileName.c_str(), &width, &height, &channels, 4);
+            Assert(data != nullptr);
+            channels = 4;
+
+            // We interpret the particles as being white with the grayscale as alpha
+            // Looking at Kenny's Unity sample it seems he intends 
+            for (int i = 0; i < width * height * channels; i += channels)
+            {
+                data[i + 3] = data[i];
+                data[i + 0] = 255;
+                data[i + 1] = 255;
+                data[i + 2] = 255;
+            }
+
+            uint32_t textureId = particleTextures.emplace_back(resources, std::format(L"{}", fileName), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), false).BindlessIndex();
+            stbi_image_free(data);
+
+            ShaderInterop::PbrMaterialParams particlePbr =
+            {
+                .AlphaCutoff = -1000.f,
+                .BaseColorTexture = textureId,
+                .BaseColorTextureSampler = sampler,
+                .MealicRoughnessTexture = BUFFER_DISABLED,
+                .MetalicRoughnessTextureSampler = BUFFER_DISABLED,
+                .NormalTexture = BUFFER_DISABLED,
+                .NormalTextureSampler = BUFFER_DISABLED,
+                .NormalTextureScale = 1.f,
+                .BaseColorFactor = float4::One,
+                .MetallicFactor = 0.f,
+                .RoughnessFactor = 1.f,
+                .EmissiveTexture = BUFFER_DISABLED,
+                .EmissiveTextureSampler = BUFFER_DISABLED,
+                .EmissiveFactor = float3::Zero,
+            };
+            PbrMaterialId particleMaterial = resources.PbrMaterials.CreateMaterial(particlePbr);
+            printf("[%d] = %d\n", i, particleMaterial);
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------------------------------
     // Misc initialization
     //-----------------------------------------------------------------------------------------------------------------
     DebugSettings debugSettings = DebugSettings();
@@ -356,6 +423,7 @@ static int MainImpl()
                 .EyePosition = camera.Position(),
                 .LightLinkedListBufferWidth = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, lightLinkedListShift).x,
                 .LightLinkedListBufferShift = lightLinkedListShift,
+                .DeltaTime = deltaTime,
                 .LightCount = std::min((uint32_t)lights.size(), LightHeap::MAX_LIGHTS),
                 .ViewTransformInverse = camera.ViewTransform().Inverted(),
             };
@@ -363,10 +431,16 @@ static int MainImpl()
 
             GpuSyncPoint perFrameCbSyncPoint = perFrameCbResource.Update(perFrame);
             graphics.GraphicsQueue().AwaitSyncPoint(perFrameCbSyncPoint); // (This is part of why FrequentlyUpdatedResource isn't the ideal abstraction here)
+            graphics.ComputeQueue().AwaitSyncPoint(perFrameCbSyncPoint); // Make sure perFrame is available to async compute
             perFrameCbAddress = perFrameCbResource.Current()->GetGPUVirtualAddress();
 
             lightUpdateSyncPoint = lightHeap.Update(lights);
         }
+
+        //-------------------------------------------------------------------------------------------------------------
+        // Update particle system
+        //-------------------------------------------------------------------------------------------------------------
+        smoke.Update(context, deltaTime, camera.Position(), perFrameCbAddress);
 
         //-------------------------------------------------------------------------------------------------------------
         // Depth pre-pass
@@ -529,7 +603,14 @@ static int MainImpl()
         // Transparents pass
         //-------------------------------------------------------------------------------------------------------------
         context.Flush();
-        //TODO: Transparents pass
+        {
+            PIXScopedEvent(&context, 3, "Transparents pass");
+            //TODO: Sort and render transparent nodes from glTF (there aren't any in Sponza so I never implemented this)
+
+            context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
+            context.SetFullViewportScissor(screenSize);
+            smoke.Render(context, perFrameCbAddress, lightHeap, lightLinkedList);
+        }
 
         //-------------------------------------------------------------------------------------------------------------
         // Debug overlays
