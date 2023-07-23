@@ -257,6 +257,9 @@
     <FxCompile Include="Shaders\ParticleSystem.cs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\LightSprites.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="ThreeL.manifest" />

@@ -227,6 +227,7 @@
     <FxCompile Include="Shaders\LightLinkedListDebug.ps.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListFill.hlsl" />
     <FxCompile Include="Shaders\LightLinkedListStats.cs.hlsl" />
+    <FxCompile Include="Shaders\LightSprites.hlsl" />
     <FxCompile Include="Shaders\ParticleRender.hlsl" />
     <FxCompile Include="Shaders\ParticleSystem.cs.hlsl" />
     <FxCompile Include="Shaders\Pbr.hlsl" />

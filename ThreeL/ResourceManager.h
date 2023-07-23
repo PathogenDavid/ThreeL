@@ -51,6 +51,9 @@ struct ResourceManager
     RootSignature LightLinkedListStatsRootSignature;
     PipelineStateObject LightLinkedListStats;
 
+    RootSignature LightSpritesRootSignature;
+    PipelineStateObject LightSprites;
+
     RootSignature ParticleSystemRootSignature;
     PipelineStateObject ParticleSystemSpawn;
     PipelineStateObject ParticleSystemUpdate;

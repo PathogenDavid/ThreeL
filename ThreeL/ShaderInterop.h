@@ -259,4 +259,14 @@ namespace ShaderInterop
 
         static const uint32_t ThreadGroupSize = 1024;
     }
+
+    namespace LightSprites
+    {
+        enum RootParameters
+        {
+            RpPerFrameCb,
+            RpLightHeap,
+            RpTexture,
+        };
+    }
 }

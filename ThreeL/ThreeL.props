@@ -42,6 +42,7 @@
   -->
   <ItemGroup>
     <_Assets Include="$(ExternalDir)Assets/**" TargetPath="Assets/%(RecursiveDir)/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <_Assets Include="$(MSBuildThisFileDirectory)Assets/**" TargetPath="Assets/%(RecursiveDir)/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <_Assets Include="$(MSBuildThisFileDirectory)Shaders/**" TargetPath="Shaders/%(RecursiveDir)/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="EnumerateThreeLAssets" BeforeTargets="AssignTargetPaths;GetCopyToOutputDirectoryItems">

@@ -30,6 +30,9 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
 
     ShaderBlobs lightLinkedListStatsCs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListStats.cs.hlsl", L"Main", L"cs_6_0");
 
+    ShaderBlobs lightSpritesVs = hlslCompiler.CompileShader(L"Shaders/LightSprites.hlsl", L"VsMain", L"vs_6_0");
+    ShaderBlobs lightSpritesPs = hlslCompiler.CompileShader(L"Shaders/LightSprites.hlsl", L"PsMain", L"ps_6_0");
+
     ShaderBlobs particleSystemSpawn = hlslCompiler.CompileShader(L"Shaders/ParticleSystem.cs.hlsl", L"MainSpawn", L"cs_6_0");
     ShaderBlobs particleSystemUpdate = hlslCompiler.CompileShader(L"Shaders/ParticleSystem.cs.hlsl", L"MainUpdate", L"cs_6_0");
     ShaderBlobs particleSystemPrepareDrawIndirect = hlslCompiler.CompileShader(L"Shaders/ParticleSystem.cs.hlsl", L"MainPrepareDrawIndirect", L"cs_6_0");
@@ -45,6 +48,7 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     LightLinkedListFillRootSignature = RootSignature(Graphics, lightLinkedListFillVs, L"LightLinkedList Fill Root Signature");
     LightLinkedListDebugRootSignature = RootSignature(Graphics, lightLinkedListDebugPs, L"LightLinkedList Debug Root Signature");
     LightLinkedListStatsRootSignature = RootSignature(Graphics, lightLinkedListStatsCs, L"LightLinkedList Statistics Root Signature");
+    LightSpritesRootSignature = RootSignature(Graphics, lightSpritesVs, L"Light Sprites Root Signature");
     ParticleSystemRootSignature = RootSignature(Graphics, particleSystemSpawn, L"Particle System Root Signature");
     ParticleRenderRootSignature = RootSignature(Graphics, particleRenderVs, L"Particle Render Root Signature");
 
@@ -203,6 +207,15 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
             .CS = lightLinkedListStatsCs.ShaderBytecode(),
         };
         LightLinkedListStats = PipelineStateObject(Graphics, generateMipMapsDescription, L"LightLinkedList Statistics PSO");
+    }
+
+    // Create LightSprites pipeline state object
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC description = PipelineStateObject::BaseDescription;
+        description.pRootSignature = LightSpritesRootSignature.Get();
+        description.VS = lightSpritesVs.ShaderBytecode();
+        description.PS = lightSpritesPs.ShaderBytecode();
+        LightSprites = PipelineStateObject(Graphics, description, L"Light Sprites PSO");
     }
 
     // Create ParticleSystem pipeline state objects

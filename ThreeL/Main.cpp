@@ -77,6 +77,19 @@ static Texture LoadHdr(ResourceManager& resources, std::string filePath)
     return texture;
 }
 
+static Texture LoadTexture(ResourceManager& resources, std::string filePath)
+{
+    int width;
+    int height;
+    int channels;
+    uint8_t* data = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
+    Assert(data != nullptr);
+    channels = 4;
+    Texture texture(resources, std::format(L"{}", filePath), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), channels);
+    stbi_image_free(data);
+    return texture;
+}
+
 static int MainImpl()
 {
     // Set working directory to app directory so we can easily get at our assets
@@ -136,6 +149,8 @@ static int MainImpl()
     // Allocate lighting resources
     //-----------------------------------------------------------------------------------------------------------------
     LightHeap lightHeap(graphics);
+    Texture lightSprite = LoadTexture(resources, "Assets/LightSprite.png");
+    bool showLightSprites = false;
     std::vector<ShaderInterop::LightInfo> lights;
     lights.reserve(LightHeap::MAX_LIGHTS);
 
@@ -275,6 +290,7 @@ static int MainImpl()
     uint64_t frameNumber = 0;
 
     // Camera stuff
+    bool showControlsHint = true;
     CameraInput cameraInput(window);
     CameraController camera;
     float cameraFovDegrees = 45.f;
@@ -630,6 +646,22 @@ static int MainImpl()
             lightLinkedList.DrawDebugOverlay(context, lightHeap, perFrameCbAddress, params);
         }
 
+        // Light sprites
+        if (showLightSprites)
+        {
+            PIXScopedEvent(&context, 4, "Light sprites");
+            context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+            context.SetRenderTarget(swapChain, depthBuffer.View());
+            context.SetFullViewportScissor(screenSize);
+            context->SetGraphicsRootSignature(resources.LightSpritesRootSignature);
+            context->SetPipelineState(resources.LightSprites);
+            context->SetGraphicsRootConstantBufferView(ShaderInterop::LightSprites::RpPerFrameCb, perFrameCbAddress);
+            context->SetGraphicsRootShaderResourceView(ShaderInterop::LightSprites::RpLightHeap, lightHeap.BufferGpuAddress());
+            context->SetGraphicsRootDescriptorTable(ShaderInterop::LightSprites::RpTexture, lightSprite.SrvHandle().ResidentHandle());
+            context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+            context.DrawInstanced(4, perFrame.LightCount, 1, 1);
+        }
+
         //-------------------------------------------------------------------------------------------------------------
         // UI
         //-------------------------------------------------------------------------------------------------------------
@@ -670,6 +702,13 @@ static int MainImpl()
 
                         ImGui::Checkbox("Animate lights", &debugSettings.AnimateLights);
 
+                        ImGui::EndMenu();
+                    }
+
+                    if (ImGui::BeginMenu("View"))
+                    {
+                        ImGui::Checkbox("Show light sprites", &showLightSprites);
+                        ImGui::Checkbox("Show controls hint", &showControlsHint);
                         ImGui::EndMenu();
                     }
 
@@ -841,6 +880,7 @@ static int MainImpl()
                 }
 
                 // Show controls hint
+                if (showControlsHint)
                 {
                     std::string controlsHint = std::format("Move with {}, click+drag look around or use Xbox controller.", cameraInput.WasdName());
                     float wrapWidth = centralNode->Size.x - padding * 2.f - overlayLegendWidth;
