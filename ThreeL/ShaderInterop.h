@@ -104,6 +104,7 @@ namespace ShaderInterop
         enum RootParameters
         {
             RpParticleBuffer,
+            RpSortedParticleLookupBuffer,
             RpPerFrameCb,
             RpMaterialHeap,
             RpLightHeap,
@@ -177,6 +178,7 @@ namespace ShaderInterop
             RpParticleSpritesOut,
             RpLivingParticleCountOut,
             RpDrawIndirectArguments,
+            RpParticleSpriteSortBuffer,
         };
 
         static const uint32_t SpawnGroupSize = 64;

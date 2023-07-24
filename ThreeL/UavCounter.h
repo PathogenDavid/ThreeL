@@ -13,6 +13,7 @@ class UavCounter : public GpuResource
 {
 private:
     ResourceDescriptor m_Uav;
+    ResourceDescriptor m_Srv;
     D3D12_GPU_VIRTUAL_ADDRESS m_GpuAddress = 0;
 
 public:
@@ -24,5 +25,6 @@ public:
     inline operator ID3D12Resource* () const { return Resource(); }
 
     inline ResourceDescriptor Uav() const { return m_Uav; };
+    inline ResourceDescriptor Srv() const { return m_Srv; };
     inline D3D12_GPU_VIRTUAL_ADDRESS GpuAddress() const { return m_GpuAddress; };
 };

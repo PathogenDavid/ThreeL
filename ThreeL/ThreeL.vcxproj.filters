@@ -90,6 +90,7 @@
     <ClCompile Include="Stopwatch.cpp" />
     <ClCompile Include="ParticleSystemDefinition.cpp" />
     <ClCompile Include="AssetLoading.cpp" />
+    <ClCompile Include="BitonicSort.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -206,6 +207,7 @@
     <ClInclude Include="Stopwatch.h" />
     <ClInclude Include="ParticleSystemDefinition.h" />
     <ClInclude Include="AssetLoading.h" />
+    <ClInclude Include="BitonicSort.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -217,6 +219,9 @@
     </None>
     <None Include="Shaders\Random.hlsli">
       <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\external\BitonicSort\BitonicSortCommon.hlsli">
+      <Filter>external\BitonicSort</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -231,6 +236,9 @@
     </Filter>
     <Filter Include="Math">
       <UniqueIdentifier>{2680a101-7374-4cae-9099-cdea269e6f42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external\BitonicSort">
+      <UniqueIdentifier>{2406106f-1795-4877-909f-77751fc56038}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -266,6 +274,18 @@
     </FxCompile>
     <FxCompile Include="Shaders\LightSprites.hlsl">
       <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\external\BitonicSort\BitonicInnerSort.cs.hlsl">
+      <Filter>external\BitonicSort</Filter>
+    </FxCompile>
+    <FxCompile Include="..\external\BitonicSort\BitonicOuterSort.cs.hlsl">
+      <Filter>external\BitonicSort</Filter>
+    </FxCompile>
+    <FxCompile Include="..\external\BitonicSort\BitonicPreSort.cs.hlsl">
+      <Filter>external\BitonicSort</Filter>
+    </FxCompile>
+    <FxCompile Include="..\external\BitonicSort\BitonicPrepareIndirectArgs.cs.hlsl">
+      <Filter>external\BitonicSort</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

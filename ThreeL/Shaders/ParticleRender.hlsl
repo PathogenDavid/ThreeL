@@ -1,5 +1,6 @@
 #define PBR_ROOT_SIGNATURE \
-    "SRV(t0, space = 900, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
+    "SRV(t0, space = 900, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE, visibility = SHADER_VISIBILITY_VERTEX)," \
+    "SRV(t1, space = 900, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE, visibility = SHADER_VISIBILITY_VERTEX)," \
     "CBV(b1)," \
     "SRV(t0, flags = DATA_STATIC)," \
     "SRV(t1, flags = DATA_STATIC_WHILE_SET_AT_EXECUTE)," \
@@ -21,6 +22,7 @@
 #include "Pbr.hlsl"
 
 StructuredBuffer<ParticleSprite> g_Particles : register(t0, space900);
+ByteAddressBuffer g_SortedParticleLookup : register(t1, space900);
 
 //===================================================================================================================================================
 // Vertex shader
@@ -30,6 +32,7 @@ StructuredBuffer<ParticleSprite> g_Particles : register(t0, space900);
 PsInput VsMainParticle(uint vertexId : SV_VertexID, uint particleIndex : SV_InstanceID)
 {
     PsInput result;
+    particleIndex = g_SortedParticleLookup.Load(particleIndex * 8);
     ParticleSprite particle = g_Particles[particleIndex];
 
     result.Uv0 = float2(uint2(vertexId >> 1, vertexId) & 1.xx);

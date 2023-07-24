@@ -30,7 +30,21 @@ UavCounter::UavCounter(GraphicsCore& graphics, const std::wstring& debugName)
             .Flags = D3D12_BUFFER_UAV_FLAG_RAW,
         },
     };
-    m_Uav = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(m_Resource.Get(), nullptr, uavDescription);;
+    m_Uav = graphics.ResourceDescriptorManager().CreateUnorderedAccessView(m_Resource.Get(), nullptr, uavDescription);
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDescription =
+    {
+        .Format = DXGI_FORMAT_R32_TYPELESS,
+        .ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+        .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+        .Buffer =
+        {
+            .FirstElement = 0,
+            .NumElements = 1,
+            .Flags = D3D12_BUFFER_SRV_FLAG_RAW,
+        },
+    };
+    m_Srv = graphics.ResourceDescriptorManager().CreateShaderResourceView(m_Resource.Get(), srvDescription);
 
     m_GpuAddress = m_Resource->GetGPUVirtualAddress();
 }

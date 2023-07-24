@@ -86,6 +86,7 @@
     <ClCompile Include="..\external\xxhash.c" />
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="AssetLoading.cpp" />
+    <ClCompile Include="BitonicSort.cpp" />
     <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="CameraInput.cpp" />
     <ClCompile Include="CommandContext.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="Assert.h" />
     <ClInclude Include="AssetLoading.h" />
     <ClInclude Include="BackBuffer.h" />
+    <ClInclude Include="BitonicSort.h" />
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="CameraInput.h" />
     <ClInclude Include="CommandContext.h" />
@@ -219,12 +221,17 @@
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\external\BitonicSort\BitonicSortCommon.hlsli" />
     <None Include="packages.config" />
     <None Include="Shaders\Common.hlsli" />
     <None Include="Shaders\ParticleCommon.hlsli" />
     <None Include="Shaders\Random.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\external\BitonicSort\BitonicInnerSort.cs.hlsl" />
+    <FxCompile Include="..\external\BitonicSort\BitonicOuterSort.cs.hlsl" />
+    <FxCompile Include="..\external\BitonicSort\BitonicPrepareIndirectArgs.cs.hlsl" />
+    <FxCompile Include="..\external\BitonicSort\BitonicPreSort.cs.hlsl" />
     <FxCompile Include="Shaders\DepthDownsample.ps.hlsl" />
     <FxCompile Include="Shaders\DepthOnly.hlsl" />
     <FxCompile Include="Shaders\FullScreenQuad.vs.hlsl" />

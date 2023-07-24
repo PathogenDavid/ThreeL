@@ -1,12 +1,15 @@
 #include "pch.h"
 #include "ResourceManager.h"
 
+#include "GraphicsCore.h"
 #include "HlslCompiler.h"
 
 ResourceManager::ResourceManager(GraphicsCore& graphics)
     : Graphics(graphics), PbrMaterials(graphics), MeshHeap(graphics)
 {
     HlslCompiler hlslCompiler;
+
+    BitonicSort = ::BitonicSort(Graphics, hlslCompiler);
 
     // Compile all shaders
     ShaderBlobs pbrVs = hlslCompiler.CompileShader(L"Shaders/Pbr.hlsl", L"VsMain", L"vs_6_0");

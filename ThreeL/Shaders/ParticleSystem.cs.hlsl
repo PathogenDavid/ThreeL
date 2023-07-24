@@ -10,6 +10,7 @@ RWStructuredBuffer<ParticleSprite> g_ParticleSpritesOut : register(u1, space900)
 
 RWByteAddressBuffer g_LivingParticleCountOut : register(u2, space900);
 RWByteAddressBuffer g_DrawIndirectArguments : register(u3, space900);
+RWByteAddressBuffer g_ParticleSpriteSortBuffer : register(u4, space900);
 
 struct ParticleSystemParams
 {
@@ -52,6 +53,7 @@ ConstantBuffer<ParticleSystemParams> g_Params : register(b0, space900);
     "UAV(u1, space = 900, flags = DATA_VOLATILE)," \
     "UAV(u2, space = 900, flags = DATA_VOLATILE)," \
     "UAV(u3, space = 900, flags = DATA_VOLATILE)," \
+    "UAV(u4, space = 900, flags = DATA_VOLATILE)," \
     ""
 
 void OutputParticle(uint outputIndex, ParticleState state);
@@ -135,9 +137,13 @@ void OutputParticle(uint outputIndex, ParticleState state)
     g_ParticleStatesOut[outputIndex] = state;
 
     // Create a sprite for this particle
-    //TODO: Emit a sort key
     //TODO: Culling?
     g_ParticleSpritesOut[outputIndex] = MakeSprite(state);
+
+    // Emit sort index/key pair
+    float3 toEye = state.WorldPosition - g_PerFrame.EyePosition;
+    float distanceSquared = dot(toEye, toEye);
+    g_ParticleSpriteSortBuffer.Store2(outputIndex * 8, uint2(outputIndex, asuint(distanceSquared)));
 }
 
 [numthreads(1, 1, 1)]

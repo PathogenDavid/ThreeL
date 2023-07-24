@@ -1,9 +1,11 @@
 #pragma once
-#include "GraphicsCore.h"
+#include "BitonicSort.h"
 #include "MeshHeap.h"
 #include "PbrMaterialHeap.h"
 #include "PipelineStateObject.h"
 #include "RootSignature.h"
+
+class GraphicsCore;
 
 namespace MeshInputSlot
 {
@@ -20,6 +22,7 @@ struct ResourceManager
     GraphicsCore& Graphics;
     PbrMaterialHeap PbrMaterials;
     MeshHeap MeshHeap;
+    BitonicSort BitonicSort;
 
     // No complicated PSO management here, we don't need very many so we just make them all by hand
     RootSignature PbrRootSignature;

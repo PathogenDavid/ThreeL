@@ -7,6 +7,7 @@ ThreeL incorporates third-party libraries and assets licensed as follows.
 - [DirectX Shader Compiler](#directx-shader-compiler)
 - [Kenney Particle Pack](#kenney-particle-pack)
 - [JSON for Modern C++](#json-for-modern-c)
+- [MiniEngine Bitonic Sort](#miniengine-bitonic-sort)
 - [Sponza](#sponza)
 - [stb](#stb)
 - [TinyGLTF](#tinygltf)
@@ -322,6 +323,34 @@ https://github.com/nlohmann/json
 MIT License 
 
 Copyright (c) 2013-2022 Niels Lohmann
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+# MiniEngine Bitonic Sort
+
+https://github.com/microsoft/DirectX-Graphics-Samples/tree/b5f92e2251ee83db4d4c795b3cba5d470c52eaf8/MiniEngine
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2013-2015 Microsoft
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

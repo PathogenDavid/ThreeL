@@ -39,6 +39,9 @@ private:
 
     RawGpuResource m_ParticleSpriteBuffer;
 
+    RawGpuResource m_ParticleSpriteSortBuffer;
+    ResourceDescriptor m_ParticleSpriteSortBufferUav;
+
     RawGpuResource m_DrawIndirectArguments;
 
 public:

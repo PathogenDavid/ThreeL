@@ -21,8 +21,9 @@
     <ClCompile Update="$(MSBuildThisFileDirectory)../external/**/*">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
-    <!-- Don't use legacy HLSL compiler -->
+    <!-- Don't use MSBuild's HLSL compilation -->
     <FxCompile Update="**" ExcludedFromBuild="true" />
+    <FxCompile Update="$(MSBuildThisFileDirectory)../external/**/*" ExcludedFromBuild="true" />
   </ItemGroup>
 
   <!-- Automatically disable runtime checks when ASAN is enabled -->

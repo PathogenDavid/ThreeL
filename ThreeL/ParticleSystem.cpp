@@ -73,6 +73,36 @@ ParticleSystem::ParticleSystem(ResourceManager& resources, const std::wstring& d
     spriteBuffer->SetName(std::format(L"'{}' Particle Sprites", debugName).c_str());
     m_ParticleSpriteBuffer = RawGpuResource(std::move(spriteBuffer));
 
+    // Allocate sort buffer
+    uint32_t sortBufferSizeBytes = sizeof(uint2) * m_Capacity;
+    D3D12_RESOURCE_DESC sortBufferDescription = DescribeBufferResource(sortBufferSizeBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    ComPtr<ID3D12Resource> sortBuffer;
+    AssertSuccess(m_Graphics.Device()->CreateCommittedResource
+    (
+        &heapProperties,
+        D3D12_HEAP_FLAG_CREATE_NOT_ZEROED,
+        &sortBufferDescription,
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr,
+        IID_PPV_ARGS(&sortBuffer)
+    ));
+    sortBuffer->SetName(std::format(L"'{}' Particle Sort Buffer", debugName).c_str());
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDescription =
+    {
+        .Format = DXGI_FORMAT_R32_TYPELESS,
+        .ViewDimension = D3D12_UAV_DIMENSION_BUFFER,
+        .Buffer =
+        {
+            .FirstElement = 0,
+            .NumElements = sortBufferSizeBytes / sizeof(uint32_t),
+            .Flags = D3D12_BUFFER_UAV_FLAG_RAW,
+        },
+    };
+
+    m_ParticleSpriteSortBufferUav = m_Graphics.ResourceDescriptorManager().CreateUnorderedAccessView(sortBuffer.Get(), nullptr, uavDescription);
+    m_ParticleSpriteSortBuffer = RawGpuResource(std::move(sortBuffer));
+
     // Allocate DrawIndirect arguments buffer
     D3D12_RESOURCE_DESC drawIndirectArgumentsDescription = DescribeBufferResource(sizeof(D3D12_DRAW_ARGUMENTS), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     ComPtr<ID3D12Resource> drawIndirectArguments;
@@ -135,6 +165,7 @@ void ParticleSystem::Update(ComputeContext& context, float deltaTime, D3D12_GPU_
     context->SetComputeRootUnorderedAccessView(ShaderInterop::ParticleSystem::RpParticleSpritesOut, m_ParticleSpriteBuffer.GpuAddress());
     context->SetComputeRootUnorderedAccessView(ShaderInterop::ParticleSystem::RpLivingParticleCountOut, outputStateBuffer.Counter.GpuAddress());
     context->SetComputeRootUnorderedAccessView(ShaderInterop::ParticleSystem::RpDrawIndirectArguments, m_DrawIndirectArguments.GpuAddress());
+    context->SetComputeRootUnorderedAccessView(ShaderInterop::ParticleSystem::RpParticleSpriteSortBuffer, m_ParticleSpriteSortBuffer.GpuAddress());
 
     // Update existing particles
     //PERF: For systems with very large capacities that are not near capacity, this ends up spawning a bunch of useless threads
@@ -166,11 +197,22 @@ void ParticleSystem::Update(ComputeContext& context, float deltaTime, D3D12_GPU_
     context.Dispatch(1);
 
     // Sort particle sprites
-    //TODO
+    BitonicSortParams sortParams =
+    {
+        .SortList = m_ParticleSpriteSortBuffer,
+        .SortListUav = m_ParticleSpriteSortBufferUav,
+        .Capacity = m_Capacity,
+        .ItemKind = BitonicSortParams::SeparateKeyIndex,
+        .ItemCountBuffer = outputStateBuffer.Counter,
+        .SkipPreSort = false,
+        .SortAscending = false,
+    };
+    m_Resources.BitonicSort.Sort(context, sortParams);
 
     // Transition all resources for their use in render
     context.UavBarrier();
     context.TransitionResource(m_ParticleSpriteBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    context.TransitionResource(m_ParticleSpriteSortBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     context.TransitionResource(m_DrawIndirectArguments, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
     // Update complete, save a sync point for render
@@ -191,6 +233,7 @@ void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS 
     context->SetGraphicsRootSignature(m_Resources.ParticleRenderRootSignature);
 
     context->SetGraphicsRootShaderResourceView(ShaderInterop::ParticleRender::RpParticleBuffer, m_ParticleSpriteBuffer.GpuAddress());
+    context->SetGraphicsRootShaderResourceView(ShaderInterop::ParticleRender::RpSortedParticleLookupBuffer, m_ParticleSpriteSortBuffer.GpuAddress());
     context->SetGraphicsRootConstantBufferView(ShaderInterop::ParticleRender::RpPerFrameCb, perFrameCb);
     context->SetGraphicsRootShaderResourceView(ShaderInterop::ParticleRender::RpMaterialHeap, m_Resources.PbrMaterials.BufferGpuAddress());
 

@@ -34,4 +34,34 @@ namespace Math
     {
         return (numerator + denominator - 1) / denominator;
     }
+
+    inline uint8_t Log2(uint64_t x)
+    {
+        DWORD mostSignificantBit;
+        DWORD leastSignificantBit;
+
+        if (_BitScanReverse64(&mostSignificantBit, x) && _BitScanForward64(&leastSignificantBit, x))
+        {
+            uint8_t result = (uint8_t)mostSignificantBit;
+
+            // If x is not a perfect power of two (IE: multiple bits set) we round up to the next power of two
+            if (mostSignificantBit != leastSignificantBit)
+            { result++; }
+
+            return result;
+        }
+
+        return 0;
+    }
+
+    template<typename T>
+    inline T AlignPowerOfTwo(T x)
+    {
+        return x == 0 ? 0 : 1 << Log2(x);
+    }
+
+    inline bool IsPowerOfTwo(uint32_t x)
+    {
+        return x && !(x & (x - 1u));
+    }
 }
