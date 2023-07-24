@@ -11,6 +11,7 @@ class UavCounter;
 
 struct GraphicsContext
 {
+    friend inline void PIXEndGPUEventOnContext(_In_ GraphicsContext* context);
 private:
     CommandContext* m_Context;
 
@@ -157,6 +158,7 @@ inline void PIXBeginGPUEventOnContext(_In_ GraphicsContext* context, _In_reads_b
 
 inline void PIXEndGPUEventOnContext(_In_ GraphicsContext* context)
 {
+    context->m_Context->FlushResourceBarriers();
     PIXEndGPUEventOnContext(context->CommandList());
 }
 #endif
