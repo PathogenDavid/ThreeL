@@ -112,6 +112,7 @@
     <ClCompile Include="Matrix3.cpp" />
     <ClCompile Include="ModernDpi.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="ParticleSystemDefinition.cpp" />
     <ClCompile Include="PbrMaterialHeap.cpp" />
     <ClCompile Include="Matrix4.cpp" />
     <ClCompile Include="MeshHeap.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="Matrix3.h" />
     <ClInclude Include="ModernDpi.h" />
     <ClInclude Include="ParticleSystem.h" />
+    <ClInclude Include="ParticleSystemDefinition.h" />
     <ClInclude Include="PbrMaterialHeap.h" />
     <ClInclude Include="MathCommon.h" />
     <ClInclude Include="Matrix4.h" />
@@ -218,6 +220,7 @@
     <None Include="packages.config" />
     <None Include="Shaders\Common.hlsli" />
     <None Include="Shaders\ParticleCommon.hlsli" />
+    <None Include="Shaders\Random.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DepthDownsample.ps.hlsl" />

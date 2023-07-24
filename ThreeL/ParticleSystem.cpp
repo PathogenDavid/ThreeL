@@ -6,6 +6,7 @@
 #include "GraphicsCore.h"
 #include "LightHeap.h"
 #include "LightLinkedList.h"
+#include "ParticleSystemDefinition.h"
 #include "ResourceManager.h"
 #include "ShaderInterop.h"
 
@@ -17,12 +18,13 @@
 // (In practice updating is so fast it's already done before any drawing happens anyway.)
 //#define USE_ASYNC_COMPUTE
 
-ParticleSystem::ParticleSystem(ResourceManager& resources, const std::wstring& debugName, uint32_t capacity, float spawnRatePerSecond)
+ParticleSystem::ParticleSystem(ResourceManager& resources, const std::wstring& debugName, const ParticleSystemDefinition& definition, float3 spawnPoint, uint32_t capacity)
     : m_Resources(resources)
     , m_Graphics(resources.Graphics)
     , m_DebugName(debugName)
+    , m_Definition(definition)
+    , m_SpawnPoint(spawnPoint)
     , m_Capacity(capacity)
-    , m_SpawnRate(spawnRatePerSecond)
 {
     D3D12_HEAP_PROPERTIES heapProperties = { D3D12_HEAP_TYPE_DEFAULT };
 
@@ -93,7 +95,7 @@ ParticleSystem::ParticleSystem(ResourceManager& resources, const std::wstring& d
     m_DrawIndirectArguments = RawGpuResource(std::move(drawIndirectArguments));
 }
 
-void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, float3 eyePosition, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
+void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, bool skipPrepareRender)
 {
 #ifdef USE_ASYNC_COMPUTE
     // Make sure we don't update buffers on the async compute queue while they're still being used to render the previous frame
@@ -111,7 +113,7 @@ void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, f
     PIXBeginEvent(&context, 42, L"Update '%s' particle system", m_DebugName.c_str());
 
     // Determine number of particles to spawn this frame
-    float toSpawnF = m_SpawnLeftover + m_SpawnRate * deltaTime;
+    float toSpawnF = m_SpawnLeftover + m_Definition.SpawnRate * deltaTime;
     uint32_t toSpawn = (uint32_t)toSpawnF;
     m_SpawnLeftover = Math::Frac(toSpawnF); // Accumulate partial unspawned particles for future frames
 
@@ -131,11 +133,7 @@ void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, f
     context.ClearUav(outputStateBuffer.Counter);
 
     // Bind root signature
-    ShaderInterop::ParticleSystemParams params =
-    {
-        .ParticleCapacity = m_Capacity,
-        .ToSpawnThisFrame = toSpawn,
-    };
+    ShaderInterop::ParticleSystemParams params = m_Definition.CreateShaderParams(m_Capacity, toSpawn, m_SpawnPoint);
     context->SetComputeRoot32BitConstants(ShaderInterop::ParticleSystem::RpParams, sizeof(params) / sizeof(uint32_t), &params, 0);
     context->SetComputeRootConstantBufferView(ShaderInterop::ParticleSystem::RpPerFrameCb, perFrameCb);
     context->SetComputeRootShaderResourceView(ShaderInterop::ParticleSystem::RpParticleStatesIn, inputStateBuffer.Buffer.GpuAddress());
@@ -157,6 +155,17 @@ void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, f
         context.UavBarrier(outputStateBuffer.Counter); // Update must finish allocating output particles before spawning can happen
         context->SetPipelineState(m_Resources.ParticleSystemSpawn);
         context.Dispatch(Math::DivRoundUp(toSpawn, ShaderInterop::ParticleSystem::SpawnGroupSize));
+    }
+
+    // Don't bother preparing to render if we aren't going to do it
+    if (skipPrepareRender)
+    {
+        context.UavBarrier();
+        PIXEndEvent(&context);
+#ifdef USE_ASYNC_COMPUTE
+        m_UpdateSyncPoint = context.Finish();
+#endif
+        return;
     }
 
     // Prepare parameters for the indirect draw
@@ -209,5 +218,81 @@ void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS 
     PIXEndEvent(&context);
 #ifdef USE_ASYNC_COMPUTE
     m_RenderSyncPoint = context.Flush();
+#endif
+}
+
+void ParticleSystem::SeedState(float numSeconds)
+{
+    // Run the forced simulation just often enough to ensure particles spawn when they "should"
+    // (But cap it at 30 updates per simulated second in case spawn rate is very high)
+    float simulatedRate = std::max(1.f / m_Definition.SpawnRate, 1.f / 30.f);
+    uint32_t framesToSimulate = (uint32_t)(std::ceil(numSeconds / simulatedRate) + 0.5f);
+
+    struct AlignedPerFrameCb
+    {
+        ShaderInterop::PerFrameCb PerFrameCb;
+        uint8_t Padding[D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - (sizeof(ShaderInterop::PerFrameCb) % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT)];
+    };
+
+    // Create fake per-frame constant buffers
+    D3D12_RESOURCE_DESC perFrameCbBufferDescription = DescribeBufferResource(sizeof(AlignedPerFrameCb) * framesToSimulate);
+    PendingUpload pendingUpload = m_Graphics.UploadQueue().AllocateResource(perFrameCbBufferDescription, std::format(L"'{}' ParticleSystem::SeedState PerFrameCb buffer", m_DebugName));
+
+    // Start at a distance frame so that the random number seeds don't overlap with the start
+    uint32_t fakeStartFrame = std::numeric_limits<uint32_t>::max() - framesToSimulate;
+    std::span<AlignedPerFrameCb> perFrames = SpanCast<uint8_t, AlignedPerFrameCb>(pendingUpload.StagingBuffer());
+    float numSecondsSim = numSeconds;
+    for (uint32_t i = 0; i < framesToSimulate; i++)
+    {
+        perFrames[i].PerFrameCb = ShaderInterop::PerFrameCb
+        {
+            // A lot of these are provided with dummy values as they're unused by the basic stages of updating
+            .ViewProjectionTransform = float4x4::Identity,
+            .EyePosition = float3::Zero,
+            .LightLinkedListBufferWidth = 100,
+            .LightLinkedListBufferShift = 0,
+            .DeltaTime = std::min(simulatedRate, numSecondsSim),
+            .FrameNumber = fakeStartFrame + i,
+            .LightCount = 0,
+            .ViewProjectionTransformInverse = float4x4::Identity,
+            .ViewTransformInverse = float4x4::Identity,
+        };
+        numSecondsSim -= simulatedRate;
+    }
+
+    InitiatedUpload upload = pendingUpload.InitiateUpload();
+    ComPtr<ID3D12Resource> perFrameCbs = std::move(upload.Resource);
+
+    // Simulate the particle system
+    GraphicsContext context(m_Graphics.GraphicsQueue());
+#ifdef USE_ASYNC_COMPUTE
+    m_Graphics.ComputeQueue().AwaitSyncPoint(upload.SyncPoint);
+    PIXBeginEvent(&m_Graphics.ComputeQueue(), 0, L"ParticleSystem::SeedState for '%s'", m_DebugName.c_str());
+#else
+    m_Graphics.GraphicsQueue().AwaitSyncPoint(upload.SyncPoint);
+    PIXBeginEvent(&context, 0, L"ParticleSystem::SeedState for '%s'", m_DebugName.c_str());
+#endif
+
+    numSecondsSim = numSeconds;
+    D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress = perFrameCbs->GetGPUVirtualAddress();
+    for (uint32_t i = 0; i < framesToSimulate; i++)
+    {
+        Update(context, std::min(simulatedRate, numSecondsSim), perFrameCbAddress, true);
+        perFrameCbAddress += sizeof(AlignedPerFrameCb);
+        numSecondsSim -= simulatedRate;
+    }
+
+#ifdef USE_ASYNC_COMPUTE
+    PIXEndEvent(&m_Graphics.ComputeQueue());
+#else
+    PIXEndEvent(&context);
+#endif
+    GpuSyncPoint graphicsSyncPoint = context.Finish();
+
+    // Wait for the simulation to complete on the GPU so we can dispose of the temporary per-frame constant buffers
+#ifdef USE_ASYNC_COMPUTE
+    m_UpdateSyncPoint.Wait();
+#else
+    graphicsSyncPoint.Wait();
 #endif
 }

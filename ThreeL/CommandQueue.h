@@ -91,3 +91,22 @@ public:
     {
     }
 };
+
+// PIX compatibility
+#include <pix3.h>
+#ifdef USE_PIX
+inline void PIXSetGPUMarkerOnContext(_In_ CommandQueue* context, _In_reads_bytes_(size) void* data, UINT size)
+{
+    PIXSetGPUMarkerOnContext(context->Queue(), data, size);
+}
+
+inline void PIXBeginGPUEventOnContext(_In_ CommandQueue* context, _In_reads_bytes_(size) void* data, UINT size)
+{
+    PIXBeginGPUEventOnContext(context->Queue(), data, size);
+}
+
+inline void PIXEndGPUEventOnContext(_In_ CommandQueue* context)
+{
+    PIXEndGPUEventOnContext(context->Queue());
+}
+#endif

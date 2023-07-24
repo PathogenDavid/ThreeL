@@ -48,8 +48,8 @@ namespace ShaderInterop
         uint32_t LightLinkedListBufferWidth;
         uint32_t LightLinkedListBufferShift;
         float DeltaTime;
+        uint32_t FrameNumber;
         uint32_t LightCount;
-        uint32_t _Padding;
         float4x4 ViewProjectionTransformInverse;
         float4x4 ViewTransformInverse;
     };
@@ -59,7 +59,8 @@ namespace ShaderInterop
     static_assert(offsetof(PerFrameCb, LightLinkedListBufferWidth) == 76);
     static_assert(offsetof(PerFrameCb, LightLinkedListBufferShift) == 80);
     static_assert(offsetof(PerFrameCb, DeltaTime) == 84);
-    static_assert(offsetof(PerFrameCb, LightCount) == 88);
+    static_assert(offsetof(PerFrameCb, FrameNumber) == 88);
+    static_assert(offsetof(PerFrameCb, LightCount) == 92);
     static_assert(offsetof(PerFrameCb, ViewProjectionTransformInverse) == 96);
     static_assert(offsetof(PerFrameCb, ViewTransformInverse) == 160);
 
@@ -94,7 +95,7 @@ namespace ShaderInterop
         };
     }
 
-    const static uint32_t SizeOfParticleState = 32;
+    const static uint32_t SizeOfParticleState = 60;
     const static uint32_t SizeOfParticleSprite = 48;
 
     namespace ParticleRender
@@ -117,10 +118,51 @@ namespace ShaderInterop
     {
         uint32_t ParticleCapacity;
         uint32_t ToSpawnThisFrame;
+        float MaxSize;
+        float FadeOutTime;
+
+        float LifeMin;
+        float LifeMax;
+        float AngularVelocityMin;
+        float AngularVelocityMax;
+
+        float3 VelocityDirectionVariance;
+        float VelocityMagnitudeMin;
+
+        float3 VelocityDirectionBias;
+        float VelocityMagnitudeMax;
+
+        float3 SpawnPoint;
+        uint32_t MinMaterialId;
+
+        float3 SpawnPointVariance;
+        uint32_t MaxMaterialId;
+
+        float3 BaseColor;
+        float MinShade;
+
+        float MaxShade;
     };
-    static_assert(sizeof(ParticleSystemParams) == 2 * sizeof(uint32_t));
+    static_assert(sizeof(ParticleSystemParams) == 29 * sizeof(uint32_t));
     static_assert(offsetof(ParticleSystemParams, ParticleCapacity) == 0);
     static_assert(offsetof(ParticleSystemParams, ToSpawnThisFrame) == 4);
+    static_assert(offsetof(ParticleSystemParams, MaxSize) == 8);
+    static_assert(offsetof(ParticleSystemParams, FadeOutTime) == 12);
+    static_assert(offsetof(ParticleSystemParams, LifeMin) == 16);
+    static_assert(offsetof(ParticleSystemParams, LifeMax) == 20);
+    static_assert(offsetof(ParticleSystemParams, AngularVelocityMin) == 24);
+    static_assert(offsetof(ParticleSystemParams, AngularVelocityMax) == 28);
+    static_assert(offsetof(ParticleSystemParams, VelocityDirectionVariance) == 32);
+    static_assert(offsetof(ParticleSystemParams, VelocityMagnitudeMin) == 44);
+    static_assert(offsetof(ParticleSystemParams, VelocityDirectionBias) == 48);
+    static_assert(offsetof(ParticleSystemParams, VelocityMagnitudeMax) == 60);
+    static_assert(offsetof(ParticleSystemParams, SpawnPoint) == 64);
+    static_assert(offsetof(ParticleSystemParams, MinMaterialId) == 76);
+    static_assert(offsetof(ParticleSystemParams, SpawnPointVariance) == 80);
+    static_assert(offsetof(ParticleSystemParams, MaxMaterialId) == 92);
+    static_assert(offsetof(ParticleSystemParams, BaseColor) == 96);
+    static_assert(offsetof(ParticleSystemParams, MinShade) == 108);
+    static_assert(offsetof(ParticleSystemParams, MaxShade) == 112);
 
     namespace ParticleSystem
     {

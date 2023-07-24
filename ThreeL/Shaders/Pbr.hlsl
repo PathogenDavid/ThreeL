@@ -151,16 +151,13 @@ struct Brdf
         NdotL = dot(Normal, SurfaceToLight);
 
 #ifdef PBR_IS_PARTICLE
-        // For particles only we do an extreme approximation of light transmission through the particle
-        // This isn't physically accurate, but it's good enough to make our particles lit in a way that makes sense
-        // The proper way to do this would probably be to incorporate a proper BTDF
-        // (IE: along the lines of the KHR_materials_transmission glTF extension.)
-        // That might be a bit heavy for particles though (this shader is already a bit much for particles as it is.)
+        // For particles only we do an extreme approximation of light scattering within the particle
+        // Right now we don't incorporate a BTDF (IE: transmission of light through objects isn't simulated) so we have to pretend light shines through
+        // Additionally from a math perspective our particles are flat quads, but from a visual perspective they're 3D clouds of smoke so we need to simulate that
+        // Doing this isn't physically accurate, but it's good enough to make our particles lit in a way that makes sense
         if (NdotL < 0.f)
-        {
-            NdotL = -NdotL;
-            Normal = -Normal;
-        }
+        { Normal = -Normal; }
+        NdotL = 1.f;
 #endif
 
         NdotH = clampedDot(Normal, HalfVector);

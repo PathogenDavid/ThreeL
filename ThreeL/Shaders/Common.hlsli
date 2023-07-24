@@ -78,6 +78,7 @@ struct PerFrame
     uint LightLinkedListBufferShift;
     // Less frequently used members go below so that frequently accessed members fit in a single cache line on Nvidia
     float DeltaTime;
+    uint FrameNumber;
     uint LightCount;
     float4x4 ViewProjectionTransformInverse;
     float4x4 ViewTransformInverse;

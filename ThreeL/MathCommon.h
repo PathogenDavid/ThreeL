@@ -9,17 +9,17 @@ namespace Math
     const float QuarterPi = 0.25f * Pi;
     const float InversePi = 1.f / Pi;
 
-    inline float Clamp(float x, float min, float max)
+    inline constexpr float Clamp(float x, float min, float max)
     {
         return x < min ? min : (x > max ? max : x);
     }
 
-    inline float Deg2Rad(float x)
+    inline constexpr float Deg2Rad(float x)
     {
         return x / 180.f * Pi;
     }
 
-    inline float Rad2Deg(float x)
+    inline constexpr float Rad2Deg(float x)
     {
         return x / Pi * 180.f;
     }
@@ -30,7 +30,7 @@ namespace Math
         return std::modf(x, &_unused);
     }
 
-    inline uint32_t DivRoundUp(uint32_t numerator, uint32_t denominator)
+    inline constexpr uint32_t DivRoundUp(uint32_t numerator, uint32_t denominator)
     {
         return (numerator + denominator - 1) / denominator;
     }

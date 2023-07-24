@@ -9,6 +9,7 @@ struct GraphicsContext;
 class GraphicsCore;
 class LightHeap;
 class LightLinkedList;
+struct ParticleSystemDefinition;
 struct ResourceManager;
 
 class ParticleSystem
@@ -17,9 +18,10 @@ private:
     ResourceManager& m_Resources;
     GraphicsCore& m_Graphics;
     std::wstring m_DebugName;
+    const ParticleSystemDefinition& m_Definition;
+    float3 m_SpawnPoint;
     uint32_t m_Capacity;
 
-    float m_SpawnRate;
     float m_SpawnLeftover = 0.f;
 
     GpuSyncPoint m_UpdateSyncPoint;
@@ -39,8 +41,19 @@ private:
     RawGpuResource m_DrawIndirectArguments;
 
 public:
-    ParticleSystem(ResourceManager& resources, const std::wstring& debugName, uint32_t capacity, float spawnRatePerSecond);
+    ParticleSystem(ResourceManager& resources, const std::wstring& debugName, const ParticleSystemDefinition& definition, float3 spawnPoint, uint32_t capacity);
 
-    void Update(GraphicsContext& context, float deltaTime, float3 eyePosition, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb);
+private:
+    void Update(GraphicsContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, bool skipPrepareRender);
+public:
+    inline void Update(GraphicsContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
+    { Update(context, deltaTime, perFrameCb, false); }
+
     void Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList);
+
+    //! Seeds the state of the particle system by simulating it for the specified number of (simulated) seconds
+    void SeedState(float numSeconds);
+
+    inline float3 SpawnPoint() const { return m_SpawnPoint; }
+    inline void SpawnPoint(float3 spawnPoint) { m_SpawnPoint = spawnPoint; }
 };

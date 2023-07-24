@@ -88,6 +88,7 @@
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="UavCounter.cpp" />
     <ClCompile Include="Stopwatch.cpp" />
+    <ClCompile Include="ParticleSystemDefinition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="UavCounter.h" />
     <ClInclude Include="Stopwatch.h" />
+    <ClInclude Include="ParticleSystemDefinition.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -209,6 +211,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\ParticleCommon.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\Random.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
