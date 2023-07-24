@@ -58,6 +58,8 @@ public:
     //! Seeds the state of the particle system by simulating it for the specified number of (simulated) seconds
     void SeedState(float numSeconds);
 
+    void Reset(ComputeContext& context);
+
     inline float3 SpawnPoint() const { return m_SpawnPoint; }
     inline void SpawnPoint(float3 spawnPoint) { m_SpawnPoint = spawnPoint; }
 };

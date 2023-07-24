@@ -91,4 +91,16 @@ namespace ImGuizmo
     {
         return Manipulate(&view.m00, &projection.m00, operation, mode, &matrix.m00, (float*)deltaMatrix, (float*)snap, (float*)localBounds, (float*)boundsSnap);
     }
+
+    inline bool Manipulate(const float4x4& view, const float4x4& projection, OPERATION operation, MODE mode, float3& position, const float3* snap = nullptr)
+    {
+        Assert((operation & TRANSLATE) != 0);
+        float4x4 translation = float4x4::MakeTranslation(position);
+        if (Manipulate(view, projection, operation, mode, translation, nullptr, snap))
+        {
+            position = float3(translation.m30, translation.m31, translation.m32);
+            return true;
+        }
+        return false;
+    }
 }

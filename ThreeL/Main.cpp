@@ -151,6 +151,8 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Particle system initialization
     //-----------------------------------------------------------------------------------------------------------------
+    bool showParticleSystemEditor = false;
+    bool showParticleSystemGizmo = true;
     ParticleSystemDefinition smokeDefinition(resources);
     smokeDefinition.SpawnRate = 3.5f;
     smokeDefinition.MaxSize = 0.2f;
@@ -648,6 +650,7 @@ static int MainImpl()
                     {
                         ImGui::Checkbox("Show light sprites", &showLightSprites);
                         ImGui::Checkbox("Show controls hint", &showControlsHint);
+                        ImGui::Checkbox("Particle Editor", &showParticleSystemEditor);
                         ImGui::EndMenu();
                     }
 
@@ -696,6 +699,7 @@ static int MainImpl()
                 ImGui::End();
             }
 
+            // Light linked list settings
             ImGui::SetNextWindowSize(ImVec2(275.f * dearImGui.DpiScale(), 0.f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Light linked list settings"))
             {
@@ -758,6 +762,64 @@ static int MainImpl()
                 ImGui::PopItemWidth();
             }
             ImGui::End();
+
+            // Particle editor
+            if (showParticleSystemEditor)
+            {
+                ImGui::SetNextWindowSize(ImVec2(275.f * dearImGui.DpiScale(), 0.f), ImGuiCond_FirstUseEver);
+                if (ImGui::Begin("Particle Editor", &showParticleSystemEditor))
+                {
+                    ImGui::PushItemWidth(-90.f);
+                    ImGui::DragFloat("Spawn rate", &smokeDefinition.SpawnRate, 0.1f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::SliderFloat("Max size", &smokeDefinition.MaxSize, 0.f, 1.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    
+                    ImGui::SeparatorText("Lifetime");
+                    ImGui::SliderFloat("Fade out time", &smokeDefinition.FadeOutTime, 0.f, smokeDefinition.LifeMin, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloatRange2("Lifetime", &smokeDefinition.LifeMin, &smokeDefinition.LifeMax, 0.1f, 0.f, FLT_MAX, "%.1f s", nullptr, ImGuiSliderFlags_AlwaysClamp);
+
+                    ImGui::SeparatorText("Movement");
+                    ImGui::Text("Velocity direction variance");
+                    ImGui::DragFloat("X##VelocityDirectionVariance", &smokeDefinition.VelocityDirectionVariance.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloat("Y##VelocityDirectionVariance", &smokeDefinition.VelocityDirectionVariance.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloat("Z##VelocityDirectionVariance", &smokeDefinition.VelocityDirectionVariance.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::Text("Velocity direction bias");
+                    ImGui::DragFloat("X##VelocityDirectionBias", &smokeDefinition.VelocityDirectionBias.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloat("Y##VelocityDirectionBias", &smokeDefinition.VelocityDirectionBias.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloat("Z##VelocityDirectionBias", &smokeDefinition.VelocityDirectionBias.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::Text("Velocity magnitude");
+                    ImGui::DragFloatRange2("Linear", &smokeDefinition.VelocityMagnitudeMin, &smokeDefinition.VelocityMagnitudeMax, 0.01f);
+                    ImGui::DragFloatRange2("Angular", &smokeDefinition.AngularVelocityMin, &smokeDefinition.AngularVelocityMax, 0.01f, 0.f, 0.f, "%.3f rad/s");
+
+                    ImGui::SeparatorText("Spawn point");
+                    ImGui::Checkbox("Show spawn point gizmo", &showParticleSystemGizmo);
+                    ImGui::DragFloat("X##SpawnPointVariance", &smokeDefinition.SpawnPointVariance.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloat("Y##SpawnPointVariance", &smokeDefinition.SpawnPointVariance.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+                    ImGui::DragFloat("Z##SpawnPointVariance", &smokeDefinition.SpawnPointVariance.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+                    ImGui::SeparatorText("Visuals");
+                    ImGui::ColorEdit3("Base color", &smokeDefinition.BaseColor.x);
+                    ImGui::DragFloatRange2("Shade", &smokeDefinition.MinShade, &smokeDefinition.MaxShade, 0.001f, 0.f, 1.f, "%.3f", nullptr, ImGuiSliderFlags_AlwaysClamp);
+
+                    ImGui::SeparatorText("Commands");
+                    if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) { smoke.Reset(context.Compute()); }
+
+                    static float seedSeconds = 10.f;
+                    ImGui::PopItemWidth();
+                    ImGui::PushItemWidth(-FLT_MIN);
+                    if (ImGui::Button("Advance system by")) { smoke.SeedState(seedSeconds); }
+                    ImGui::SameLine();
+                    ImGui::SliderFloat("##seedSeconds", &seedSeconds, 1.f / 30.f, smokeDefinition.LifeMax, "%.1f seconds");
+                    ImGui::PopItemWidth();
+                }
+                ImGui::End();
+
+                if (showParticleSystemGizmo)
+                {
+                    float3 spawnPoint = smoke.SpawnPoint();
+                    if (ImGuizmo::Manipulate(camera.ViewTransform(), perspectiveTransform, ImGuizmo::TRANSLATE, ImGuizmo::WORLD, spawnPoint))
+                    { smoke.SpawnPoint(spawnPoint); }
+                }
+            }
 
             // Show viewport overlays
             {

@@ -314,3 +314,10 @@ void ParticleSystem::SeedState(float numSeconds)
     // Wait for the simulation to complete on the GPU so we can dispose of the temporary per-frame constant buffers
     graphicsSyncPoint.Wait();
 }
+
+void ParticleSystem::Reset(ComputeContext& context)
+{
+    UavCounter& currentCounter = m_ParticleStateBuffers[m_CurrentParticleStateBuffer].Counter;
+    context.TransitionResource(currentCounter, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    context.ClearUav(currentCounter);
+}
