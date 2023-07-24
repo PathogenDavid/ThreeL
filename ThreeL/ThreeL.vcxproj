@@ -83,6 +83,7 @@
     <ClCompile Include="..\external\DearImGui\imgui_impl_win32.cpp" />
     <ClCompile Include="..\external\DearImGui\imgui_tables.cpp" />
     <ClCompile Include="..\external\DearImGui\imgui_widgets.cpp" />
+    <ClCompile Include="..\external\ImGuizmo.cpp" />
     <ClCompile Include="..\external\xxhash.c" />
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="AssetLoading.cpp" />
@@ -152,6 +153,7 @@
     <ClInclude Include="..\external\DearImGui\imstb_rectpack.h" />
     <ClInclude Include="..\external\DearImGui\imstb_textedit.h" />
     <ClInclude Include="..\external\DearImGui\imstb_truetype.h" />
+    <ClInclude Include="..\external\ImGuizmo.h" />
     <ClInclude Include="..\external\json.hpp" />
     <ClInclude Include="..\external\stb_image.h" />
     <ClInclude Include="..\external\tiny_gltf.h" />
