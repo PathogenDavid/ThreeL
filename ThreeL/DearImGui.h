@@ -1,8 +1,10 @@
 #pragma once
 #include "Vector3.h"
+#include "Matrix4.h"
 #include "Window.h"
 
 #include <imgui.h>
+#include <ImGuizmo.h>
 
 struct GraphicsContext;
 class GraphicsCore;
@@ -16,6 +18,7 @@ private:
     WndProcHandle m_WndProcHandle;
     Window& m_Window;
     ImGuiStyle m_BaseStyle;
+    ImGuizmo::Style m_BaseGizmoStyle;
     float m_LastScale = 1.f;
 
 public:
@@ -79,5 +82,13 @@ namespace ImGui
         draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 0.f, pos.y + 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
         draw_list->AddText(nullptr, 0.f, ImVec2(pos.x + 1.f, pos.y + 1.f), shadow_col, text.data(), text.data() + text.size(), wrap_width);
         draw_list->AddText(nullptr, 0.f, pos, col, text.data(), text.data() + text.size(), wrap_width);
+    }
+}
+
+namespace ImGuizmo
+{
+    inline bool Manipulate(const float4x4& view, const float4x4& projection, OPERATION operation, MODE mode, float4x4& matrix, float4x4* deltaMatrix = nullptr, const float3* snap = nullptr, const float* localBounds = nullptr, const float3* boundsSnap = nullptr)
+    {
+        return Manipulate(&view.m00, &projection.m00, operation, mode, &matrix.m00, (float*)deltaMatrix, (float*)snap, (float*)localBounds, (float*)boundsSnap);
     }
 }

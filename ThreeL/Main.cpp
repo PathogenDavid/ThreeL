@@ -26,6 +26,7 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <ImGuizmo.h>
 #include <iostream>
 #include <pix3.h>
 #include <random>
@@ -587,6 +588,17 @@ static int MainImpl()
             context->SetGraphicsRootDescriptorTable(ShaderInterop::LightSprites::RpTexture, lightSprite.SrvHandle().ResidentHandle());
             context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
             context.DrawInstanced(4, perFrame.LightCount, 1, 1);
+        }
+
+        // Show gizmo for moving lights
+        //TODO: Add UI for selecting different lights instead of hard-coding things
+        if (lights.size() > 2)
+        {
+            float4x4 lightWorld = float4x4::MakeTranslation(lights[2].Position);
+            if (ImGuizmo::Manipulate(camera.ViewTransform(), perspectiveTransform, ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, lightWorld))
+            {
+                lights[2].Position = float3(lightWorld.m30, lightWorld.m31, lightWorld.m32);
+            }
         }
 
         //-------------------------------------------------------------------------------------------------------------

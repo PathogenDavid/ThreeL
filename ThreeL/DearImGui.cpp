@@ -10,6 +10,7 @@
 #include <imgui_internal.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx12.h>
+#include <ImGuizmo.h>
 
 DearImGui* DearImGui::s_Singleton = nullptr;
 
@@ -47,6 +48,21 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
 
     m_BaseStyle = style;
 
+    // ImGuizmo style
+    ImGuizmo::Style& gizmoStyle = ImGuizmo::GetStyle();
+    ImGuizmo::AllowAxisFlip(false);
+    ImGuizmo::SetGizmoSizeClipSpace(0.15f);
+
+    gizmoStyle.Colors[ImGuizmo::PLANE_X] = gizmoStyle.Colors[ImGuizmo::DIRECTION_X] = ImVec4(237.f / 255.f, 56.f / 255.f, 80.f / 255.f, 1.f);
+    gizmoStyle.Colors[ImGuizmo::PLANE_Y] = gizmoStyle.Colors[ImGuizmo::DIRECTION_Y] = ImVec4(131.f / 255.f, 206.f / 255.f, 24.f / 255.f, 1.f);
+    gizmoStyle.Colors[ImGuizmo::PLANE_Z] = gizmoStyle.Colors[ImGuizmo::DIRECTION_Z] = ImVec4(48.f / 255.f, 133.f / 255.f, 234.f / 255.f, 1.f);
+    gizmoStyle.Colors[ImGuizmo::PLANE_X].w = 0.38f;
+    gizmoStyle.Colors[ImGuizmo::PLANE_Y].w = 0.38f;
+    gizmoStyle.Colors[ImGuizmo::PLANE_Z].w = 0.38f;
+    gizmoStyle.Colors[ImGuizmo::SELECTION] = ImVec4(240.f / 255.f, 240.f / 255.f, 157.f / 255.f, 0.541f);
+
+    m_BaseGizmoStyle = gizmoStyle;
+
     // Apply initial scaling
     UINT dpi = GetDpiForWindow(window.Hwnd());
     Assert(dpi != 0);
@@ -77,6 +93,13 @@ void DearImGui::NewFrame()
     ImGui_ImplDX12_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+
+    // Set up ImGuizmo for this frame
+    // We don't bother calling ImGuizmo::BeginFrame here
+    // All it does is submit a dummy window for rendering gizmos to and we're drawing them directly to the background drawlist
+    ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+    ImGuizmo::SetDrawlist(ImGui::GetBackgroundDrawList(mainViewport));
+    ImGuizmo::SetRect(0.f, 0.f, mainViewport->Size.x, mainViewport->Size.y);
 }
 
 void DearImGui::Render(GraphicsContext& context)
@@ -101,6 +124,17 @@ void DearImGui::ScaleUi(float scale)
     style = m_BaseStyle;
     style.ScaleAllSizes(scale);
     ImGui::GetIO().FontGlobalScale = scale;
+
+    ImGuizmo::Style& gizmoStyle = ImGuizmo::GetStyle();
+    gizmoStyle = m_BaseGizmoStyle;
+    gizmoStyle.TranslationLineThickness *= scale;
+    gizmoStyle.TranslationLineArrowSize *= scale;
+    gizmoStyle.RotationLineThickness *= scale;
+    gizmoStyle.RotationOuterLineThickness *= scale;
+    gizmoStyle.ScaleLineThickness *= scale;
+    gizmoStyle.ScaleLineCircleSize *= scale;
+    gizmoStyle.HatchedAxisLineThickness *= scale;
+    gizmoStyle.CenterCircleSize *= scale;
 
     // Reposition and resize windows so their relative positions and sizes remain the same
     // Dear ImGui doesn't have super great support for handling DPI changes, so this is only best effort
