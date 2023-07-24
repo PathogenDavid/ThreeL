@@ -1,4 +1,6 @@
 #include "pch.h"
+
+#include "AssetLoading.h"
 #include "BackBuffer.h"
 #include "CameraController.h"
 #include "CameraInput.h"
@@ -21,14 +23,11 @@
 #include "Utilities.h"
 #include "Window.h"
 
-#include <format>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
 #include <pix3.h>
 #include <random>
-#include <stb_image.h>
-#include <tiny_gltf.h>
 
 using ShaderInterop::LightLinkedListDebugMode;
 
@@ -39,58 +38,6 @@ struct DebugSettings
     float OverlayAlpha = 0.25f;
     bool AnimateLights = true;
 };
-
-static Scene LoadGltfScene(ResourceManager& resources, const std::string& filePath, const float4x4& transform = float4x4::Identity)
-{
-    tinygltf::Model model;
-    tinygltf::TinyGLTF loader;
-    std::string gltfError;
-    std::string gltfWarning;
-    printf("Parsing glTF file...\n");
-    bool success = loader.LoadASCIIFromFile(&model, &gltfError, &gltfWarning, filePath);
-
-    if (!gltfError.empty())
-        printf("glTF parsing error: %s\n", gltfError.c_str());
-
-    if (!gltfWarning.empty())
-        printf("glTF parsing warning: %s\n", gltfWarning.c_str());
-
-    if (!success)
-    {
-        printf("glTF parsing failed.\n");
-        exit(1);
-    }
-
-    printf("Loading glTF scene...\n");
-    return Scene(resources, model, transform);
-}
-
-static Texture LoadHdr(ResourceManager& resources, std::string filePath)
-{
-    int width;
-    int height;
-    int channels;
-    // Forcing 4 channels because R32G32B32 cannot be accessed via UAV which is required for mipmap chain generation.
-    float* data = stbi_loadf(filePath.c_str(), &width, &height, &channels, 4);
-    Assert(data != nullptr);
-    channels = 4;
-    Texture texture(resources, std::format(L"{}", filePath), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), channels);
-    stbi_image_free(data);
-    return texture;
-}
-
-static Texture LoadTexture(ResourceManager& resources, std::string filePath)
-{
-    int width;
-    int height;
-    int channels;
-    uint8_t* data = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
-    Assert(data != nullptr);
-    channels = 4;
-    Texture texture(resources, std::format(L"{}", filePath), std::span(data, width * height * channels), uint2((uint32_t)width, (uint32_t)height), channels);
-    stbi_image_free(data);
-    return texture;
-}
 
 static int MainImpl()
 {
@@ -117,12 +64,6 @@ static int MainImpl()
     ResourceManager resources(graphics);
 
     //-----------------------------------------------------------------------------------------------------------------
-    // Load environment HDR
-    //-----------------------------------------------------------------------------------------------------------------
-    Texture environmentHdr = LoadHdr(resources, "Assets/ninomaru_teien_1k.hdr");
-    Assert(environmentHdr.BindlessIndex() == 0); // We currently hard-code the environment HDR to be bindless slot 0 in the shader
-
-    //-----------------------------------------------------------------------------------------------------------------
     // Load glTF model
     //-----------------------------------------------------------------------------------------------------------------
     Scene scene = LoadGltfScene
@@ -134,7 +75,7 @@ static int MainImpl()
     printf("Done.\n");
 
     //-----------------------------------------------------------------------------------------------------------------
-    // Allocate screen-dependent resources
+    // Allocate depth buffers
     //-----------------------------------------------------------------------------------------------------------------
     uint2 screenSize = swapChain.Size();
     float2 screenSizeF = (float2)screenSize;
@@ -794,26 +735,6 @@ static int MainImpl()
                 ImGui::PopItemWidth();
             }
             ImGui::End();
-
-#if false
-            ImGui::ShowDemoWindow();
-
-            //TODO: Put these in the order they are in the descriptor table
-            ImGui::Begin("Loaded Textures");
-            {
-                ImGui::Image((void*)environmentHdr.SrvHandle().ResidentHandle().ptr, ImVec2(128, 128));
-                int i = 1;
-                for (auto& texture : scene.m_TextureCache)
-                {
-                    if (i < 5) { ImGui::SameLine(); }
-                    else { i = 0; }
-                    UINT64 handle = texture.second->SrvHandle().ResidentHandle().ptr;
-                    ImGui::Image((void*)handle, ImVec2(128, 128));
-                    i++;
-                }
-            }
-            ImGui::End();
-#endif
 
             // Show viewport overlays
             {

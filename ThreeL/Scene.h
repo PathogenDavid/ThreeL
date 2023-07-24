@@ -19,7 +19,6 @@ private:
     std::span<SceneNode> m_SceneNodes;
 
     // (Image index + sRGB bit) -> Texture
-public://TODO: TEMP
     std::unordered_map<uint64_t, std::unique_ptr<Texture>> m_TextureCache;
 
 public:

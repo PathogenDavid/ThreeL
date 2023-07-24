@@ -7,8 +7,6 @@ ThreeL incorporates third-party libraries and assets licensed as follows.
 - [DirectX Shader Compiler](#directx-shader-compiler)
 - [Kenney Particle Pack](#kenney-particle-pack)
 - [JSON for Modern C++](#json-for-modern-c)
-- [Metal-Rough Spheres](#metal-rough-spheres)
-- [Ninomaru Teien](#ninomaru-teien)
 - [Sponza](#sponza)
 - [stb](#stb)
 - [TinyGLTF](#tinygltf)
@@ -343,24 +341,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-# Metal-Rough Spheres
-
-https://github.com/KhronosGroup/glTF-Sample-Models/tree/189f80d7d44f76d8f9be8e337d4c6cb85ef521a4/2.0/MetalRoughSpheres
-
-```
-Copyright 2017 Analytical Graphics, Inc.
-CC-BY 4.0 https://creativecommons.org/licenses/by/4.0/
-Model and textures by Ed Mackey.
-```
-
-# Ninomaru Teien
-
-https://polyhaven.com/a/ninomaru_teien
-
-> All assets (HDRIs, textures and 3D models) on this site are the original work of Poly Haven staff, or artists who willingly and directly donate/sell their work to Poly Haven.
->
-> Our assets are all licensed as CC0, which is effectively Public Domain even in jurisdictions that do not support the Public Domain.
 
 # Sponza
 
