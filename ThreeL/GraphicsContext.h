@@ -6,6 +6,7 @@
 #include "SwapChain.h"
 #include "Vector4.h"
 
+struct ComputeContext;
 class GraphicsQueue;
 class UavCounter;
 
@@ -22,6 +23,10 @@ public:
 
     inline ID3D12GraphicsCommandList* CommandList() const { return m_Context->m_CommandList.Get(); }
     inline ID3D12GraphicsCommandList* operator->() const { return CommandList(); }
+
+    inline ComputeContext& Compute() { return reinterpret_cast<ComputeContext&>(*this); }
+
+    inline D3D12_COMMAND_LIST_TYPE QueueType() const { return m_Context->m_CommandQueue.m_Type; }
 
     inline void TransitionResource(GpuResource& resource, D3D12_RESOURCE_STATES desiredState, bool immediate = false)
     {
@@ -82,21 +87,6 @@ public:
     {
         m_Context->FlushResourceBarriers();
         CommandList()->ExecuteIndirect(m_Context->m_CommandQueue.m_GraphicsCore.DrawIndexedIndirectCommandSignature(), 1, argumentResource.m_Resource.Get(), argumentOffset, nullptr, 0);
-    }
-
-    //TODO: Actual intent is that there'd be a cast from GraphicsContext to ComputeContext, but the adjacent infrastrucutre making that worth it is missing so didn't bother.
-    inline void Dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
-    {
-        m_Context->FlushResourceBarriers();
-        m_Context->m_CommandList->Dispatch(x, y, z);
-    }
-
-    inline void Dispatch(uint3 threadGroupCount) { Dispatch(threadGroupCount.x, threadGroupCount.y, threadGroupCount.z); }
-
-    inline void DispatchIndirect(const GpuResource& argumentResource, uint32_t argumentOffset = 0)
-    {
-        m_Context->FlushResourceBarriers();
-        CommandList()->ExecuteIndirect(m_Context->m_CommandQueue.m_GraphicsCore.DispatchIndirectCommandSignature(), 1, argumentResource.m_Resource.Get(), argumentOffset, nullptr, 0);
     }
 
     inline void SetRenderTarget(RenderTargetView renderTarget)

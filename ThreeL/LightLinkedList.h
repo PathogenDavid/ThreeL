@@ -75,7 +75,7 @@ public:
     void DrawDebugOverlay(GraphicsContext& context, LightHeap& lightHeap, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, const ShaderInterop::LightLinkedListDebugParams& params);
 
     // Note: resultsBuffer will not receive a UAV barrier
-    void CollectStatistics(GraphicsContext& context, uint2 fullScreenSize, uint32_t lllBufferShift, D3D12_GPU_VIRTUAL_ADDRESS resultsBuffer);
+    void CollectStatistics(ComputeContext& context, uint2 fullScreenSize, uint32_t lllBufferShift, D3D12_GPU_VIRTUAL_ADDRESS resultsBuffer);
 
     inline D3D12_GPU_DESCRIPTOR_HANDLE LightLinksHeapSrv() const { return m_LightLinksHeapSrv.ResidentHandle(); }
     inline D3D12_GPU_VIRTUAL_ADDRESS LightLinksHeapGpuAddress() const { return m_LightLinksHeap.GpuAddress(); }

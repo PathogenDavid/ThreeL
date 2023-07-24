@@ -12,12 +12,6 @@
 
 #include <pix3.h>
 
-// This works but isn't really necessary
-// At one point I was getting sporradic inexplicable stuttering from the m_RenderSyncPoint await in Update.
-// Those issues mysteriously vanished, but out of an abundance of caution I'm leaving this disabled for the sake of ThreeL working well for demonstration purposes.
-// (In practice updating is so fast it's already done before any drawing happens anyway.)
-//#define USE_ASYNC_COMPUTE
-
 ParticleSystem::ParticleSystem(ResourceManager& resources, const std::wstring& debugName, const ParticleSystemDefinition& definition, float3 spawnPoint, uint32_t capacity)
     : m_Resources(resources)
     , m_Graphics(resources.Graphics)
@@ -95,21 +89,20 @@ ParticleSystem::ParticleSystem(ResourceManager& resources, const std::wstring& d
     m_DrawIndirectArguments = RawGpuResource(std::move(drawIndirectArguments));
 }
 
-void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, bool skipPrepareRender)
+void ParticleSystem::Update(ComputeContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, bool skipPrepareRender)
 {
-#ifdef USE_ASYNC_COMPUTE
-    // Make sure we don't update buffers on the async compute queue while they're still being used to render the previous frame
-    // Could also keep track of additional buffers instead, which would allow us to prepare particles for frame N while frame N - 1 is still rendering
-    // (For the sake of ThreeL though this really doesn't even need to use async compute in the first place so I didn't bother.)
-    m_Graphics.ComputeQueue().AwaitSyncPoint(m_RenderSyncPoint);
+    bool isAsyncCompute = context.QueueType() == D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    if (isAsyncCompute)
+    {
+        // Make sure we don't update buffers on the async compute queue while they're still being used to render the previous frame
+        // Could also keep track of additional buffers instead, which would allow us to prepare particles for frame N while frame N - 1 is still rendering
+        // (For the sake of ThreeL though this really doesn't even need to use async compute in the first place so I didn't bother.)
+        m_Graphics.ComputeQueue().AwaitSyncPoint(m_RenderSyncPoint);
+    }
 
-    ComputeContext context(m_Graphics.ComputeQueue(), m_Resources.ParticleSystemRootSignature, m_Resources.ParticleSystemUpdate);
-#else
-    GraphicsContext& context = graphicsContext;
-    context.Flush();
     context->SetComputeRootSignature(m_Resources.ParticleSystemRootSignature);
     context->SetPipelineState(m_Resources.ParticleSystemUpdate);
-#endif
+
     PIXBeginEvent(&context, 42, L"Update '%s' particle system", m_DebugName.c_str());
 
     // Determine number of particles to spawn this frame
@@ -162,9 +155,8 @@ void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, D
     {
         context.UavBarrier();
         PIXEndEvent(&context);
-#ifdef USE_ASYNC_COMPUTE
-        m_UpdateSyncPoint = context.Finish();
-#endif
+
+        if (isAsyncCompute) { m_UpdateSyncPoint = context.Flush(); }
         return;
     }
 
@@ -183,9 +175,7 @@ void ParticleSystem::Update(GraphicsContext& graphicsContext, float deltaTime, D
 
     // Update complete, save a sync point for render
     PIXEndEvent(&context);
-#ifdef USE_ASYNC_COMPUTE
-    m_UpdateSyncPoint = context.Finish();
-#endif
+    if (isAsyncCompute) { m_UpdateSyncPoint = context.Flush(); }
 }
 
 void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList)
@@ -193,9 +183,9 @@ void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS 
     PIXBeginEvent(&context, 42, L"Render '%s' particle system", m_DebugName.c_str());
 
     // Ensure particle update has completed on the async compute queue
-#ifdef USE_ASYNC_COMPUTE
-    m_Graphics.GraphicsQueue().AwaitSyncPoint(m_UpdateSyncPoint);
-#endif
+    // (If work wasn't done on the async compute queue this is a no-op)
+    if (!m_UpdateSyncPoint.WasReached())
+    { m_Graphics.GraphicsQueue().AwaitSyncPoint(m_UpdateSyncPoint); }
 
     // Draw the particles
     context->SetGraphicsRootSignature(m_Resources.ParticleRenderRootSignature);
@@ -216,9 +206,7 @@ void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS 
     context.DrawIndirect(m_DrawIndirectArguments);
 
     PIXEndEvent(&context);
-#ifdef USE_ASYNC_COMPUTE
     m_RenderSyncPoint = context.Flush();
-#endif
 }
 
 void ParticleSystem::SeedState(float numSeconds)
@@ -264,14 +252,9 @@ void ParticleSystem::SeedState(float numSeconds)
     ComPtr<ID3D12Resource> perFrameCbs = std::move(upload.Resource);
 
     // Simulate the particle system
-    GraphicsContext context(m_Graphics.GraphicsQueue());
-#ifdef USE_ASYNC_COMPUTE
-    m_Graphics.ComputeQueue().AwaitSyncPoint(upload.SyncPoint);
-    PIXBeginEvent(&m_Graphics.ComputeQueue(), 0, L"ParticleSystem::SeedState for '%s'", m_DebugName.c_str());
-#else
+    ComputeContext context(m_Graphics.GraphicsQueue());
     m_Graphics.GraphicsQueue().AwaitSyncPoint(upload.SyncPoint);
     PIXBeginEvent(&context, 0, L"ParticleSystem::SeedState for '%s'", m_DebugName.c_str());
-#endif
 
     numSecondsSim = numSeconds;
     D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress = perFrameCbs->GetGPUVirtualAddress();
@@ -282,17 +265,9 @@ void ParticleSystem::SeedState(float numSeconds)
         numSecondsSim -= simulatedRate;
     }
 
-#ifdef USE_ASYNC_COMPUTE
-    PIXEndEvent(&m_Graphics.ComputeQueue());
-#else
     PIXEndEvent(&context);
-#endif
     GpuSyncPoint graphicsSyncPoint = context.Finish();
 
     // Wait for the simulation to complete on the GPU so we can dispose of the temporary per-frame constant buffers
-#ifdef USE_ASYNC_COMPUTE
-    m_UpdateSyncPoint.Wait();
-#else
     graphicsSyncPoint.Wait();
-#endif
 }

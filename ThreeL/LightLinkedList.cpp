@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "LightLinkedList.h"
 
+#include "ComputeContext.h"
 #include "DepthStencilBuffer.h"
 #include "GraphicsContext.h"
 #include "GraphicsCore.h"
@@ -198,7 +199,7 @@ void LightLinkedList::DrawDebugOverlay(GraphicsContext& context, LightHeap& ligh
     context.DrawInstanced(3, 1);
 }
 
-void LightLinkedList::CollectStatistics(GraphicsContext& context, uint2 fullScreenSize, uint32_t lllBufferShift, D3D12_GPU_VIRTUAL_ADDRESS resultsBuffer)
+void LightLinkedList::CollectStatistics(ComputeContext& context, uint2 fullScreenSize, uint32_t lllBufferShift, D3D12_GPU_VIRTUAL_ADDRESS resultsBuffer)
 {
     uint2 lightLinkedListBufferSize = ScreenSizeToLllBufferSize(fullScreenSize, lllBufferShift);
     uint32_t lightLinkedListBufferLength = lightLinkedListBufferSize.x * lightLinkedListBufferSize.y;

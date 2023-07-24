@@ -5,6 +5,7 @@
 #include "CameraController.h"
 #include "CameraInput.h"
 #include "CommandQueue.h"
+#include "ComputeContext.h"
 #include "DearImGui.h"
 #include "DebugLayer.h"
 #include "DepthStencilBuffer.h"
@@ -372,7 +373,17 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         // Update particle system
         //-------------------------------------------------------------------------------------------------------------
-        smoke.Update(context, deltaTime, perFrameCbAddress);
+#if true
+        smoke.Update(context.Compute(), deltaTime, perFrameCbAddress);
+#else
+        // Alternatively we could update particles on the async compute queue instead of the graphics queue
+        // In practice this didn't really add anything other than complexity, so I've disabled it
+        {
+            ComputeContext asyncCompute(graphics.ComputeQueue());
+            smoke.Update(asyncCompute, deltaTime, perFrameCbAddress);            
+            asyncCompute.Finish();
+        }
+#endif
 
         //-------------------------------------------------------------------------------------------------------------
         // Depth pre-pass
@@ -808,7 +819,7 @@ static int MainImpl()
         {
             PIXScopedEvent(&context, 99, "Collect frame statistics");
             stats.StartCollectStatistics(context);
-            lightLinkedList.CollectStatistics(context, screenSize, lightLinkedListShift, stats.LightLinkedListStatisticsLocation());
+            lightLinkedList.CollectStatistics(context.Compute(), screenSize, lightLinkedListShift, stats.LightLinkedListStatisticsLocation());
             stats.FinishCollectStatistics(context);
         }
 

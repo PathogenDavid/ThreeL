@@ -147,8 +147,12 @@ void MainPrepareDrawIndirect()
     // Particle count can be beyond capacity when spawning fails due to the system being full
     uint particleCount = min(g_LivingParticleCountOut.Load(0), g_Params.ParticleCapacity);
 
-    g_DrawIndirectArguments.Store(0, 4); // VertexCountPerInstance
-    g_DrawIndirectArguments.Store(4, particleCount); // InstanceCount
-    g_DrawIndirectArguments.Store(8, 1); // StartVertexLocation
-    g_DrawIndirectArguments.Store(12, 1); // StartInstanceLocation
+    uint4 arguments = uint4
+    (
+        4, // VertexCountPerInstance
+        particleCount, // InstanceCount
+        1, // StartVertexLocation
+        1 // StartInstanceLocation
+    );
+    g_DrawIndirectArguments.Store4(0, arguments);
 }

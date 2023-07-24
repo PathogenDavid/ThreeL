@@ -5,6 +5,7 @@
 #include "UavCounter.h"
 #include "Vector3.h"
 
+struct ComputeContext;
 struct GraphicsContext;
 class GraphicsCore;
 class LightHeap;
@@ -44,9 +45,9 @@ public:
     ParticleSystem(ResourceManager& resources, const std::wstring& debugName, const ParticleSystemDefinition& definition, float3 spawnPoint, uint32_t capacity);
 
 private:
-    void Update(GraphicsContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, bool skipPrepareRender);
+    void Update(ComputeContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, bool skipPrepareRender);
 public:
-    inline void Update(GraphicsContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
+    inline void Update(ComputeContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
     { Update(context, deltaTime, perFrameCb, false); }
 
     void Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList);

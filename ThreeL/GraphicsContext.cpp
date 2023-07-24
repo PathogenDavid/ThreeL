@@ -2,7 +2,11 @@
 #include "GraphicsContext.h"
 
 #include "CommandQueue.h"
+#include "ComputeContext.h"
 #include "UavCounter.h"
+
+static_assert(sizeof(GraphicsContext) == sizeof(void*) && "Do not add fields to GraphicsContext or ComputeContext! They must be the same size and layout.");
+static_assert(sizeof(GraphicsContext) == sizeof(ComputeContext) && "Do not add fields to GraphicsContext or ComputeContext! They must be the same size and layout.");
 
 GraphicsContext::GraphicsContext(GraphicsQueue& queue)
 {

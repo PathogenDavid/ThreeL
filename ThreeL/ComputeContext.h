@@ -30,6 +30,8 @@ public:
     inline ID3D12GraphicsCommandList* CommandList() const { return m_Context->m_CommandList.Get(); }
     inline ID3D12GraphicsCommandList* operator->() const { return CommandList(); }
 
+    inline D3D12_COMMAND_LIST_TYPE QueueType() const { return m_Context->m_CommandQueue.m_Type; }
+
     inline void TransitionResource(GpuResource& resource, D3D12_RESOURCE_STATES desiredState, bool immediate = false)
     {
         m_Context->TransitionResource(resource, desiredState, immediate);
@@ -63,9 +65,9 @@ public:
         CommandList()->ExecuteIndirect(m_Context->m_CommandQueue.m_GraphicsCore.DispatchIndirectCommandSignature(), 1, argumentResource.m_Resource.Get(), argumentOffset, nullptr, 0);
     }
 
-    inline GpuSyncPoint Flush(ID3D12PipelineState* newState)
+    inline GpuSyncPoint Flush(ID3D12PipelineState* newState = nullptr)
     {
-        m_Context->Flush(newState);
+        return m_Context->Flush(newState);
     }
 
     GpuSyncPoint Finish();
