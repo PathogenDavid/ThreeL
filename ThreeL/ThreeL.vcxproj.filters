@@ -91,6 +91,10 @@
     <ClCompile Include="ParticleSystemDefinition.cpp" />
     <ClCompile Include="AssetLoading.cpp" />
     <ClCompile Include="BitonicSort.cpp" />
+    <ClCompile Include="Ui.cpp" />
+    <ClCompile Include="..\external\ImGuizmo.cpp">
+      <Filter>external</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h" />
@@ -208,6 +212,10 @@
     <ClInclude Include="ParticleSystemDefinition.h" />
     <ClInclude Include="AssetLoading.h" />
     <ClInclude Include="BitonicSort.h" />
+    <ClInclude Include="Ui.h" />
+    <ClInclude Include="..\external\ImGuizmo.h">
+      <Filter>external</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

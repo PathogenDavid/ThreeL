@@ -44,7 +44,7 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
 
     // Disable window rounding and window background alpha since it doesn't play nice with multiple viewports
     style.WindowRounding = 0.f;
-    //style.Colors[ImGuiCol_WindowBg].w = 1.f; // I decided I'm OK with this only working in the main window (plus I disabled mutli-viewports.)
+    style.Colors[ImGuiCol_WindowBg].w = 1.f;
 
     m_BaseStyle = style;
 
@@ -199,5 +199,13 @@ namespace ImGui
         }
 
         return true;
+    }
+
+    void RightAlignedText(const std::string& s, float width)
+    {
+        ImVec2 size = ImGui::CalcTextSize(s);
+        if (size.x < width)
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (width - size.x));
+        ImGui::Text(s);
     }
 }

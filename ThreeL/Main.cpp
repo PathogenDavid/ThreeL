@@ -21,6 +21,7 @@
 #include "ShaderInterop.h"
 #include "Stopwatch.h"
 #include "SwapChain.h"
+#include "Ui.h"
 #include "Utilities.h"
 #include "Window.h"
 
@@ -196,6 +197,8 @@ static int MainImpl()
     PresentMode presentMode = PresentMode::Vsync;
     DearImGui dearImGui(graphics, window);
     FrameStatistics stats(graphics);
+#define ScopedTimer(context, timer) FrameStatistics::ScopedTimer __scopedTimer ## __LINE__ = stats.MakeScopedTimer(context, timer)
+    Ui ui;
 
     // Time keeping
     LARGE_INTEGER performanceFrequency;
@@ -206,7 +209,7 @@ static int MainImpl()
     LARGE_INTEGER lastTimestamp;
     AssertWinError(QueryPerformanceCounter(&lastTimestamp));
 
-    float frameTimes[200] = {};
+    float gpuFrameTimesMs[200] = {};
     uint64_t frameNumber = 0;
 
     // Camera stuff
@@ -296,7 +299,8 @@ static int MainImpl()
         QueryPerformanceCounter(&timestamp);
         float deltaTime = (float)(double(timestamp.QuadPart - lastTimestamp.QuadPart) * performanceFrequencyInverse); // seconds
         float deltaTimeMs = deltaTime * 1000.f;
-        frameTimes[frameNumber % std::size(frameTimes)] = deltaTimeMs;
+        float gpuFrameTimeMs = (float)(stats.GetElapsedTimeGpu(Timer::FrameTotal) * 1000.0);
+        gpuFrameTimesMs[frameNumber % std::size(gpuFrameTimesMs)] = gpuFrameTimeMs;
 
         dearImGui.NewFrame();
 
@@ -345,8 +349,10 @@ static int MainImpl()
         GpuSyncPoint lightUpdateSyncPoint;
 
         GraphicsContext context(graphics.GraphicsQueue(), resources.PbrRootSignature, resources.PbrBlendOffSingleSided);
+        stats.StartTimer(context, Timer::FrameTotal);
         {
             PIXScopedEvent(&context, 0, "Frame #%lld setup", frameNumber);
+            ScopedTimer(context, Timer::FrameSetup);
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_RENDER_TARGET);
             context.TransitionResource(depthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
             context.Clear(swapChain, 0.01f, 0.01f, 0.01f, 1.f);
@@ -378,13 +384,17 @@ static int MainImpl()
         // Update particle system
         //-------------------------------------------------------------------------------------------------------------
 #if true
+        stats.StartTimer(context, Timer::ParticleUpdate);
         smoke.Update(context.Compute(), deltaTime, perFrameCbAddress);
+        stats.EndTimer(context, Timer::ParticleUpdate);
 #else
         // Alternatively we could update particles on the async compute queue instead of the graphics queue
         // In practice this didn't really add anything other than complexity, so I've disabled it
         {
             ComputeContext asyncCompute(graphics.ComputeQueue());
+            stats.StartTimer(asyncCompute, Timer::ParticleUpdate);
             smoke.Update(asyncCompute, deltaTime, perFrameCbAddress);            
+            stats.EndTimer(asyncCompute, Timer::ParticleUpdate);
             asyncCompute.Finish();
         }
 #endif
@@ -394,6 +404,7 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(&context, 1, "Depth pre-pass");
+            ScopedTimer(context, Timer::DepthPrePass);
             context.SetRenderTarget(depthBuffer.View());
             context.SetFullViewportScissor(screenSize);
             BindPbrRootSignature(context, perFrameCbAddress);
@@ -446,6 +457,7 @@ static int MainImpl()
         context.Flush();
         {
             PIXScopedEvent(&context, 1, "Downsample depth");
+            ScopedTimer(context, Timer::DownsampleDepth);
 
             DepthStencilBuffer* previousBuffer = &depthBuffer;
             context->SetGraphicsRootSignature(resources.DepthDownsampleRootSignature);
@@ -474,6 +486,7 @@ static int MainImpl()
         context.Flush();
         {
             PIXScopedEvent(&context, 2, "Fill light linked list");
+            ScopedTimer(context, Timer::FillLightLinkedList);
             graphics.GraphicsQueue().AwaitSyncPoint(lightUpdateSyncPoint);
             DepthStencilBuffer& lightLinkedListDepthBuffer = lightLinkedListShift == 0 ? depthBuffer : downsampledDepthBuffers[lightLinkedListShift - 1];
             lightLinkedList.FillLights
@@ -496,6 +509,7 @@ static int MainImpl()
         context.Flush();
         {
             PIXScopedEvent(&context, 2, "Opaque pass");
+            ScopedTimer(context, Timer::OpaquePass);
             context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
             context.SetFullViewportScissor(screenSize);
             BindPbrRootSignature(context, perFrameCbAddress);
@@ -554,6 +568,7 @@ static int MainImpl()
             PIXScopedEvent(&context, 3, "Transparents pass");
             //TODO: Sort and render transparent nodes from glTF (there aren't any in Sponza so I never implemented this)
 
+            ScopedTimer(context, Timer::ParticleRender);
             context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
             context.SetFullViewportScissor(screenSize);
             smoke.Render(context, perFrameCbAddress, lightHeap, lightLinkedList);
@@ -566,6 +581,7 @@ static int MainImpl()
         if (debugSettings.OverlayMode != LightLinkedListDebugMode::None)
         {
             PIXScopedEvent(&context, 4, "Debug overlay");
+            ScopedTimer(context, Timer::DebugOverlay);
             context.SetRenderTarget(swapChain);
             context.SetFullViewportScissor(screenSize);
             ShaderInterop::LightLinkedListDebugParams params =
@@ -609,25 +625,12 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(&context, 4, "UI");
+            ScopedTimer(context, Timer::UI);
             ImGuiStyle& style = ImGui::GetStyle();
 
             // Submit main dockspace and menu bar
-            ImGuiDockNode* centralNode;
             {
-                ImGuiViewport* viewport = ImGui::GetMainViewport();
-                ImGui::SetNextWindowPos(viewport->WorkPos);
-                ImGui::SetNextWindowSize(viewport->WorkSize);
-                ImGui::SetNextWindowViewport(viewport->ID);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2());
-                ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
-                flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
-                ImGui::Begin("MainDockSpaceViewportWindow", nullptr, flags);
-                ImGui::PopStyleVar(3);
-
-                ImGui::DockSpace(0xC0FFEEEE, ImVec2(), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
-                centralNode = ImGui::DockBuilderGetCentralNode(0xC0FFEEEE);
+                ui.BeginMainViewportWindow();
 
                 if (ImGui::BeginMenuBar())
                 {
@@ -649,10 +652,11 @@ static int MainImpl()
 
                     if (ImGui::BeginMenu("View"))
                     {
-                        ImGui::Checkbox("Light linked list settings", &showLightLinkedListEditor);
-                        ImGui::Checkbox("Show light sprites", &showLightSprites);
-                        ImGui::Checkbox("Show controls hint", &showControlsHint);
-                        ImGui::Checkbox("Particle Editor", &showParticleSystemEditor);
+                        ImGui::MenuItem("Light linked list settings", nullptr, &showLightLinkedListEditor);
+                        ImGui::MenuItem("Show light sprites", nullptr, &showLightSprites);
+                        ImGui::MenuItem("Particle editor", nullptr, &showParticleSystemEditor);
+                        ImGui::MenuItem("Show controls hint", nullptr, &showControlsHint);
+                        ImGui::MenuItem("Timing statistics", nullptr, &ui.ShowTimingStatisticsWindow);
                         ImGui::EndMenu();
                     }
 
@@ -678,17 +682,18 @@ static int MainImpl()
                     // Submit frame time indicator
                     {
                         float graphWidth = 200.f + style.FramePadding.x * 2.f;
-                        float frameTimeWidth = ImGui::CalcTextSize("Frame time: 9999.99 ms").x; // Use a static string so the position is stable
+                        float frameTimeWidth = ImGui::CalcTextSize("GPU frame time: 9999.99 ms").x; // Use a static string so the position is stable
 
                         ImGui::SetCursorPosX(screenSizeF.x - graphWidth - frameTimeWidth);
-                        ImGui::Text("Frame time: %.2f ms", deltaTimeMs);
+                        if (ImGui::SneakyButton(std::format("GPU frame time: {:0.2f} ms###frameTimeButton", gpuFrameTimeMs).c_str()))
+                            ui.ShowTimingStatisticsWindow = !ui.ShowTimingStatisticsWindow;
                         ImGui::SetCursorPosX(screenSizeF.x - graphWidth);
                         ImGui::PlotLines
                         (
                             "##FrameTimeGraph",
-                            frameTimes,
-                            (int)std::size(frameTimes),
-                            (int)(frameNumber % std::size(frameTimes)),
+                            gpuFrameTimesMs,
+                            (int)std::size(gpuFrameTimesMs),
+                            (int)(frameNumber % std::size(gpuFrameTimesMs)),
                             nullptr,
                             FLT_MAX, FLT_MAX,
                             ImVec2(200.f, ImGui::GetCurrentWindow()->MenuBarHeight())
@@ -820,9 +825,13 @@ static int MainImpl()
                 }
             }
 
+            // Timing statistics
+            ui.SubmitTimingStatisticsWindow(stats);
+
             // Show viewport overlays
             {
                 float padding = 5.f;
+                ImGuiDockNode* centralNode = ui.CentralNode();
                 ImDrawList* drawList = ImGui::GetBackgroundDrawList();
                 ImU32 white = IM_COL32(255, 255, 255, 255);
                 ImU32 black = IM_COL32(0, 0, 0, 255);
@@ -880,16 +889,23 @@ static int MainImpl()
         //-------------------------------------------------------------------------------------------------------------
         {
             PIXScopedEvent(98, "Present");
+            stats.StartTimer(context, Timer::Present);
             context.TransitionResource(swapChain, D3D12_RESOURCE_STATE_PRESENT);
             context.Flush();
 
             swapChain.Present(presentMode);
+
+            stats.EndTimer(context, Timer::Present);
+            context.Flush();
         }
 
         //-------------------------------------------------------------------------------------------------------------
         // Collect frame statistics
         //-------------------------------------------------------------------------------------------------------------
         {
+            // We treat this as the end of the frame so that the timer doesn't straddle statistic buffer boundaries
+            stats.EndTimer(context, Timer::FrameTotal);
+
             PIXScopedEvent(&context, 99, "Collect frame statistics");
             stats.StartCollectStatistics(context);
             lightLinkedList.CollectStatistics(context.Compute(), screenSize, lightLinkedListShift, stats.LightLinkedListStatisticsLocation());

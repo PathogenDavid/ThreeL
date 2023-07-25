@@ -43,9 +43,19 @@ namespace ImGui
     //! Same as Begin except the window will be skipped when closed and it uses the if(Begin()) { End() } idiom used for non-windows in Dear ImGui.
     bool Begin2(const char* name, bool* p_open = nullptr, ImGuiWindowFlags flags = 0);
 
-    inline void Text(std::string s) { ImGui::TextUnformatted(s.data(), s.data() + s.size()); }
+    inline void Text(const std::string& s) { ImGui::TextUnformatted(s.data(), s.data() + s.size()); }
 
-    inline ImVec2 CalcTextSize(std::string s, bool hide_text_after_double_hash = false, float wrap_width = -1.0f)
+    void RightAlignedText(const std::string& s, float width);
+
+    inline bool SneakyButton(const char* label, const ImVec2& v = ImVec2(0.f, 0.f))
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+        bool clicked = ImGui::Button(label, v);
+        ImGui::PopStyleColor();
+        return clicked;
+    }
+
+    inline ImVec2 CalcTextSize(const std::string& s, bool hide_text_after_double_hash = false, float wrap_width = -1.0f)
     {
         return ImGui::CalcTextSize(s.data(), s.data() + s.size(), hide_text_after_double_hash, wrap_width);
     }
