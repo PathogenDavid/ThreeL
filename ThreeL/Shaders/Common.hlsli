@@ -26,6 +26,9 @@ struct MaterialParams
     uint EmissiveTexture;
     uint EmissiveTextureSampler;
     float3 EmissiveFactor;
+
+    // Ensure MaterialParams is a multiple of 16 bytes so that it doesn't straddle cache lines
+    uint _Padding;
 };
 
 struct LightInfo

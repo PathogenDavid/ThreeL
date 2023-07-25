@@ -24,8 +24,9 @@ namespace ShaderInterop
         uint32_t EmissiveTexture;
         uint32_t EmissiveTextureSampler;
         float3 EmissiveFactor;
+        uint32_t _Padding;
     };
-    static_assert(sizeof(PbrMaterialParams) == 76);
+    static_assert(sizeof(PbrMaterialParams) == 80);
     static_assert(offsetof(PbrMaterialParams, AlphaCutoff) == 0);
     static_assert(offsetof(PbrMaterialParams, BaseColorTexture) == 4);
     static_assert(offsetof(PbrMaterialParams, BaseColorTextureSampler) == 8);
