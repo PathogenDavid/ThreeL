@@ -14,6 +14,7 @@ class GraphicsCore
 private:
     ComPtr<ID3D12Device> m_Device;
     ComPtr<IDXGIFactory4> m_DxgiFactory;
+    DXGI_ADAPTER_DESC1 m_AdapterDescription;
 
     std::unique_ptr<ResourceDescriptorManager> m_ResourceDescriptorManager;
     std::unique_ptr<SamplerHeap> m_SamplerHeap;
@@ -40,6 +41,9 @@ public:
     inline ID3D12CommandSignature* DrawIndirectCommandSignature() const { return m_DrawIndirectCommandSignature.Get(); }
     inline ID3D12CommandSignature* DrawIndexedIndirectCommandSignature() const { return m_DrawIndexedIndirectCommandSignature.Get(); }
     inline ID3D12CommandSignature* DispatchIndirectCommandSignature() const { return m_DispatchIndirectCommandSignature.Get(); }
+
+    inline bool IsIntel() const { return m_AdapterDescription.VendorId == 0x8086; }
+    inline const wchar_t* AdapterName() const { return m_AdapterDescription.Description; }
 
     //! Waits for all outstanding GPU work to complete, do not use for anything that happens frequently
     inline void WaitForGpuIdle() const

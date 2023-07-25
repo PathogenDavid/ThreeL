@@ -55,6 +55,7 @@ static int MainImpl()
     PIXBeginEvent(0, "Initialization");
 
     std::wstring windowTitle = L"ThreeL";
+    windowTitle += std::format(L" - {}", graphics.AdapterName());
     windowTitle += DebugLayer::GetExtraWindowTitleInfo();
     Window window(windowTitle.c_str(), 1280, 720);
 

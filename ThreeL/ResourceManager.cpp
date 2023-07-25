@@ -31,7 +31,10 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
 
     ShaderBlobs lightLinkedListDebugPs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListDebug.ps.hlsl", L"PsMain", L"ps_6_0");
 
-    ShaderBlobs lightLinkedListStatsCs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListStats.cs.hlsl", L"Main", L"cs_6_0");
+    std::vector<std::wstring> lightLinkedListStatsCsDefines;
+    if (Graphics.IsIntel())
+        lightLinkedListStatsCsDefines.push_back(L"NO_GROUPSHARED"); // My Intel UHD 620 is choking on the groupshared optimization in this shader.
+    ShaderBlobs lightLinkedListStatsCs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListStats.cs.hlsl", L"Main", L"cs_6_0", lightLinkedListStatsCsDefines);
 
     ShaderBlobs lightSpritesVs = hlslCompiler.CompileShader(L"Shaders/LightSprites.hlsl", L"VsMain", L"vs_6_0");
     ShaderBlobs lightSpritesPs = hlslCompiler.CompileShader(L"Shaders/LightSprites.hlsl", L"PsMain", L"ps_6_0");

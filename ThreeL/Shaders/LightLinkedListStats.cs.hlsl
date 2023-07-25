@@ -23,8 +23,11 @@ RWByteAddressBuffer g_Results : register(u1, space900);
 
 #define GROUP_SIZE 1024
 
+// For whatever reason the groupshared implementation is causing device removal on my Intel UHD 620, so we provide an implementation that doesn't use it
+#ifndef NO_GROUPSHARED
 // Sized for worse case scenario of WaveGetLaneCount, in practice most of this will go unused
 groupshared uint gs_MaxLightCountInWave[GROUP_SIZE / 4];
+#endif
 
 [numthreads(GROUP_SIZE, 1, 1)]
 [RootSignature(ROOT_SIGNATURE)]
@@ -36,7 +39,13 @@ void Main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV
 
     [branch]
     if (dispatchThreadId.x >= g_Params.LightLinkedListBufferLength)
-    { return; }
+    {
+#ifndef NO_GROUPSHARED
+        if (WaveIsFirstLane())
+        { gs_MaxLightCountInWave[groupThreadId.x / WaveGetLaneCount()] = 0; }
+#endif
+        return;
+    }
 
     uint lightLinkIndex = g_FirstLightLink.Load(dispatchThreadId.x * 4) & NO_LIGHT_LINK;
     uint lightCount = 0;
@@ -50,6 +59,7 @@ void Main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV
     // Find the maximum light count in the wave
     uint maxLightCount = WaveActiveMax(lightCount);
 
+#ifndef NO_GROUPSHARED
     // The first lane in the wave will record the maximum in groupshared memory
     [branch]
     if (WaveIsFirstLane())
@@ -67,4 +77,9 @@ void Main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupThreadId : SV
 
         g_Results.InterlockedMax(4, maxLightCount);
     }
+#else
+    [branch]
+    if (WaveIsFirstLane())
+    { g_Results.InterlockedMax(4, maxLightCount); }
+#endif
 }

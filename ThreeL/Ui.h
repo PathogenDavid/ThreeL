@@ -47,7 +47,7 @@ public:
     bool ShowTimingStatisticsWindow = false;
     void SubmitTimingStatisticsWindow();
 
-    bool ShowControlsHint = false;
+    bool ShowControlsHint = true;
     void SubmitViewportOverlays(ShaderInterop::LightLinkedListDebugMode debugOverlay, uint32_t maxLightsPerPixelForOverlay);
 
     inline ImGuiDockNode* CentralNode() const { return m_CentralNode; }

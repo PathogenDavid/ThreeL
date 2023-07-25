@@ -210,7 +210,7 @@ void LightLinkedList::CollectStatistics(ComputeContext& context, uint2 fullScree
     context->SetComputeRootUnorderedAccessView(ShaderInterop::LightLinkedListStats::RpResults, resultsBuffer);
     context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpLightLinksHeap, m_LightLinksHeap.GpuAddress());
     context->SetComputeRootShaderResourceView(ShaderInterop::LightLinkedListStats::RpFirstLightLinkBuffer, m_FirstLightLinkBuffer.GpuAddress());
-    context.Dispatch(uint3((lightLinkedListBufferLength + ShaderInterop::LightLinkedListStats::ThreadGroupSize - 1) / ShaderInterop::LightLinkedListStats::ThreadGroupSize, 1, 1));
+    context.Dispatch(Math::DivRoundUp(lightLinkedListBufferLength, ShaderInterop::LightLinkedListStats::ThreadGroupSize));
 }
 
 // This is just a UV sphere I made in Blender with 12 segments and 6 rings with a radius of 1.07
