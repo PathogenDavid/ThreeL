@@ -85,7 +85,7 @@ static int MainImpl()
     DepthStencilBuffer depthBuffer(graphics, L"Depth Buffer", screenSize, DEPTH_BUFFER_FORMAT);
 
     std::vector<DepthStencilBuffer> downsampledDepthBuffers;
-    for (int div = 2, shift = 1; div <= 8; div *= 2, shift++)
+    for (int div = 2, shift = 1; div <= 16; div *= 2, shift++)
     {
         std::wstring name = std::format(L"Depth Buffer (1/{})", div);
         downsampledDepthBuffers.emplace_back(graphics, name, LightLinkedList::ScreenSizeToLllBufferSize(screenSize, shift), DEPTH_BUFFER_FORMAT);
@@ -94,7 +94,6 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Allocate lighting resources
     //-----------------------------------------------------------------------------------------------------------------
-    bool showLightLinkedListEditor = true;
     LightHeap lightHeap(graphics);
     Texture lightSprite = LoadTexture(resources, "Assets/LightSprite.png");
     bool showLightSprites = false;
@@ -153,8 +152,6 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     // Particle system initialization
     //-----------------------------------------------------------------------------------------------------------------
-    bool showParticleSystemEditor = false;
-    bool showParticleSystemGizmo = true;
     ParticleSystemDefinition smokeDefinition(resources);
     smokeDefinition.SpawnRate = 3.5f;
     smokeDefinition.MaxSize = 0.2f;
@@ -195,10 +192,8 @@ static int MainImpl()
     //-----------------------------------------------------------------------------------------------------------------
     DebugSettings debugSettings = DebugSettings();
     PresentMode presentMode = PresentMode::Vsync;
-    DearImGui dearImGui(graphics, window);
     FrameStatistics stats(graphics);
 #define ScopedTimer(context, timer) FrameStatistics::ScopedTimer __scopedTimer ## __LINE__ = stats.MakeScopedTimer(context, timer)
-    Ui ui;
 
     // Time keeping
     LARGE_INTEGER performanceFrequency;
@@ -209,11 +204,9 @@ static int MainImpl()
     LARGE_INTEGER lastTimestamp;
     AssertWinError(QueryPerformanceCounter(&lastTimestamp));
 
-    float gpuFrameTimesMs[200] = {};
     uint64_t frameNumber = 0;
 
     // Camera stuff
-    bool showControlsHint = true;
     CameraInput cameraInput(window);
     CameraController camera;
     float cameraFovDegrees = 45.f;
@@ -224,6 +217,10 @@ static int MainImpl()
     // Per-frame constant buffer
     // This is a pretty heavyweight abstraction for a constant buffer, ideally we should have a little bump allocator for this sort of thing
     FrequentlyUpdatedResource perFrameCbResource(graphics, DescribeBufferResource(sizeof(ShaderInterop::PerFrameCb)), L"Per-frame constant buffer");
+
+    // User interface
+    DearImGui dearImGui(graphics, window);
+    Ui ui(dearImGui, camera, cameraInput, stats);
 
     // Custom WndProc
     WndProcHandle wndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>
@@ -299,8 +296,6 @@ static int MainImpl()
         QueryPerformanceCounter(&timestamp);
         float deltaTime = (float)(double(timestamp.QuadPart - lastTimestamp.QuadPart) * performanceFrequencyInverse); // seconds
         float deltaTimeMs = deltaTime * 1000.f;
-        float gpuFrameTimeMs = (float)(stats.GetElapsedTimeGpu(Timer::FrameTotal) * 1000.0);
-        gpuFrameTimesMs[frameNumber % std::size(gpuFrameTimesMs)] = gpuFrameTimeMs;
 
         dearImGui.NewFrame();
 
@@ -626,9 +621,10 @@ static int MainImpl()
         {
             PIXScopedEvent(&context, 4, "UI");
             ScopedTimer(context, Timer::UI);
+            ui.Start(screenSize, screenSizeF, perspectiveTransform);
             ImGuiStyle& style = ImGui::GetStyle();
 
-            // Submit main dockspace and menu bar
+            // Submit main viewport and menu bar
             {
                 ui.BeginMainViewportWindow();
 
@@ -652,10 +648,10 @@ static int MainImpl()
 
                     if (ImGui::BeginMenu("View"))
                     {
-                        ImGui::MenuItem("Light linked list settings", nullptr, &showLightLinkedListEditor);
+                        ImGui::MenuItem("Light linked list settings", nullptr, &ui.ShowLightLinkedListSettingsWindow);
                         ImGui::MenuItem("Show light sprites", nullptr, &showLightSprites);
-                        ImGui::MenuItem("Particle editor", nullptr, &showParticleSystemEditor);
-                        ImGui::MenuItem("Show controls hint", nullptr, &showControlsHint);
+                        ImGui::MenuItem("Particle editor", nullptr, &ui.ShowParticleSystemEditor);
+                        ImGui::MenuItem("Show controls hint", nullptr, &ui.ShowControlsHint);
                         ImGui::MenuItem("Timing statistics", nullptr, &ui.ShowTimingStatisticsWindow);
                         ImGui::EndMenu();
                     }
@@ -679,205 +675,17 @@ static int MainImpl()
                         ImGui::EndMenu();
                     }
 
-                    // Submit frame time indicator
-                    {
-                        float graphWidth = 200.f + style.FramePadding.x * 2.f;
-                        float frameTimeWidth = ImGui::CalcTextSize("GPU frame time: 9999.99 ms").x; // Use a static string so the position is stable
-
-                        ImGui::SetCursorPosX(screenSizeF.x - graphWidth - frameTimeWidth);
-                        if (ImGui::SneakyButton(std::format("GPU frame time: {:0.2f} ms###frameTimeButton", gpuFrameTimeMs).c_str()))
-                            ui.ShowTimingStatisticsWindow = !ui.ShowTimingStatisticsWindow;
-                        ImGui::SetCursorPosX(screenSizeF.x - graphWidth);
-                        ImGui::PlotLines
-                        (
-                            "##FrameTimeGraph",
-                            gpuFrameTimesMs,
-                            (int)std::size(gpuFrameTimesMs),
-                            (int)(frameNumber % std::size(gpuFrameTimesMs)),
-                            nullptr,
-                            FLT_MAX, FLT_MAX,
-                            ImVec2(200.f, ImGui::GetCurrentWindow()->MenuBarHeight())
-                        );
-                    }
-
+                    ui.SubmitFrameTimeIndicator(frameNumber);
                     ImGui::EndMenuBar();
                 }
 
                 ImGui::End();
             }
 
-            // Light linked list settings
-            ImGui::SetNextWindowSize(ImVec2(275.f * dearImGui.DpiScale(), 0.f), ImGuiCond_FirstUseEver);
-            if (ImGui::Begin2("Light linked list settings", &showLightLinkedListEditor))
-            {
-                ImGui::PushItemWidth(-FLT_MIN);
-                char comboTemp[128];
-                uint2 size = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, lightLinkedListShift);
-                uint2 currentLightBufferSize = size;
-                snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", (int)std::pow(2, lightLinkedListShift), size.x, size.y);
-                ImGui::TextUnformatted("Buffer size");
-                if (ImGui::BeginCombo("##lightLinkedListShiftCombo", comboTemp))
-                {
-                    for (uint32_t div = 1, i = 0; i <= downsampledDepthBuffers.size(); div *= 2, i++)
-                    {
-                        size = LightLinkedList::ScreenSizeToLllBufferSize(screenSize, i);
-                        snprintf(comboTemp, sizeof(comboTemp), "1/%d (%dx%d)", div, size.x, size.y);
-                        bool isSelected = lightLinkedListShift == i;
-                        if (ImGui::Selectable(comboTemp, isSelected))
-                        {
-                            lightLinkedListShift = i;
-                        }
-
-                        if (isSelected) { ImGui::SetItemDefaultFocus(); }
-                    }
-                    ImGui::EndCombo();
-                }
-
-                {
-                    ImGui::Text("Light links heap capacity");
-                    double speed = 16.0 + std::pow((double)lightLinkLimit / (double)LightLinkedList::MAX_LIGHT_LINKS, 2.0) * 5120000.0;
-                    ImGui::DragInt("##lightLinksLimit", &lightLinkLimit, (float)std::max(1.0, speed), 0, LightLinkedList::MAX_LIGHT_LINKS, "%u", ImGuiSliderFlags_AlwaysClamp);
-                }
-
-                ImGui::SeparatorText("Buffer Sizes");
-                {
-                    const char* sizeUnits;
-                    size_t sizeBytes;
-                    double size;
-                    size_t totalSize = 0;
-
-                    totalSize += sizeBytes = currentLightBufferSize.x * currentLightBufferSize.y * sizeof(uint32_t);
-                    size = GetHumanFriendlySize(sizeBytes, sizeUnits);
-                    ImGui::Text("First link buffer: %.2f %s", size, sizeUnits);
-
-                    totalSize += sizeBytes = lightLinkLimit * ShaderInterop::SizeOfLightLink;
-                    double heapUsed = ((double)stats.NumberOfLightLinksUsed() / (double)lightLinkLimit) * 100.0;
-                    size = GetHumanFriendlySize(sizeBytes, sizeUnits);
-                    ImGui::Text(" Light links heap: %.2f %s (%.2f%%)", size, sizeUnits, heapUsed);
-
-                    size = GetHumanFriendlySize(sizeBytes, sizeUnits);
-                    ImGui::Text("            Total: %.2f %s", size, sizeUnits);
-                }
-
-                ImGui::SeparatorText("Frame Statistics");
-                {
-                    ImGui::Text("Light links used: %d", stats.NumberOfLightLinksUsed());
-                    ImGui::Text("Max lights per pixel: %d", stats.MaximumLightCountForAnyPixel());
-                    ImGui::Text("Average lights per pixel: %.1f", (double)stats.NumberOfLightLinksUsed() / (double)(currentLightBufferSize.x * currentLightBufferSize.y));
-                }
-
-                ImGui::PopItemWidth();
-                ImGui::End();
-            }
-
-            // Particle editor
-            ImGui::SetNextWindowSize(ImVec2(275.f * dearImGui.DpiScale(), 0.f), ImGuiCond_FirstUseEver);
-            if (ImGui::Begin2("Particle Editor", &showParticleSystemEditor))
-            {
-                ImGui::PushItemWidth(-90.f);
-                ImGui::DragFloat("Spawn rate", &smokeDefinition.SpawnRate, 0.1f, 0.f, FLT_MAX, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::SliderFloat("Max size", &smokeDefinition.MaxSize, 0.f, 1.f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-
-                ImGui::SeparatorText("Lifetime");
-                ImGui::SliderFloat("Fade out time", &smokeDefinition.FadeOutTime, 0.f, smokeDefinition.LifeMin, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloatRange2("Lifetime", &smokeDefinition.LifeMin, &smokeDefinition.LifeMax, 0.1f, 0.f, FLT_MAX, "%.1f s", nullptr, ImGuiSliderFlags_AlwaysClamp);
-
-                ImGui::SeparatorText("Movement");
-                ImGui::Text("Velocity direction variance");
-                ImGui::DragFloat("X##VelocityDirectionVariance", &smokeDefinition.VelocityDirectionVariance.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloat("Y##VelocityDirectionVariance", &smokeDefinition.VelocityDirectionVariance.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloat("Z##VelocityDirectionVariance", &smokeDefinition.VelocityDirectionVariance.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::Text("Velocity direction bias");
-                ImGui::DragFloat("X##VelocityDirectionBias", &smokeDefinition.VelocityDirectionBias.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloat("Y##VelocityDirectionBias", &smokeDefinition.VelocityDirectionBias.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloat("Z##VelocityDirectionBias", &smokeDefinition.VelocityDirectionBias.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::Text("Velocity magnitude");
-                ImGui::DragFloatRange2("Linear", &smokeDefinition.VelocityMagnitudeMin, &smokeDefinition.VelocityMagnitudeMax, 0.01f);
-                ImGui::DragFloatRange2("Angular", &smokeDefinition.AngularVelocityMin, &smokeDefinition.AngularVelocityMax, 0.01f, 0.f, 0.f, "%.3f rad/s");
-
-                ImGui::SeparatorText("Spawn point");
-                ImGui::Checkbox("Show spawn point gizmo", &showParticleSystemGizmo);
-                ImGui::DragFloat("X##SpawnPointVariance", &smokeDefinition.SpawnPointVariance.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloat("Y##SpawnPointVariance", &smokeDefinition.SpawnPointVariance.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-                ImGui::DragFloat("Z##SpawnPointVariance", &smokeDefinition.SpawnPointVariance.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-
-                ImGui::SeparatorText("Visuals");
-                ImGui::ColorEdit3("Base color", &smokeDefinition.BaseColor.x);
-                ImGui::DragFloatRange2("Shade", &smokeDefinition.MinShade, &smokeDefinition.MaxShade, 0.001f, 0.f, 1.f, "%.3f", nullptr, ImGuiSliderFlags_AlwaysClamp);
-
-                ImGui::SeparatorText("Commands");
-                if (ImGui::Button("Reset", ImVec2(-1.f, 0.f))) { smoke.Reset(context.Compute()); }
-
-                static float seedSeconds = 10.f;
-                ImGui::PopItemWidth();
-                ImGui::PushItemWidth(-FLT_MIN);
-                if (ImGui::Button("Advance system by")) { smoke.SeedState(seedSeconds); }
-                ImGui::SameLine();
-                ImGui::SliderFloat("##seedSeconds", &seedSeconds, 1.f / 30.f, smokeDefinition.LifeMax, "%.1f seconds");
-                ImGui::PopItemWidth();
-                ImGui::End();
-
-                if (showParticleSystemGizmo)
-                {
-                    float3 spawnPoint = smoke.SpawnPoint();
-                    if (ImGuizmo::Manipulate(camera.ViewTransform(), perspectiveTransform, ImGuizmo::TRANSLATE, ImGuizmo::WORLD, spawnPoint))
-                    { smoke.SpawnPoint(spawnPoint); }
-                }
-            }
-
-            // Timing statistics
-            ui.SubmitTimingStatisticsWindow(stats);
-
-            // Show viewport overlays
-            {
-                float padding = 5.f;
-                ImGuiDockNode* centralNode = ui.CentralNode();
-                ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-                ImU32 white = IM_COL32(255, 255, 255, 255);
-                ImU32 black = IM_COL32(0, 0, 0, 255);
-
-                // Show overlay legend
-                float overlayLegendWidth = 0.f;
-                if (debugSettings.OverlayMode == LightLinkedListDebugMode::LightCount)
-                {
-                    float w = std::min(screenSizeF.x * 0.25f, 270.f * dearImGui.DpiScale());
-                    overlayLegendWidth = w + padding + 2.f;
-                    float h = 20.f * dearImGui.DpiScale();
-
-                    float x0 = centralNode->Pos.x + centralNode->Size.x - w - padding - 1.f;
-                    float x1 = x0 + (w / 3.f);
-                    float x2 = x0 + (w / 3.f * 2.f);
-                    float x3 = x0 + w;
-
-                    float y0 = centralNode->Pos.y + centralNode->Size.y - h - padding - 1.f;
-                    float y1 = y0 + h;
-
-                    drawList->AddRectFilled(ImVec2(x0 - 1.f, y0 - 1.f), ImVec2(x3 + 1.f, y1 + 1.f), white);
-                    uint32_t color0 = IM_COL32(0, 0, 255, 255);
-                    uint32_t color1 = IM_COL32(0, 255, 255, 255);
-                    uint32_t color2 = IM_COL32(0, 255, 0, 255);
-                    uint32_t color3 = IM_COL32(255, 255, 0, 255);
-                    drawList->AddRectFilledMultiColor(ImVec2(x0, y0), ImVec2(x1, y1), color0, color1, color1, color0);
-                    drawList->AddRectFilledMultiColor(ImVec2(x1, y0), ImVec2(x2, y1), color1, color2, color2, color1);
-                    drawList->AddRectFilledMultiColor(ImVec2(x2, y0), ImVec2(x3, y1), color2, color3, color3, color2);
-
-                    std::string labelMax = std::format("{}", maxLightsPerPixelForOverlay);
-                    ImVec2 labelSize = ImGui::CalcTextSize(labelMax);
-                    float labelY = y0 + h * 0.5f - labelSize.y * 0.5f;
-                    ImGui::HudText(drawList, ImVec2(x0 + padding, labelY), "0");
-                    ImGui::HudText(drawList, ImVec2(x3 - labelSize.x - padding, labelY), labelMax);
-                }
-
-                // Show controls hint
-                if (showControlsHint)
-                {
-                    std::string controlsHint = std::format("Move with {}, click+drag look around or use Xbox controller.", cameraInput.WasdName());
-                    float wrapWidth = centralNode->Size.x - padding * 2.f - overlayLegendWidth;
-                    ImVec2 hintSize = ImGui::CalcTextSize(controlsHint, false, wrapWidth);
-                    ImVec2 position = ImVec2(centralNode->Pos.x + padding, centralNode->Pos.y + centralNode->Size.y - hintSize.y - padding);
-                    ImGui::HudText(drawList, position, controlsHint, wrapWidth);
-                }
-            }
+            ui.SubmitLightLinkedListSettingsWindow(lightLinkedListShift, lightLinkLimit, (uint32_t)downsampledDepthBuffers.size());
+            ui.SubmitParticleSystemEditor(context.Compute(), smoke, smokeDefinition);
+            ui.SubmitTimingStatisticsWindow();
+            ui.SubmitViewportOverlays(debugSettings.OverlayMode, maxLightsPerPixelForOverlay);
 
             context.SetRenderTarget(swapChain);
             dearImGui.Render(context);
