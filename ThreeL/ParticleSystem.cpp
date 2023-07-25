@@ -2,6 +2,7 @@
 #include "ParticleSystem.h"
 
 #include "ComputeContext.h"
+#include "DebugLayer.h"
 #include "GraphicsContext.h"
 #include "GraphicsCore.h"
 #include "LightHeap.h"
@@ -187,7 +188,8 @@ void ParticleSystem::Update(ComputeContext& context, float deltaTime, D3D12_GPU_
         context.UavBarrier();
         PIXEndEvent(&context);
 
-        if (isAsyncCompute) { m_UpdateSyncPoint = context.Flush(); }
+        if (isAsyncCompute)
+        { m_UpdateSyncPoint = context.Flush(); }
         return;
     }
 
@@ -217,7 +219,8 @@ void ParticleSystem::Update(ComputeContext& context, float deltaTime, D3D12_GPU_
 
     // Update complete, save a sync point for render
     PIXEndEvent(&context);
-    if (isAsyncCompute) { m_UpdateSyncPoint = context.Flush(); }
+    if (isAsyncCompute)
+    { m_UpdateSyncPoint = context.Flush(); }
 }
 
 void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList)
@@ -300,12 +303,21 @@ void ParticleSystem::SeedState(float numSeconds)
     PIXBeginEvent(&context, 0, L"ParticleSystem::SeedState for '%s'", m_DebugName.c_str());
 
     numSecondsSim = numSeconds;
+    uint32_t lastFrame = framesToSimulate - 1;
     D3D12_GPU_VIRTUAL_ADDRESS perFrameCbAddress = perFrameCbs->GetGPUVirtualAddress();
     for (uint32_t i = 0; i < framesToSimulate; i++)
     {
-        Update(context, std::min(simulatedRate, numSecondsSim), perFrameCbAddress, true);
+        Update(context, std::min(simulatedRate, numSecondsSim), perFrameCbAddress, i != lastFrame);
         perFrameCbAddress += sizeof(AlignedPerFrameCb);
         numSecondsSim -= simulatedRate;
+
+        //TODO: Investigate this further and/or report the issue
+        // There is (what seems to be) a bug with the debug layer's tracking of implicit resource state tracking that we're triggering here
+        // For some reason it becomes convinced that the output buffer's UAV counter was implicitly promoted to D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
+        // This makes zero sense since we aren't using any DXR stuff and my understanding is things don't implicitly promot to be acceleration structures anyway.
+        // Flushing the context (IE: executing command lists) clears the issue since that clears out the implicit state promotions.
+        if (DebugLayer::IsEnabled())
+        { context.Flush(); }
     }
 
     PIXEndEvent(&context);

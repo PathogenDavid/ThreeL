@@ -44,7 +44,7 @@ DearImGui::DearImGui(GraphicsCore& graphicsCore, Window& window)
 
     // Disable window rounding and window background alpha since it doesn't play nice with multiple viewports
     style.WindowRounding = 0.f;
-    style.Colors[ImGuiCol_WindowBg].w = 1.f;
+    //style.Colors[ImGuiCol_WindowBg].w = 1.f; // I decided I'm OK with this only working in the main window (plus I disabled mutli-viewports.)
 
     m_BaseStyle = style;
 
@@ -180,4 +180,24 @@ DearImGui::~DearImGui()
 
     Assert(s_Singleton == this);
     s_Singleton = nullptr;
+}
+
+namespace ImGui
+{
+    bool Begin2(const char* name, bool* p_open, ImGuiWindowFlags flags)
+    {
+        if (p_open != nullptr && !*p_open)
+        {
+            ImGui::GetCurrentContext()->NextWindowData.ClearFlags();
+            return false;
+        }
+
+        if (!ImGui::Begin(name, p_open, flags))
+        {
+            ImGui::End();
+            return false;
+        }
+
+        return true;
+    }
 }
