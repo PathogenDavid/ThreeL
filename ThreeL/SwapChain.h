@@ -26,6 +26,7 @@ private:
     ComPtr<IDXGISwapChain3> m_SwapChain;
     DXGI_SWAP_CHAIN_FLAG m_SwapChainFlags;
     bool m_SupportsTearing;
+    DXGI_FORMAT m_UnderlyingFormat;
 
     ComPtr<ID3D12DescriptorHeap> m_RtvHeap;
     BackBuffer m_BackBuffers[BACK_BUFFER_COUNT];

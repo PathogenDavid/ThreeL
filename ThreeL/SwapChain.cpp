@@ -21,17 +21,16 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     m_BufferSize = m_Size = { width, height };
 
     // The view of the swap chain can be sRGB but the actual texture cannot so we drop the sRGB designation when it's used
-    DXGI_FORMAT format;
     switch (BACK_BUFFER_FORMAT)
     {
         case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            m_UnderlyingFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
             break;
         case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            m_UnderlyingFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
             break;
         default:
-            format = BACK_BUFFER_FORMAT;
+            m_UnderlyingFormat = BACK_BUFFER_FORMAT;
             break;
     }
 
@@ -40,7 +39,7 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     {
         .Width = width,
         .Height = height,
-        .Format = format,
+        .Format = m_UnderlyingFormat,
         .SampleDesc = { 1, 0 },
         .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
         .BufferCount = BACK_BUFFER_COUNT,
@@ -215,7 +214,7 @@ void SwapChain::Resize(uint2 size)
         BACK_BUFFER_COUNT,
         size.x,
         size.y,
-        BACK_BUFFER_FORMAT,
+        m_UnderlyingFormat,
         m_SwapChainFlags
     );
     AssertSuccess(hr);
