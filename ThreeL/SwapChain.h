@@ -17,7 +17,7 @@ enum class PresentMode
 class SwapChain
 {
 public:
-    static const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    static const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
     static const uint32_t BACK_BUFFER_COUNT = 3;
 
 private:

@@ -105,6 +105,23 @@ static int MainImpl()
     uint32_t lightLinkedListShift = 3; // 0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8
     uint32_t lightLinkLimit = LightLinkedList::MAX_LIGHT_LINKS;
 
+#if true
+    for (int i = 0; i < 16; i++)
+    {
+        lights.push_back
+        ({
+            .Position = float3
+            (
+                1.f + -0.7f * (i / 2 * 2),
+                0.5f,
+                -0.7f * (i % 2 == 1 ? -1.f : 1.f)
+            ),
+            .Range = 1000.f,
+            .Color = ImGui::ColorConvertHSVtoRGB(float3((float)i / 16.f, 1.f, 1.f)),
+            .Intensity = 1.f,
+        });
+    }
+#else
     lights.push_back
     ({
         .Position = float3::Zero,
@@ -149,6 +166,7 @@ static int MainImpl()
             .Intensity = std::uniform_real_distribution(0.5f, 3.f)(randomGenerator),
         });
     }
+#endif
 
     //-----------------------------------------------------------------------------------------------------------------
     // Particle system initialization
@@ -334,12 +352,14 @@ static int MainImpl()
         camera.ApplyMovement(cameraInput.MoveVector(), cameraInput.LookVector());
 
         // Animate lights
+#if false
         if (debugSettings.AnimateLights)
         {
             lights[0].Position.y = 0.1f + (1.f + std::sin(light0Hover += deltaTime * 2.f)) * 0.25f;
             light1Offset = Quaternion(float3::UnitY, -deltaTime) * light1Offset;
             lights[1].Position = light1Center + light1Offset;
         }
+#endif
 
         //-------------------------------------------------------------------------------------------------------------
         // Resize screen-dependent resources
@@ -635,6 +655,7 @@ static int MainImpl()
 
         // Show gizmo for moving lights
         //TODO: Add UI for selecting different lights instead of hard-coding things
+#if false
         if (lights.size() > 2)
         {
             float4x4 lightWorld = float4x4::MakeTranslation(lights[2].Position);
@@ -643,6 +664,7 @@ static int MainImpl()
                 lights[2].Position = float3(lightWorld.m30, lightWorld.m31, lightWorld.m32);
             }
         }
+#endif
 
         //-------------------------------------------------------------------------------------------------------------
         // UI
