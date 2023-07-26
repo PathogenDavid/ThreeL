@@ -201,7 +201,9 @@ namespace DebugLayer
     {
         std::wstring title = L"";
 
-#ifndef NDEBUG
+#if defined(DEBUG)
+        title += L"Debug";
+#elif !defined(NDEBUG)
         title += L"Checked";
 #endif
 

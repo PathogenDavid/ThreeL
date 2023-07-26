@@ -34,7 +34,15 @@ Various debug visualizations, settings, and tools can be accessed using the UI.
 
 Building should be as simple as opening `ThreeL.sln` in Visual Studio 2022 and pressing F5.
 
-The debug configuration is instrumented with [WinPixEventRuntime](https://devblogs.microsoft.com/pix/winpixeventruntime/) if you want to inspect the structure of the frame using [PIX](https://devblogs.microsoft.com/pix/download/) or [RenderDoc](https://renderdoc.org/).
+&nbsp;
+
+ThreeL has three build configrations:
+
+* Debug - Code optimizations disabled (including shaders) with debug layer & asserts – slowest
+* Checked - Optimizations enabled with asserts only – faster
+* Release - Optimizations enabled without asserts – fastest
+
+The debug and checked configurations are instrumented with [WinPixEventRuntime](https://devblogs.microsoft.com/pix/winpixeventruntime/) if you're wanting to inspect the structure of the frame using [PIX](https://devblogs.microsoft.com/pix/download/) or [RenderDoc](https://renderdoc.org/).
 
 ## License
 
