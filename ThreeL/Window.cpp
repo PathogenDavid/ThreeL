@@ -7,6 +7,9 @@
 #include <ranges>
 #include <ShellScalingApi.h>
 
+static const DWORD kWindowedStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+static const DWORD kFullscreenStyle = WS_POPUP | WS_VISIBLE;
+
 struct Monitor
 {
     HMONITOR Monitor;
@@ -71,7 +74,7 @@ Window::Window(LPCWSTR title, int width, int height)
     // Create the main window
     {
         DWORD styleEx = 0;
-        DWORD style = WS_OVERLAPPEDWINDOW;
+        DWORD style = kWindowedStyle & ~WS_VISIBLE; // Don't start visible, Show must be called to initially show the window
 
         Monitor monitor = GetPrimaryMonitor();
 
@@ -107,6 +110,14 @@ Window::Window(LPCWSTR title, int width, int height)
             position.y = monitor.Info.rcWork.top + (monitor.Info.rcWork.bottom - monitor.Info.rcWork.top) / 2 - (size.y / 2);
         }
 
+        m_LastWindowedRect =
+        {
+            .left = position.x,
+            .top = position.y,
+            .right = position.x + size.x,
+            .bottom = position.y + size.y,
+        };
+
         m_Hwnd = nullptr;
         m_Hwnd = CreateWindowExW
         (
@@ -130,6 +141,13 @@ Window::Window(LPCWSTR title, int width, int height)
 void Window::Show()
 {
     ShowWindow(m_Hwnd, SW_SHOW);
+}
+
+void Window::StartFrame()
+{
+    // Output mode changes are deferred until the start of the frame to prevent them from affecting the swapchain mid-frame
+    if (m_DesiredOutputMode != m_CurrentOutputMode)
+    { ChangeOutputMode(m_DesiredOutputMode); }
 }
 
 bool Window::ProcessMessages()
@@ -167,6 +185,79 @@ void Window::RemoveWndProc(WndProcHandle handle)
     }
 
     Assert(false && "Window's message handler chain does not contain the specified handle.");
+}
+
+void Window::ChangeOutputMode(OutputMode desiredMode)
+{
+    m_SuppressFullscreenWindowChanges = false;
+
+    RECT desiredRect = { };
+    DWORD desiredStyle = 0;
+    bool desiredMaximize = false;
+
+    switch (desiredMode)
+    {
+        case OutputMode::Fullscreen:
+        case OutputMode::MostlyFullscreen:
+        {
+            HMONITOR monitor = MonitorFromWindow(m_Hwnd, MONITOR_DEFAULTTOPRIMARY);
+            MONITORINFO monitorInfo = { sizeof(monitorInfo) };
+            AssertWinError(GetMonitorInfoW(monitor, &monitorInfo));
+
+            desiredStyle = kFullscreenStyle;
+            desiredRect = desiredMode == OutputMode::Fullscreen ? monitorInfo.rcMonitor : monitorInfo.rcWork;
+            break;
+        }
+        case OutputMode::Windowed:
+        {
+            desiredStyle = kWindowedStyle;
+            desiredRect = m_LastWindowedRect;
+            desiredMaximize = m_LastWindowedMaximized;
+            break;
+        }
+        default:
+            Assert(false && "Invalid output mode");
+            return;
+    }
+
+    // Set right away so that the fullscreen window positions don't affect the saved windowed rect
+    m_CurrentOutputMode = desiredMode;
+
+    SetLastError(ERROR_SUCCESS);
+    AssertWinError(SetWindowLong(m_Hwnd, GWL_STYLE, desiredStyle) != 0);
+
+    AssertWinError(SetWindowPos
+    (
+        m_Hwnd,
+        nullptr,
+        desiredRect.left,
+        desiredRect.top,
+        desiredRect.right - desiredRect.left,
+        desiredRect.bottom - desiredRect.top,
+        SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED
+    ));
+
+    if (desiredMaximize)
+    { ShowWindow(m_Hwnd, SW_MAXIMIZE); }
+
+    m_SuppressFullscreenWindowChanges = true;
+}
+
+void Window::CycleOutputMode()
+{
+    switch (m_CurrentOutputMode)
+    {
+        case OutputMode::Windowed:
+            RequestOutputMode(OutputMode::MostlyFullscreen);
+            break;
+        case OutputMode::MostlyFullscreen:
+            RequestOutputMode(OutputMode::Fullscreen);
+            break;
+        case OutputMode::Fullscreen:
+        default:
+            RequestOutputMode(OutputMode::Windowed);
+            break;
+    }
 }
 
 LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -210,6 +301,26 @@ LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
 
 LRESULT Window::WndProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
+    // Save current window size when windowed for transitioning out of fullscreen
+    // We do this before custom handlers because we're only reacting to the even but not handling it
+    // (The attached SwapChain is going to handle it.)
+    // We save the last windowed rect here rather than during mode transitions in order
+    // to simplify handling minimized windows. (Otherwise a fullscreen transition that
+    // somehow happens while we're minimized would use the wrong rect.)
+    if (message == WM_WINDOWPOSCHANGED && m_CurrentOutputMode == OutputMode::Windowed)
+    {
+        RECT clientRect;
+        // Only save the window size when the client rect isn't 0 by 0 (which typically means the window is minimized)
+        if (GetClientRect(m_Hwnd, &clientRect) && clientRect.left != clientRect.right && clientRect.top != clientRect.bottom)
+        { GetWindowRect(m_Hwnd, &m_LastWindowedRect); }
+    }
+
+    // If the monitor layout changes and we're in fullscreen mode we re-enter fullscreen mode to ensure we're still visible
+    if (m_CurrentOutputMode != OutputMode::Windowed && ((message == WM_SETTINGCHANGE && wParam == SPI_SETWORKAREA) || message == WM_DISPLAYCHANGE))
+    {
+        ChangeOutputMode(m_CurrentOutputMode);
+    }
+
     // Process registered message handlers (from most recently added to last.)
     for (auto messageHandler : m_MessageHandlers | std::views::reverse)
     {
@@ -222,7 +333,16 @@ LRESULT Window::WndProc(UINT message, WPARAM wParam, LPARAM lParam)
     // No custom handlers handled the message, check if we have our own default behavior for this message
     switch (message)
     {
-        //TODO: Handle WM_DPICHANGED
+        case WM_WINDOWPOSCHANGING:
+        {
+            // Don't allow moving or resizing fullscreen windows
+            if (m_SuppressFullscreenWindowChanges && (m_CurrentOutputMode == OutputMode::MostlyFullscreen || m_CurrentOutputMode == OutputMode::Fullscreen))
+            {
+                WINDOWPOS* windowPosition = (WINDOWPOS*)lParam;
+                windowPosition->flags |= SWP_NOMOVE | SWP_NOSIZE;
+            }
+            return 0;
+        }
         case WM_PAINT:
         {
             // Explicitly tell Windows we don't need to paint since we don't need Win32 painting.

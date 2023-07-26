@@ -5,12 +5,19 @@
 #include "CameraInput.h"
 #include "ComputeContext.h"
 #include "DearImGui.h"
+#include "DebugLayer.h"
 #include "FrameStatistics.h"
 #include "LightLinkedList.h"
 #include "ParticleSystem.h"
 #include "ParticleSystemDefinition.h"
 
 #include <imgui_internal.h>
+
+Ui::Ui(GraphicsCore& graphics, Window& window, DearImGui& dearImGui, CameraController& camera, CameraInput& cameraInput, FrameStatistics& stats)
+    : m_Graphics(graphics), m_Window(window), m_DearImGui(dearImGui), m_Camera(camera), m_CameraInput(cameraInput), m_Stats(stats)
+{
+    m_SystemInfo = std::format("{}{}", std::wstring(m_Graphics.AdapterName()), DebugLayer::GetExtraWindowTitleInfo());
+}
 
 void Ui::Start(const uint2& screenSize, const float2& screenSizeF, const float4x4& perspectiveTransform)
 {
@@ -311,5 +318,12 @@ void Ui::SubmitViewportOverlays(ShaderInterop::LightLinkedListDebugMode debugOve
         ImVec2 hintSize = ImGui::CalcTextSize(controlsHint, false, wrapWidth);
         ImVec2 position = ImVec2(m_CentralNode->Pos.x + padding, m_CentralNode->Pos.y + m_CentralNode->Size.y - hintSize.y - padding);
         ImGui::HudText(drawList, position, controlsHint, wrapWidth);
+    }
+
+    // Show runtime info in fullscreen
+    if (m_Window.CurrentOutputMode() != OutputMode::Windowed)
+    {
+        ImVec2 position = ImVec2(m_CentralNode->Pos.x + padding, m_CentralNode->Pos.y + padding);
+        ImGui::HudText(drawList, position, m_SystemInfo);
     }
 }

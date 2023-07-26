@@ -18,6 +18,7 @@ The project utilizes relatively thin abstractions, hopefully making it more frie
 * Compute-based particle systems
 * Basic glTF loading (non-conformant, it's restricted to the features needed by ThreeL)
 * Bindless rendering (Specifically for textures/samplers used by PBR materials and some mesh data)
+* A few little Dear ImGui-based tools for fiddling with things
 
 ## Controls
 
@@ -25,7 +26,7 @@ Move with <kbd>WASD</kbd>\*, click and drag to look around. Hold <kbd>Shift</kbd
 
 You can also use an Xbox Controller. Click in the left stick to sprint.
 
-Various debug visualizations and settings can be configured using the UI.
+Various debug visualizations, settings, and tools can be accessed using the UI.
 
 <sup>(\*Or <kbd>ZWSD</kbd> or <kbd>,AOE</kbd> or <kbd>WARS</kbd> whatever your keyboard uses for those keys. Arrow keys work too.)</sup>
 

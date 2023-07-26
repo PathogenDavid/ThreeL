@@ -8,25 +8,30 @@ class CameraInput;
 struct ComputeContext;
 class DearImGui;
 class FrameStatistics;
+class GraphicsCore;
 struct ImGuiDockNode;
 class ParticleSystem;
 struct ParticleSystemDefinition;
+class Window;
 
 class Ui
 {
 private:
-    ImGuiDockNode* m_CentralNode = nullptr;
+    GraphicsCore& m_Graphics;
+    Window& m_Window;
+    DearImGui& m_DearImGui;
     CameraController& m_Camera;
     CameraInput& m_CameraInput;
-    DearImGui& m_DearImGui;
     FrameStatistics& m_Stats;
+
+    std::string m_SystemInfo;
+
+    ImGuiDockNode* m_CentralNode = nullptr;
     float4x4 m_PerspectiveTransform;
     uint2 m_ScreenSize;
     float2 m_ScreenSizeF;
 public:
-    Ui(DearImGui& dearImGui, CameraController& camera, CameraInput& cameraInput, FrameStatistics& stats)
-        : m_DearImGui(dearImGui), m_Camera(camera), m_CameraInput(cameraInput), m_Stats(stats)
-    { }
+    Ui(GraphicsCore& graphics, Window& window, DearImGui& dearImGui, CameraController& camera, CameraInput& cameraInput, FrameStatistics& stats);
 
     void Start(const uint2& screenSize, const float2& screenSizeF, const float4x4& perspectiveTransform);
 

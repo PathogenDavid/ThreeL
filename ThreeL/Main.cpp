@@ -221,7 +221,7 @@ static int MainImpl()
 
     // User interface
     DearImGui dearImGui(graphics, window);
-    Ui ui(dearImGui, camera, cameraInput, stats);
+    Ui ui(graphics, window, dearImGui, camera, cameraInput, stats);
 
     // Custom WndProc
     WndProcHandle wndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>
@@ -256,6 +256,32 @@ static int MainImpl()
                     ));
 
                     return 0;
+                }
+                // Handle Alt+Enter fullscreen transitions
+                case WM_SYSKEYDOWN:
+                {
+                    if (wParam != VK_RETURN)
+                    { return { }; }
+
+                    // Require alt to be held and ignore repeats
+                    WORD keyFlags = HIWORD(lParam);
+                    if ((keyFlags & KF_ALTDOWN) == 0 || (keyFlags & KF_REPEAT) != 0)
+                    { return { }; }
+
+                    // Cycle the output mode
+                    window.CycleOutputMode();
+                    return 0;
+                }
+                // Handle escape to close the app
+                case WM_KEYDOWN:
+                {
+                    if (wParam == VK_ESCAPE)
+                    {
+                        AssertWinError(DestroyWindow(hwnd));
+                        return 0;
+                    }
+
+                    return { };
                 }
                 default:
                     return { };
@@ -297,6 +323,8 @@ static int MainImpl()
         QueryPerformanceCounter(&timestamp);
         float deltaTime = (float)(double(timestamp.QuadPart - lastTimestamp.QuadPart) * performanceFrequencyInverse); // seconds
         float deltaTimeMs = deltaTime * 1000.f;
+
+        window.StartFrame();
 
         dearImGui.NewFrame();
 
@@ -654,6 +682,18 @@ static int MainImpl()
                         ImGui::MenuItem("Particle editor", nullptr, &ui.ShowParticleSystemEditor);
                         ImGui::MenuItem("Show controls hint", nullptr, &ui.ShowControlsHint);
                         ImGui::MenuItem("Timing statistics", nullptr, &ui.ShowTimingStatisticsWindow);
+
+                        if (ImGui::BeginMenu("Window Mode"))
+                        {
+                            if (ImGui::MenuItem("Windowed", "Alt+Enter", window.CurrentOutputMode() == OutputMode::Windowed))
+                                window.RequestOutputMode(OutputMode::Windowed);
+                            if (ImGui::MenuItem("Fullscreen", "Alt+Enter", window.CurrentOutputMode() == OutputMode::Fullscreen))
+                                window.RequestOutputMode(OutputMode::Fullscreen);
+                            if (ImGui::MenuItem("Mostly Fullscreen", "Alt+Enter", window.CurrentOutputMode() == OutputMode::MostlyFullscreen))
+                                window.RequestOutputMode(OutputMode::MostlyFullscreen);
+                            ImGui::EndMenu();
+                        }
+
                         ImGui::EndMenu();
                     }
 
