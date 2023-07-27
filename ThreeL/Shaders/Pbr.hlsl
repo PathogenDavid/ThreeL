@@ -195,7 +195,7 @@ struct Brdf
         // attenuation is approaching zero at that point. Basically this shows dim solid light for areas covered by the light linked list
         // and bright in areas actually covered by the light. It also indirectly shows light checks lost due to depth errors.
         // In other words, this shows that RangeExtension in LightLinkedListFill.hlsl is being calculated correctly.
-#if DEBUG_LIGHT_BOUNDARIES
+#ifdef DEBUG_LIGHT_BOUNDARIES
         lightAttenuation = distanceSquared < rangeSquared ? 1.f : 0.25f;
         Diffuse += light.Color * lightAttenuation;
 #else
@@ -207,6 +207,16 @@ struct Brdf
 #endif
     }
 };
+
+float4 SampleBindlessTexture(uint textureIndex, uint samplerIndex, float2 uv)
+{
+    // Particles are instanced, which means differen pixel shader invocations get different material IDs which means potentially non-uniform resource indicies
+#ifdef PBR_IS_PARTICLE
+    return g_Textures[NonUniformResourceIndex(textureIndex)].Sample(g_Samplers[NonUniformResourceIndex(samplerIndex)], uv);
+#else
+    return g_Textures[textureIndex].Sample(g_Samplers[samplerIndex], uv);
+#endif
+}
 
 [RootSignature(PBR_ROOT_SIGNATURE)]
 float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
@@ -224,7 +234,7 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     float4 baseColor = input.Color * material.BaseColorFactor;
 
     if (material.BaseColorTexture != DISABLED_BUFFER)
-    { baseColor *= g_Textures[material.BaseColorTexture].Sample(g_Samplers[material.BaseColorTextureSampler], input.Uv0); }
+    { baseColor *= SampleBindlessTexture(material.BaseColorTexture, material.BaseColorTextureSampler, input.Uv0); }
 
     // Only base color affects alpha so alpha cutoff can be applied at this point
     if (baseColor.a < material.AlphaCutoff)
@@ -236,7 +246,7 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
 
     if (material.MealicRoughnessTexture != DISABLED_BUFFER)
     {
-        float4 mr = g_Textures[material.MealicRoughnessTexture].Sample(g_Samplers[material.MetalicRoughnessTextureSampler], input.Uv0);
+        float4 mr = SampleBindlessTexture(material.MealicRoughnessTexture, material.MetalicRoughnessTextureSampler, input.Uv0);
         metalness *= mr.b;
         roughness *= mr.g;
     }
@@ -260,7 +270,7 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
 
         float3x3 tangentFrame = float3x3(tangent, bitangent, normal);
 
-        float3 textureNormal = g_Textures[material.NormalTexture].Sample(g_Samplers[material.NormalTextureSampler], input.Uv0).rgb;
+        float3 textureNormal = SampleBindlessTexture(material.NormalTexture, material.NormalTextureSampler, input.Uv0).rgb;
         textureNormal = textureNormal * 2.f - 1.f;
         textureNormal *= float3(material.NormalTextureScale.xx, 1.f);
         textureNormal = normalize(textureNormal);
@@ -271,7 +281,7 @@ float4 PsMain(PsInput input, bool isFrontFace: SV_IsFrontFace) : SV_Target
     float3 emissive = material.EmissiveFactor;
 
     if (material.EmissiveTexture != DISABLED_BUFFER)
-    { emissive *= g_Textures[material.EmissiveTexture].Sample(g_Samplers[material.EmissiveTextureSampler], input.Uv0).rgb; }
+    { emissive *= SampleBindlessTexture(material.EmissiveTexture, material.EmissiveTextureSampler, input.Uv0).rgb; }
 
     //=================================================================================================================
     // PBR calculations

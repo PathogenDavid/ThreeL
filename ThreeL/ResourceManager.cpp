@@ -32,8 +32,10 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
     ShaderBlobs lightLinkedListDebugPs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListDebug.ps.hlsl", L"PsMain", L"ps_6_0");
 
     std::vector<std::wstring> lightLinkedListStatsCsDefines;
-    if (Graphics.IsIntel())
-        lightLinkedListStatsCsDefines.push_back(L"NO_GROUPSHARED"); // My Intel UHD 620 is choking on the groupshared optimization in this shader.
+    // My Intel UHD 620 is choking on the groupshared optimization in this shader.
+    // I've also seen a AMD RX 6700 XT choking on this in a different way (light count is randomly corrupted), so let's just disable the optimization for now.
+    //if (Graphics.IsIntel())
+    lightLinkedListStatsCsDefines.push_back(L"NO_GROUPSHARED");
     ShaderBlobs lightLinkedListStatsCs = hlslCompiler.CompileShader(L"Shaders/LightLinkedListStats.cs.hlsl", L"Main", L"cs_6_0", lightLinkedListStatsCsDefines);
 
     ShaderBlobs lightSpritesVs = hlslCompiler.CompileShader(L"Shaders/LightSprites.hlsl", L"VsMain", L"vs_6_0");

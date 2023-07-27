@@ -17,7 +17,13 @@ enum class PresentMode
 class SwapChain
 {
 public:
-    static const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    // My laptop misbehaves when DXGI_FORMAT_R16G16B16A16_FLOAT
+    // Documentation on using this format for swapchains is scant, so it's unclear if this is due to
+    // something we're doing wrong or something maybe Intel's drivers are doing wrong.
+    // Regardless, we weren't really taking advantage of the increased precision anyway.
+    // In the future I might implement proper HDR support (either for rendering or presenting), but first I probably need to acquire a decent HDR monitor.
+    //static const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    static const DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
     static const uint32_t BACK_BUFFER_COUNT = 3;
 
 private:

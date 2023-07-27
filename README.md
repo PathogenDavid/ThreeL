@@ -34,7 +34,7 @@ Various debug visualizations, settings, and tools can be accessed using the UI.
 
 Building should be as simple as opening `ThreeL.sln` in Visual Studio 2022 and pressing F5.
 
-&nbsp;
+### Build Configurations
 
 ThreeL has three build configrations:
 

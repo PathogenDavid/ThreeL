@@ -93,7 +93,7 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
     InitializeBackBuffers();
 
     // Register WndProc to handle resizing
-    m_WndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+    m_WndProcHandle = window.AddWndProc([&](HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) -> std::optional<LRESULT>
         {
             if (message == WM_WINDOWPOSCHANGED)
             {
@@ -106,10 +106,10 @@ SwapChain::SwapChain(GraphicsCore& graphicsCore, Window& window)
                     Resize(newSize);
                 }
 
-                return std::optional<LRESULT>(0);
+                return 0;
             }
 
-            return std::optional<LRESULT>();
+            return { };
         });
 }
 
@@ -160,7 +160,6 @@ void SwapChain::Present(PresentMode mode)
     // As such if we don't wait here we'll clobber resources in use on the graphics queue if we modify them on the copy queue or from the CPU
     m_SyncPoints[m_CurrentBackBufferIndex].Wait();
 }
-
 
 void SwapChain::Resize(uint2 size)
 {

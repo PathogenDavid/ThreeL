@@ -160,15 +160,16 @@ void Ui::SubmitParticleSystemEditor(ComputeContext& context, ParticleSystem& par
         ImGui::DragFloat("Y##VelocityDirectionVariance", &particleSystemDefinition.VelocityDirectionVariance.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::DragFloat("Z##VelocityDirectionVariance", &particleSystemDefinition.VelocityDirectionVariance.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::Text("Velocity direction bias");
-        ImGui::DragFloat("X##VelocityDirectionBias", &particleSystemDefinition.VelocityDirectionBias.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::DragFloat("Y##VelocityDirectionBias", &particleSystemDefinition.VelocityDirectionBias.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::DragFloat("Z##VelocityDirectionBias", &particleSystemDefinition.VelocityDirectionBias.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("X##VelocityDirectionBias", &particleSystemDefinition.VelocityDirectionBias.x, 0.01f, -FLT_MAX, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("Y##VelocityDirectionBias", &particleSystemDefinition.VelocityDirectionBias.y, 0.01f, -FLT_MAX, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::DragFloat("Z##VelocityDirectionBias", &particleSystemDefinition.VelocityDirectionBias.z, 0.01f, -FLT_MAX, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::Text("Velocity magnitude");
         ImGui::DragFloatRange2("Linear", &particleSystemDefinition.VelocityMagnitudeMin, &particleSystemDefinition.VelocityMagnitudeMax, 0.01f);
         ImGui::DragFloatRange2("Angular", &particleSystemDefinition.AngularVelocityMin, &particleSystemDefinition.AngularVelocityMax, 0.01f, 0.f, 0.f, "%.3f rad/s");
 
         ImGui::SeparatorText("Spawn point");
         ImGui::Checkbox("Show spawn point gizmo", &ShowParticleSystemGizmo);
+        ImGui::Text("Spawn point variance");
         ImGui::DragFloat("X##SpawnPointVariance", &particleSystemDefinition.SpawnPointVariance.x, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::DragFloat("Y##SpawnPointVariance", &particleSystemDefinition.SpawnPointVariance.y, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::DragFloat("Z##SpawnPointVariance", &particleSystemDefinition.SpawnPointVariance.z, 0.01f, 0.f, FLT_MAX, "%.3f", ImGuiSliderFlags_AlwaysClamp);
