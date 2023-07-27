@@ -53,7 +53,7 @@ public:
     inline void Update(ComputeContext& context, float deltaTime, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb)
     { Update(context, deltaTime, perFrameCb, false); }
 
-    void Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList);
+    void Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList, bool showLightBoundaries = false);
 
     //! Seeds the state of the particle system by simulating it for the specified number of (simulated) seconds
     void SeedState(float numSeconds);

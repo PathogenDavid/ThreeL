@@ -64,6 +64,7 @@ struct ResourceManager
 
     RootSignature ParticleRenderRootSignature;
     PipelineStateObject ParticleRender;
+    PipelineStateObject ParticleRenderLightDebug;
 
     explicit ResourceManager(GraphicsCore& graphics);
     ResourceManager(const ResourceManager&) = delete;

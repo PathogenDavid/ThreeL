@@ -47,6 +47,7 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
 
     ShaderBlobs particleRenderVs = hlslCompiler.CompileShader(L"Shaders/ParticleRender.hlsl", L"VsMainParticle", L"vs_6_0");
     ShaderBlobs particleRenderPs = hlslCompiler.CompileShader(L"Shaders/ParticleRender.hlsl", L"PsMain", L"ps_6_0");
+    ShaderBlobs particleRenderPsLightDebug = hlslCompiler.CompileShader(L"Shaders/ParticleRender.hlsl", L"PsMain", L"ps_6_0", { L"DEBUG_LIGHT_BOUNDARIES" });
 
     // Create root signatures
     PbrRootSignature = RootSignature(Graphics, pbrVs, L"PBR Root Signature");
@@ -265,5 +266,8 @@ ResourceManager::ResourceManager(GraphicsCore& graphics)
         };
 
         ParticleRender = PipelineStateObject(Graphics, description, L"Particle Render PSO");
+
+        description.PS = particleRenderPsLightDebug.ShaderBytecode();
+        ParticleRenderLightDebug = PipelineStateObject(Graphics, description, L"Particle Render PSO - Light Debug");
     }
 }

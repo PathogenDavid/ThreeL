@@ -223,7 +223,7 @@ void ParticleSystem::Update(ComputeContext& context, float deltaTime, D3D12_GPU_
     { m_UpdateSyncPoint = context.Flush(); }
 }
 
-void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList)
+void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS perFrameCb, LightHeap& lightHeap, LightLinkedList& lightLinkedList, bool showLightBoundaries)
 {
     PIXBeginEvent(&context, 42, L"Render '%s' particle system", m_DebugName.c_str());
 
@@ -247,7 +247,7 @@ void ParticleSystem::Render(GraphicsContext& context, D3D12_GPU_VIRTUAL_ADDRESS 
     context->SetGraphicsRootDescriptorTable(ShaderInterop::ParticleRender::RpSamplerHeap, m_Graphics.SamplerHeap().GpuHeap()->GetGPUDescriptorHandleForHeapStart());
     context->SetGraphicsRootDescriptorTable(ShaderInterop::ParticleRender::RpBindlessHeap, m_Graphics.ResourceDescriptorManager().GpuHeap()->GetGPUDescriptorHandleForHeapStart());
 
-    context->SetPipelineState(m_Resources.ParticleRender);
+    context->SetPipelineState(showLightBoundaries ? m_Resources.ParticleRenderLightDebug : m_Resources.ParticleRender);
     context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
     context.DrawIndirect(m_DrawIndirectArguments);
 

@@ -595,7 +595,7 @@ static int MainImpl()
             ScopedTimer(context, Timer::ParticleRender);
             context.SetRenderTarget(swapChain, depthBuffer.ReadOnlyView());
             context.SetFullViewportScissor(screenSize);
-            smoke.Render(context, perFrameCbAddress, lightHeap, lightLinkedList);
+            smoke.Render(context, perFrameCbAddress, lightHeap, lightLinkedList, debugSettings.ShowLightBoundaries);
         }
 
         //-------------------------------------------------------------------------------------------------------------
