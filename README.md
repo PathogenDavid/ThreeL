@@ -3,9 +3,11 @@ ThreeL: An implementation of lighting via light linked list
 
 [![MIT Licensed](https://img.shields.io/github/license/pathogendavid/threel?style=flat-square&)](LICENSE.txt)
 
-ThreeL is an implementation of [real-time lighting via light linked list](https://advances.realtimerendering.com/s2014/#_REAL-TIME_LIGHTING_VIA) as described by Abdul Bezrati from Insomniac Games.
+ThreeL is an implementation of a somewhat unusual lighting algorithm, real-time lighting via light linked list.
 
-I'm still working on polishing ThreeL (and this readme), but the project is fully functional and mostly feature complete. I plan to publish a blog post and binaries for ThreeL soon.
+You can read more about ThreeL and the lighting via light linked list algorithm [on my portfolio](https://pixelalchemy.dev/portfolio/threel/).
+
+Pre-build binaries can be found [here on GitHub](https://github.com/PathogenDavid/ThreeL/releases/latest).
 
 ![](Screenshot.png)
 
