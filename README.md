@@ -15,7 +15,7 @@ The project utilizes relatively thin abstractions, hopefully making it more frie
 
 * Direct3D 12
 * Physically-based rendering (matching the [core glTF feature set](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#appendix-b-brdf-implementation))
-* A forward renderer with a depth pre-pass an unusual lighting algorithm
+* A forward renderer with a depth pre-pass
 * Generating mipmap chains in compute
 * Compute-based particle systems
 * Basic glTF loading (non-conformant, it's restricted to the features needed by ThreeL)
