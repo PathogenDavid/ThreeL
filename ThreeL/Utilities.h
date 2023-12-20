@@ -32,7 +32,8 @@ inline void SpanCopy(std::span<T> destination, std::span<const T> source)
 
 //! Implementation of std::formatter to automatically widen std::string to std::wstring, assumes std::string stores UTF8 characters.
 template <>
-struct std::formatter<std::string, wchar_t> {
+struct std::formatter<std::string, wchar_t>
+{
     template<class ParseContext>
     constexpr auto parse(ParseContext& ctx)
     {
@@ -40,7 +41,7 @@ struct std::formatter<std::string, wchar_t> {
     }
 
     template <class FormatContext>
-    FormatContext::iterator format(const std::string& str, FormatContext& ctx)
+    FormatContext::iterator format(const std::string& str, FormatContext& ctx) const
     {
         if (str.length() == 0) { return ctx.out(); }
 
@@ -63,7 +64,8 @@ struct std::formatter<std::string, wchar_t> {
 
 //! Implementation of std::formatter to automatically narrow std::wstring to std::string, assumes std::string stores UTF8 characters.
 template <>
-struct std::formatter<std::wstring, char> {
+struct std::formatter<std::wstring, char>
+{
     template<class ParseContext>
     constexpr auto parse(ParseContext& ctx)
     {
@@ -71,7 +73,7 @@ struct std::formatter<std::wstring, char> {
     }
 
     template <class FormatContext>
-    FormatContext::iterator format(const std::wstring& str, FormatContext& ctx)
+    FormatContext::iterator format(const std::wstring& str, FormatContext& ctx) const
     {
         if (str.length() == 0) { return ctx.out(); }
 
